@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trace">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<script>window.TRACE_API = 'https://script.google.com/macros/s/AKfycbwo94tGPvYWtSZ5lLfPP6W6AuoF75sUwdEzHuf3yibsyBs3Wu1t9k-nVeo9R9gFKuBc7A/exec';</script>
+<base target="_top">
+<meta charset="utf-8">
+<title>Trace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: single column, phone-first. Neutral ink UI; colour comes only from each
+     project's Google Calendar colour and from change states (new / moved / remove). */
+  :root {
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #eef0f4; --line: #e1e5eb; --line-strong: #cbd2dc;
+    --fg: #101722; --muted: #5d6675; --faint: #8a93a1;
+    --ink: #101722; --ink-fg: #ffffff;
+    --focus: #2e5bd8;
+    --new: #11774a; --new-soft: #e3f4ea; --moved: #9a5a00; --moved-soft: #fbf0dc;
+    --remove: #b42330; --remove-soft: #fbe6e7; --note-soft: #eef2fb;
+    --scrim: rgba(10, 14, 20, .55);
+    --font: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --r-lg: 16px; --r-md: 12px; --r-sm: 8px; --maxw: 640px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0e13; --surface: #12161d; --surface-2: #1a1f28; --line: #242b36; --line-strong: #364050;
+      --fg: #e9edf3; --muted: #9aa3b2; --faint: #6c7686;
+      --ink: #e9edf3; --ink-fg: #0b0e13; --focus: #7aa2ff;
+      --new: #45c985; --new-soft: #12301f; --moved: #f2b54a; --moved-soft: #33260c;
+      --remove: #ff7d84; --remove-soft: #3a1518; --note-soft: #171f30;
+      --scrim: rgba(0, 0, 0, .7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0e13; --surface: #12161d; --surface-2: #1a1f28; --line: #242b36; --line-strong: #364050;
+    --fg: #e9edf3; --muted: #9aa3b2; --faint: #6c7686;
+    --ink: #e9edf3; --ink-fg: #0b0e13; --focus: #7aa2ff;
+    --new: #45c985; --new-soft: #12301f; --moved: #f2b54a; --moved-soft: #33260c;
+    --remove: #ff7d84; --remove-soft: #3a1518; --note-soft: #171f30;
+    --scrim: rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.45 var(--font);
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .i { width: 20px; height: 20px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* header */
+  header { position: sticky; top: 0; z-index: 20; background: var(--bg);
+    border-bottom: 1px solid transparent; transition: border-color .2s; }
+  header.scrolled { border-bottom-color: var(--line); }
+  .bar-in { max-width: var(--maxw); margin: 0 auto; display: flex; align-items: center; gap: 8px; min-height: 60px;
+    padding-block: max(28px, calc(env(safe-area-inset-top, 0px) + 16px)) 14px;
+    padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .bar-in h1 { font-size: 17px; font-weight: 600; margin: 0; flex: 1; min-width: 0; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-in .sub { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .logo { width: 34px; height: 34px; flex: none; margin-right: 4px; }
+  .logo svg { width: 100%; height: 100%; display: block; border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
+  .iconbtn { width: 40px; height: 40px; display: inline-grid; place-items: center; border: 0; border-radius: 10px;
+    background: transparent; color: var(--fg); }
+  .iconbtn:active { background: var(--surface-2); }
+
+  main { max-width: var(--maxw); margin: 0 auto; padding-block: 20px 120px;
+    padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .view { display: grid; gap: 20px; }
+  .section { display: grid; gap: 10px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+  .group > * + * { border-top: 1px solid var(--line); }
+
+  /* project code chip = the project's Google Calendar colour */
+  .chip { display: inline-grid; place-items: center; min-width: 44px; height: 44px; padding: 0 8px; border-radius: 12px;
+    font: 600 13px/1 var(--mono); letter-spacing: .02em; color: #fff; background: var(--pc, var(--faint)); flex: none; }
+  .chip.sm { min-width: 30px; height: 24px; border-radius: 7px; font-size: 11px; padding: 0 6px; }
+
+  /* project rows on home */
+  .proj { display: flex; align-items: center; gap: 14px; padding: 14px; }
+  .proj .txt { flex: 1; min-width: 0; }
+  .proj .name { font-weight: 600; letter-spacing: -0.01em; }
+  .proj .name span { color: var(--muted); font-weight: 400; }
+  .proj .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .proj .acts { display: flex; gap: 6px; }
+  .round { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong);
+    background: var(--surface); color: var(--fg); }
+  .round.ink { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+  .round:active { transform: scale(.96); }
+
+  /* buttons */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px;
+    border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600;
+    text-decoration: none; color: var(--fg); }
+  .btn.ink { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.danger { color: var(--remove); }
+  .btn.sm { min-height: 36px; padding: 0 12px; font-size: 14px; border-radius: 10px; }
+  .btn[disabled] { opacity: .45; pointer-events: none; }
+  .btn.block { width: 100%; }
+
+  /* notice rows */
+  .notice { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-md);
+    background: var(--note-soft); font-size: 14px; }
+  .notice .i { width: 18px; height: 18px; margin-top: 1px; color: var(--muted); }
+  .notice.warn { background: var(--moved-soft); }
+  .notice.warn .i { color: var(--moved); }
+  .notice .grow { flex: 1; min-width: 0; }
+
+  /* activity */
+  .act { display: flex; gap: 12px; align-items: center; padding: 12px 14px; font-size: 14px; }
+  .act .txt { flex: 1; min-width: 0; }
+  .act .when { color: var(--muted); font-size: 13px; }
+  .counts { display: inline-flex; gap: 10px; flex-wrap: wrap; }
+  .c-new { color: var(--new); } .c-moved { color: var(--moved); } .c-remove { color: var(--remove); }
+
+  /* review summary */
+  .sum { display: flex; gap: 14px; padding: 14px; align-items: center; }
+  .sum .txt { flex: 1; min-width: 0; }
+  .sum .title { font-weight: 600; letter-spacing: -0.01em; }
+  .thumb { width: 64px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); flex: none;
+    padding: 0; background: var(--surface-2); position: relative; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .n { position: absolute; right: 4px; bottom: 4px; font: 600 11px var(--mono); background: var(--scrim); color: #fff;
+    padding: 1px 5px; border-radius: 6px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 14px; }
+  .pill { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+  .pill.new { background: var(--new-soft); color: var(--new); }
+  .pill.moved { background: var(--moved-soft); color: var(--moved); }
+  .pill.remove { background: var(--remove-soft); color: var(--remove); }
+  .tzline { padding: 10px 14px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .tzline .i { width: 16px; height: 16px; }
+
+  /* change rows */
+  .ghead { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 15px; }
+  .ghead .cnt { font: 600 13px var(--mono); color: var(--muted); }
+  .ghead .hint { font-weight: 400; font-size: 13px; color: var(--muted); }
+  .row { display: flex; gap: 12px; align-items: flex-start; padding: 14px; position: relative; }
+  .row.tap { cursor: pointer; }
+  .row.tap:active { background: var(--surface-2); }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .t { font-weight: 600; word-break: break-word; letter-spacing: -0.005em; }
+  .row .when { font-size: 14px; margin-top: 3px; }
+  .row .when .d { color: var(--muted); }
+  .row .was { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .row .was s { text-decoration-thickness: 1px; }
+  .row .src { font-size: 13px; color: var(--faint); margin-top: 2px; }
+  .row .chev { color: var(--faint); margin-top: 2px; }
+  .row.off .t, .row.off .when { opacity: .45; }
+  .row.ignored .t { text-decoration: line-through; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--muted);
+    display: inline-flex; gap: 4px; align-items: center; }
+  .tag .i { width: 13px; height: 13px; }
+  .tag.warn { background: var(--moved-soft); color: var(--moved); }
+  .tag.edit { background: var(--note-soft); color: var(--focus); }
+  .tag.ok { background: var(--new-soft); color: var(--new); }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .choice { display: grid; gap: 2px; text-align: left; padding: 9px 11px; border-radius: 10px; border: 1.5px solid var(--line-strong);
+    background: var(--surface); font-size: 14px; font-variant-numeric: tabular-nums; min-width: 0; }
+  .choice small { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .choice[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .dcline { padding: 10px 14px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: flex-start; }
+  .dcline .i { width: 16px; height: 16px; margin-top: 1px; }
+  .dcline b { color: var(--fg); font-weight: 600; }
+
+  /* custom checkbox */
+  .cb { position: relative; width: 26px; height: 26px; flex: none; margin-top: 1px; }
+  .cb input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .cb .box { position: absolute; inset: 0; border: 1.5px solid var(--line-strong); border-radius: 8px; display: grid;
+    place-items: center; background: var(--surface); pointer-events: none; }
+  .cb .box .i { width: 16px; height: 16px; stroke-width: 2.6; opacity: 0; color: var(--ink-fg); }
+  .cb input:checked + .box { background: var(--ink); border-color: var(--ink); }
+  .cb input:checked + .box .i { opacity: 1; }
+  .cb input:focus-visible + .box { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .cb input:disabled + .box { opacity: .4; }
+
+  /* inline editor */
+  .editor { padding: 14px; background: var(--surface-2); display: grid; gap: 12px; }
+  .f { display: grid; gap: 6px; min-width: 0; align-content: start; }
+  .f > span:first-child { font-size: 13px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 2px; min-height: 22px; }
+  .in { width: 100%; min-height: 46px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-strong);
+    background: var(--surface); font-size: 16px; -webkit-appearance: none; appearance: none; }
+  select.in { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .two > * { min-width: 0; }
+  .hint { font-size: 13px; color: var(--muted); }
+  .err { font-size: 13px; color: var(--remove); }
+  .toggle { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 15px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; gap: 3px; border-radius: 11px; background: var(--surface-2);
+    border: 1px solid var(--line); }
+  .seg button { border: 0; background: transparent; min-height: 38px; border-radius: 8px; font-size: 14px; font-weight: 500; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sw { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--c); position: relative; }
+  .sw[aria-pressed="true"]::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid var(--fg); }
+  .sw.none { background: var(--surface); border: 1.5px dashed var(--line-strong); }
+
+  /* settings rows */
+  .srow { display: flex; align-items: center; gap: 12px; padding: 14px; min-height: 56px; }
+  .srow .txt { flex: 1; min-width: 0; }
+  .srow .lbl { font-weight: 500; }
+  .srow .val { font-size: 13px; color: var(--muted); }
+  button.srow { width: 100%; border: 0; background: transparent; text-align: left; }
+  button.srow:active { background: var(--surface-2); }
+  .pad { padding: 14px; display: grid; gap: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--new); flex: none; }
+  .dot.paused { background: var(--moved); }
+  .role { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+    border: 1px solid var(--line-strong); padding: 2px 6px; border-radius: 5px; }
+
+  /* bottom action bar */
+  .actionbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--bg); border-top: 1px solid var(--line);
+    padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .actionbar .in-bar { max-width: var(--maxw); margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+
+  /* progress sheet */
+  .sheet-wrap { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { width: 100%; max-width: 640px; background: var(--surface); border-radius: 20px 20px 0 0; display: grid; gap: 16px;
+    padding-block: 22px calc(26px + env(safe-area-inset-bottom, 0px));
+    padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); }
+  .sheet h2 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+  .steps { display: grid; gap: 12px; }
+  .step { display: flex; gap: 12px; align-items: center; color: var(--faint); }
+  .step .st { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; flex: none; }
+  .step .st .i { width: 14px; height: 14px; stroke-width: 2.6; }
+  .step.on { color: var(--fg); }
+  .step.on .st { border-color: var(--line-strong); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+  .step.done { color: var(--fg); }
+  .step.done .st { background: var(--ink); border-color: var(--ink); color: var(--ink-fg); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* done */
+  .done-hero { display: grid; gap: 10px; justify-items: start; padding-top: 12px; }
+  .done-hero .badge { width: 52px; height: 52px; border-radius: 50%; background: var(--new-soft); color: var(--new); display: grid; place-items: center; }
+  .done-hero .badge .i { width: 26px; height: 26px; stroke-width: 2.4; }
+  .done-hero h2 { margin: 0; font-size: 26px; letter-spacing: -0.02em; text-wrap: balance; }
+  .stack { display: grid; gap: 10px; }
+
+  /* photo viewer */
+  .viewer { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; }
+  .viewer .vbar { display: flex; justify-content: space-between; align-items: center; color: #fff;
+    padding-block: calc(8px + env(safe-area-inset-top, 0px)) 8px;
+    padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px)); }
+  .viewer .vbar .iconbtn { color: #fff; }
+  .viewer .vbody { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .viewer img { display: block; width: 100%; height: auto; }
+  .viewer.zoom img { width: 220%; max-width: none; }
+
+  /* toast */
+  .toast { position: fixed; left: 16px; right: 16px; margin: 0 auto; width: fit-content; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+    background: var(--ink); color: var(--ink-fg); padding: 11px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px);
+    box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+
+  summary::-webkit-details-marker { display: none; }
+  details[open] summary .i { transform: rotate(180deg); }
+  /* feedback: spinners, skeletons, tooltips, dialogs */
+  .spin-sm { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent;
+    animation: spin .7s linear infinite; flex: none; }
+  .btn[data-busy] { pointer-events: none; opacity: .85; }
+  .skel { background: linear-gradient(90deg, var(--surface-2) 0%, var(--line) 50%, var(--surface-2) 100%); background-size: 200% 100%;
+    animation: shimmer 1.2s linear infinite; border-radius: 8px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .skel-row { display: flex; gap: 14px; align-items: center; padding: 14px; }
+  .skel-row .a { width: 44px; height: 44px; border-radius: 12px; flex: none; }
+  .skel-row .l { flex: 1; display: grid; gap: 8px; }
+  .skel-row .l span { height: 12px; }
+  .tipbtn { width: 22px; height: 22px; border-radius: 50%; border: 0; background: transparent; color: var(--faint); padding: 0;
+    display: inline-grid; place-items: center; vertical-align: middle; margin: -3px 0 -3px 2px; position: relative; }
+  .tipbtn::after { content: ""; position: absolute; inset: -10px; }
+  .tipbtn .i { width: 16px; height: 16px; }
+  .pop { position: fixed; z-index: 70; max-width: min(300px, calc(100vw - 32px)); background: var(--ink); color: var(--ink-fg);
+    font-size: 13px; line-height: 1.45; padding: 10px 12px; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.22); }
+  button.tag { border: 0; font: inherit; font-size: 12px; font-weight: 500; cursor: help; }
+  .f.invalid .in { border-color: var(--remove); }
+  .ferr { font-size: 13px; color: var(--remove); }
+  .ferr:empty { display: none; }
+  .alert-ico { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--remove-soft); color: var(--remove); }
+  .alert-ico.warn { background: var(--moved-soft); color: var(--moved); }
+  .alert-ico .i { width: 22px; height: 22px; }
+  .sheet .actions { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  .sheet .actions.two { grid-template-columns: 1fr 1fr; }
+  .toast { display: flex; gap: 10px; align-items: center; }
+  .toast .i { width: 18px; height: 18px; flex: none; }
+  .toast.ok .i { color: var(--new); }
+  .toast.err { background: var(--remove); color: #fff; }
+  .toast.err .i { color: #fff; }
+  .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 0 0 0 6px; }
+  .empty { padding: 18px 14px; color: var(--muted); font-size: 14px; }
+  .rv-side, .rv-main { display: grid; gap: 20px; align-content: start; min-width: 0; }
+  #undoBox:empty, #setupBox:empty { display: none; }
+
+  /* Small phones (iPhone SE / mini, 320–360px) */
+  @media (max-width: 360px) {
+    .proj { gap: 10px; padding: 12px; }
+    .proj .name > span { display: block; }
+    .proj .name .sep { display: none; }
+    .chip { min-width: 40px; height: 40px; font-size: 12px; }
+    .round { width: 40px; height: 40px; }
+    .proj .acts { gap: 4px; }
+    .sum .thumb { width: 52px; height: 52px; }
+    .choices { grid-template-columns: 1fr; }
+    .actionbar .in-bar { grid-template-columns: 1fr 1.6fr; }
+  }
+
+  /* Tablets in landscape and desktop: two columns */
+  @media (min-width: 900px) {
+    :root { --maxw: 1040px; }
+    #v-home { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
+    #v-home > #undoBox, #v-home > #setupBox { grid-column: 1 / -1; }
+    #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
+    .rv-side { position: sticky; top: 88px; }
+    #v-settings, #v-project { display: block; columns: 2; column-gap: 32px; }
+    #v-settings > *, #v-project > * { break-inside: avoid; margin-bottom: 20px; }
+    #v-done { max-width: 560px; margin: 0 auto; }
+    .actionbar .in-bar { grid-template-columns: 180px 320px; justify-content: end; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.8l1.4-2h6.6l1.4 2h1.8A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15.5l-5-5L6 20"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-chevdown" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
+  <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4M11 8.5v5M8.5 11h5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-double" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="12" height="12" rx="2.5"/><path d="M8.5 20.5h9.5a2.5 2.5 0 0 0 2.5-2.5V8.5"/><path d="M6.5 9.5l2 2 4-4"/></symbol>
+</svg>
+
+<header id="hdr">
+  <div class="bar-in">
+    <button class="iconbtn" id="backBtn" aria-label="Back" hidden><svg class="i"><use href="#i-back"/></svg></button>
+    <span class="logo" id="logo"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="224" fill="#101722"/><rect x="176" y="168" width="520" height="600" rx="64" fill="none" stroke="#6b7a94" stroke-width="22" stroke-dasharray="40 30"/><rect x="328" y="288" width="520" height="600" rx="64" fill="#F5F6F8"/><path d="M392 288h392a64 64 0 0 1 64 64v58H328v-58a64 64 0 0 1 64-64z" fill="#3f51b5"/><rect x="388" y="452" width="176" height="128" rx="24" fill="#0b8043"/><rect x="612" y="600" width="176" height="200" rx="24" fill="#f4511e"/></svg></span>
+    <h1 id="title">Trace<span class="sub" id="subtitle"></span></h1>
+    <button class="iconbtn" id="setBtn" aria-label="Settings"><svg class="i"><use href="#i-sliders"/></svg></button>
+  </div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <div class="notice warn" id="offline" hidden style="margin-bottom:16px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
+    <span class="grow">You're offline. Trace needs a connection to read photos and update your calendar.</span></div>
+  <section class="view" id="v-home">
+    <div id="undoBox"></div>
+    <div id="setupBox"></div>
+    <div class="section">
+      <div class="eyebrow">Projects</div>
+      <div class="group" id="projList"></div>
+      <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
+    </div>
+    <div class="section">
+      <div class="eyebrow">Recent</div>
+      <div class="group" id="hist"></div>
+    </div>
+  </section>
+
+  <!-- REVIEW -->
+  <section class="view" id="v-review" hidden></section>
+
+  <!-- DONE -->
+  <section class="view" id="v-done" hidden></section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings" hidden></section>
+
+  <!-- PROJECT EDITOR -->
+  <section class="view" id="v-project" hidden></section>
+</main>
+
+<div class="actionbar" id="actionbar" hidden>
+  <div class="in-bar">
+    <button class="btn" id="abSecondary">Cancel</button>
+    <button class="btn ink" id="abPrimary">Apply</button>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="progress" hidden>
+  <div class="sheet" role="status" aria-live="polite">
+    <h2 id="pgTitle">Reading calendar</h2>
+    <div class="steps" id="pgSteps"></div>
+    <div class="hint" id="pgHint"></div>
+  </div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <div class="vbar">
+    <button class="iconbtn" id="vClose" aria-label="Close photo"><svg class="i"><use href="#i-x"/></svg></button>
+    <span class="small" id="vCount"></span>
+    <button class="iconbtn" id="vZoom" aria-label="Zoom"><svg class="i"><use href="#i-zoom"/></svg></button>
+  </div>
+  <div class="vbody" id="vBody"></div>
+</div>
+
+<input id="camIn" type="file" accept="image/*" capture="environment" hidden>
+<input id="upIn" type="file" accept="image/*" multiple hidden>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="sheet-wrap" id="dialog" hidden><div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="dgTitle" id="dgBody"></div></div>
+<div class="pop" id="pop" role="tooltip" hidden></div>
+
+<script>
+/* ───────── constants ───────── */
+const GCOLORS = { '': ['None', ''], '1': ['Lavender', '#7986cb'], '2': ['Sage', '#33b679'], '3': ['Grape', '#8e24aa'],
+  '4': ['Flamingo', '#e67c73'], '5': ['Banana', '#f6bf26'], '6': ['Tangerine', '#f4511e'], '7': ['Peacock', '#039be5'],
+  '8': ['Graphite', '#616161'], '9': ['Blueberry', '#3f51b5'], '10': ['Basil', '#0b8043'], '11': ['Tomato', '#d50000'] };
+const TZS = [
+  ['America/New_York', 'Eastern', 'New York'], ['America/Chicago', 'Central', 'Chicago'], ['America/Denver', 'Mountain', 'Denver'],
+  ['America/Phoenix', 'Arizona', 'Phoenix'], ['America/Los_Angeles', 'Pacific', 'Los Angeles'], ['America/Anchorage', 'Alaska', 'Anchorage'],
+  ['Pacific/Honolulu', 'Hawaii', 'Honolulu'], ['America/Toronto', 'Eastern (Canada)', 'Toronto'], ['UTC', 'UTC', ''],
+  ['Europe/London', 'UK', 'London'], ['Europe/Paris', 'Central Europe', 'Paris'], ['Asia/Dubai', 'Gulf', 'Dubai'],
+  ['Asia/Karachi', 'Pakistan', 'Karachi'], ['Asia/Kolkata', 'India', 'Kolkata'], ['Asia/Singapore', 'Singapore', ''],
+  ['Asia/Tokyo', 'Japan', 'Tokyo'], ['Australia/Sydney', 'Sydney', '']];
+const APPS = [['teams', 'Microsoft Teams'], ['outlook', 'Outlook'], ['google', 'Google Calendar'], ['other', 'Other']];
+const GROUPS = [
+  { kind: 'new', label: 'New', on: true },
+  { kind: 'moved', label: 'Moved', on: true },
+  { kind: 'changed', label: 'End time changed', on: true },
+  { kind: 'canceled', label: 'Cancelled', hint: 'Shown as cancelled in the photo. Ticked ones are removed.', on: true },
+  { kind: 'missing', label: 'Not in the photo', hint: 'Tick only if the meeting was really cancelled; the photo may be cropped.', on: false }];
+
+/* ───────── state ───────── */
+let S = { settings: {}, profiles: [], history: [], undo: null };
+let view = 'home', review = null, images = [], selId = null, lastResult = null, editProj = null, models = null, cals = null;
+
+/* ───────── utils ───────── */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const icon = (n, cls) => `<svg class="i ${cls || ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+/* Server call with offline check, time limit and late-reply guard. */
+/* Two ways to reach the server: inside Google's page (google.script.run), or from the
+   GitHub Pages copy, which POSTs to the script's /exec URL without any Google cookies. */
+const API_URL = window.TRACE_API || '';
+function traceKey() {
+  if (window.TRACE_K) return window.TRACE_K;
+  const m = location.hash.match(/(?:^#|&)k=([A-Za-z0-9]+)/);
+  if (m) { try { localStorage.setItem('trace_k', m[1]); } catch (e) {} return m[1]; }
+  try { return localStorage.getItem('trace_k') || ''; } catch (e) { return ''; }
+}
+function callServer(fn, args, ok, fail) {
+  if (window.google && google.script && google.script.run) {
+    google.script.run.withSuccessHandler(ok).withFailureHandler(fail)[fn](traceKey(), ...args);
+    return;
+  }
+  fetch(API_URL, { method: 'POST', credentials: 'omit', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ k: traceKey(), fn: fn, args: args }) })
+    .then(r => { if (!r.ok) throw new Error('Google returned an error (' + r.status + '). Try again.'); return r.json(); })
+    .then(j => j.ok ? ok(j.result) : fail(new Error(j.error)))
+    .catch(fail);
+}
+function run(fn, ...args) {
+  const limit = fn === 'analyze' ? 150000 : 60000;
+  return new Promise((res, rej) => {
+    if (navigator.onLine === false) return rej(mkErr('offline', "You're offline. Check your connection, then try again."));
+    let done = false;
+    const t = setTimeout(() => { if (!done) { done = true; rej(mkErr('timeout', 'This is taking much longer than usual. Check your connection and try again.')); } }, limit);
+    callServer(fn, args,
+      v => { if (done) return; done = true; clearTimeout(t); res(v); },
+      e => { if (done) return; done = true; clearTimeout(t); rej(e); });
+  });
+}
+function mkErr(code, msg) { const e = new Error(msg); e.code = code; return e; }
+/** → { code, msg }. Server errors carry a "[code] " prefix; platform errors are recognised by text. */
+function parseErr(e) {
+  if (e && e.code) return { code: e.code, msg: e.message };
+  const m = (e && e.message ? e.message : String(e)).replace(/^(Exception|Error|ScriptError):\s*/, '');
+  const tag = m.match(/^\[(\w+)\]\s*/);
+  if (tag) return { code: tag[1], msg: m.slice(tag[0].length) };
+  if (/authori[sz]ation|sign in|login|permission to run/i.test(m)) return { code: 'auth', msg: 'Your Google session expired or needs permission again. Reload the app to sign back in.' };
+  if (/network|failed to fetch|load failed|connection/i.test(m)) return { code: 'offline', msg: "Couldn't reach Google. Check your connection, then try again." };
+  if (/timed out|time limit|maximum execution/i.test(m)) return { code: 'timeout', msg: 'Google took too long to respond. Try again.' };
+  if (/server error occurred|invoked too many times|try again later/i.test(m)) return { code: 'google', msg: 'Google Apps Script had a temporary problem. Try again in a moment.' };
+  return { code: 'other', msg: m };
+}
+const errMsg = e => parseErr(e).msg;
+const ERR_UI = {
+  offline: ['No internet connection', 'Try again', 'warn'], timeout: ['That took too long', 'Try again', 'warn'],
+  auth: ['Sign in again', 'Reload app', 'err'], busy: ['AI models are busy', 'Try again', 'warn'],
+  paused: ['AI models paused for today', 'See model status', 'warn'], key: ['Gemini key problem', 'Open settings', 'err'],
+  ai: ["Couldn't read the photo", 'Try again', 'warn'], google: ['Temporary Google problem', 'Try again', 'warn'],
+  project: ['Project not found', 'Reload app', 'err'], locked: ['Link is missing its key', null, 'err'], photo: ['No photo', null, 'warn'], undo: ['Nothing to undo', null, 'warn'],
+  form: ['Check the form', null, 'warn'], other: ['Something went wrong', 'Try again', 'err'] };
+/** Error dialog with a fix button that matches the problem. */
+function showError(e, opts) {
+  const { code, msg } = parseErr(e);
+  const [title, act, tone] = ERR_UI[code] || ERR_UI.other;
+  let fix = null;
+  if (act === 'Reload app') fix = () => location.reload();
+  else if (act === 'Open settings' || act === 'See model status') fix = () => { go('settings'); renderSettings(); };
+  else if (act === 'Try again' && opts && opts.retry) fix = opts.retry;
+  return dialog({ tone, title, body: msg, primary: fix ? act : 'OK', secondary: fix ? 'Close' : null, onPrimary: fix });
+}
+function dialog({ tone, title, body, primary, secondary, danger, onPrimary }) {
+  return new Promise(resolve => {
+    hideTip();
+    $('dgBody').innerHTML = `${tone ? `<span class="alert-ico ${tone === 'warn' ? 'warn' : ''}">${icon('info')}</span>` : ''}
+      <h2 id="dgTitle">${esc(title)}</h2>${body ? `<div class="muted small">${esc(body)}</div>` : ''}
+      <div class="actions ${secondary ? 'two' : ''}">${secondary ? `<button class="btn" id="dgNo">${esc(secondary)}</button>` : ''}
+      <button class="btn ${danger ? 'danger' : 'ink'}" id="dgYes">${esc(primary || 'OK')}</button></div>`;
+    $('dialog').hidden = false;
+    setTimeout(() => $('dgYes').focus(), 30);
+    const close = v => { $('dialog').hidden = true; document.removeEventListener('keydown', onKey); resolve(v); if (v && onPrimary) onPrimary(); };
+    const onKey = ev => { if (ev.key === 'Escape') close(false); };
+    document.addEventListener('keydown', onKey);
+    $('dgYes').onclick = () => close(true);
+    if ($('dgNo')) $('dgNo').onclick = () => close(false);
+    $('dialog').onclick = ev => { if (ev.target === $('dialog')) close(false); };
+  });
+}
+let toastT;
+/** toast(msg) · toast(msg, ms) · toast(msg, { type: 'ok'|'err', action: { label, fn }, ms }) */
+function toast(msg, o) {
+  o = typeof o === 'number' ? { ms: o } : (o || {});
+  const t = $('toast');
+  t.className = 'toast ' + (o.type || '');
+  t.innerHTML = (o.type === 'ok' ? icon('check') : o.type === 'err' ? icon('info') : '') + `<span>${esc(msg)}</span>` +
+    (o.action ? `<button type="button" id="tAct">${esc(o.action.label)}</button>` : '');
+  t.hidden = false;
+  if (o.action) $('tAct').onclick = () => { t.hidden = true; o.action.fn(); };
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.hidden = true, o.ms || (o.action ? 6500 : 3200));
+}
+/** Spinner + label on a button while fn runs; ignores double taps. */
+async function withBusy(btn, label, fn) {
+  if (!btn || btn.dataset.busy) return;
+  const html = btn.innerHTML;
+  btn.dataset.busy = '1';
+  btn.setAttribute('aria-busy', 'true');
+  btn.innerHTML = `<span class="spin-sm" aria-hidden="true"></span>${esc(label)}`;
+  try { return await fn(); }
+  finally { if (btn.isConnected) { btn.innerHTML = html; } delete btn.dataset.busy; btn.removeAttribute('aria-busy'); }
+}
+const tip = text => `<button type="button" class="tipbtn" data-tip="${esc(text)}" aria-label="More info: ${esc(text)}">${icon('info')}</button>`;
+const skelRows = n => Array.from({ length: n }, () => `<div class="skel-row" aria-hidden="true"><span class="skel a"></span><span class="l"><span class="skel" style="width:55%"></span><span class="skel" style="width:35%"></span></span></div>`).join('');
+const prof = id => S.profiles.find(p => p.id === id);
+const pcolor = p => (GCOLORS[p && p.colorId] || GCOLORS[''])[1];
+const chip = (p, sm) => `<span class="chip ${sm ? 'sm' : ''}" style="${pcolor(p) ? '--pc:' + pcolor(p) : ''}">${esc(p ? p.code : '?')}</span>`;
+const tzName = tz => { const t = TZS.find(x => x[0] === tz); return t ? t[1] : tz; };
+function ago(ts) {
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return h + ' h ago';
+  const d = Math.round(h / 24); return d === 1 ? 'yesterday' : d + ' days ago';
+}
+function countsHtml(a, u, r) {
+  const b = [];
+  if (a) b.push(`<span class="c-new">${a} added</span>`);
+  if (u) b.push(`<span class="c-moved">${u} updated</span>`);
+  if (r) b.push(`<span class="c-remove">${r} removed</span>`);
+  return b.length ? `<span class="counts">${b.join('')}</span>` : '<span class="muted">No changes</span>';
+}
+
+/* ───────── time helpers (wall-clock ↔ instant in any IANA zone) ───────── */
+function tzParts(ms, tz) {
+  const o = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date(ms)).forEach(p => o[p.type] = p.value);
+  if (o.hour === '24') o.hour = '00';
+  return o;
+}
+const localDate = (ms, tz) => { const p = tzParts(ms, tz); return `${p.year}-${p.month}-${p.day}`; };
+const localTime = (ms, tz) => { const p = tzParts(ms, tz); return `${p.hour}:${p.minute}`; };
+function offsetMin(ms, tz) { const p = tzParts(ms, tz); return Math.round((Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute) - Math.floor(ms / 60000) * 60000) / 60000); }
+function zoned(dateStr, hhmm, tz) {
+  const [y, m, d] = dateStr.split('-').map(Number), [h, mi] = hhmm.split(':').map(Number);
+  const guess = Date.UTC(y, m - 1, d, h, mi);
+  const t = guess - offsetMin(guess, tz) * 60000;
+  return guess - offsetMin(t, tz) * 60000;
+}
+function nextDay(d) { const [y, m, dd] = d.split('-').map(Number); return new Date(Date.UTC(y, m - 1, dd + 1)).toISOString().slice(0, 10); }
+const fmtDay = (ms, tz) => new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(ms));
+const dateDay = d => { const [y, m, dd] = d.split('-').map(Number); return fmtDay(Date.UTC(y, m - 1, dd, 12), 'UTC'); };
+const tzAbbr = (tz, ms) => (new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date(ms)).find(p => p.type === 'timeZoneName') || {}).value || '';
+function fmtRange(a, b, tz) {
+  const f = ms => { const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true }).formatToParts(new Date(ms));
+    return { t: p.filter(x => x.type === 'hour' || x.type === 'minute' || x.type === 'literal').map(x => x.value).join('').trim(), ap: (p.find(x => x.type === 'dayPeriod') || {}).value || '' }; };
+  const x = f(a), y = f(b);
+  const crosses = localDate(a, tz) !== localDate(b, tz);
+  return (x.ap === y.ap && !crosses ? x.t : x.t + ' ' + x.ap) + ' – ' + y.t + ' ' + y.ap + (crosses ? ' (+1)' : '');
+}
+/** {day, time} for an item in a zone */
+function when(it, tz, startKey, endKey) {
+  const s = it[startKey || 'start'], e = it[endKey || 'end'];
+  if (it.allDay || s == null) return { day: dateDay(it.date) + (it.endDate && it.endDate !== it.date ? ' – ' + dateDay(it.endDate) : ''), time: 'All day' };
+  return { day: fmtDay(s, tz), time: fmtRange(s, e, tz) + ' ' + tzAbbr(tz, s) };
+}
+
+/* ───────── tooltips (tap on phone, click on desktop) ───────── */
+let tipEl = null;
+function showTip(el) {
+  const p = $('pop');
+  if (tipEl === el && !p.hidden) { hideTip(); return; }
+  tipEl = el; p.textContent = el.dataset.tip; p.hidden = false;
+  const r = el.getBoundingClientRect(), w = p.offsetWidth, h = p.offsetHeight;
+  const x = Math.min(Math.max(12, r.left + r.width / 2 - w / 2), innerWidth - w - 12);
+  let y = r.bottom + 8;
+  if (y + h > innerHeight - 12) y = r.top - h - 8;
+  p.style.left = x + 'px'; p.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { $('pop').hidden = true; tipEl = null; }
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tip]');
+  if (t) { e.preventDefault(); e.stopPropagation(); showTip(t); } else if (!e.target.closest('#pop')) hideTip();
+}, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+window.addEventListener('scroll', hideTip, { passive: true });
+window.addEventListener('offline', () => { $('offline').hidden = false; });
+window.addEventListener('online', () => { $('offline').hidden = true; toast('Back online', { type: 'ok' }); });
+window.addEventListener('error', () => toast('Something went wrong in the app. Reload if it keeps happening.', { type: 'err' }));
+
+/* ───────── navigation ───────── */
+function go(v) {
+  view = v;
+  ['home', 'review', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
+  $('backBtn').hidden = v === 'home' || v === 'done';
+  $('setBtn').hidden = v !== 'home';
+  $('logo').hidden = v !== 'home';
+  const titles = { home: 'Trace', review: 'Review changes', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  $('title').firstChild.textContent = titles[v];
+  $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
+  $('actionbar').hidden = v !== 'review';
+  window.scrollTo(0, 0);
+}
+$('backBtn').onclick = async () => {
+  if (view === 'project' && projDirty() && !(await confirmDiscard('Discard changes?', "Your changes to this project haven't been saved.", 'Keep editing'))) return;
+  if (view === 'review' && !(await leaveReview())) return;
+  go(view === 'project' ? 'settings' : 'home');
+};
+function confirmDiscard(title, body, keep) { return dialog({ title, body, primary: 'Discard', secondary: keep, danger: true }); }
+async function leaveReview() {
+  const n = review ? pendingActions().filter(a => a.action !== 'ignore').length : 0;
+  if (!n) return true;
+  return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
+}
+$('setBtn').onclick = () => { go('settings'); renderSettings(); };
+window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+
+/* ───────── home ───────── */
+function renderHome() {
+  const ps = S.profiles;
+  $('projList').innerHTML = ps.length ? ps.map(p => {
+    const ls = p.lastSync;
+    const meta = [tzName(p.tz)];
+    if (p.doubleCheck) meta.push('Double-check');
+    if (ls) meta.push('Synced ' + ago(ls.ts));
+    return `<div class="proj">
+      ${chip(p)}
+      <div class="txt"><div class="name">${esc(p.project)}${p.person ? ` <span><span class="sep">· </span>${esc(p.person)}</span>` : ''}</div>
+        <div class="meta">${esc(meta.join(' · '))}</div></div>
+      <div class="acts">
+        <button class="round" data-up="${esc(p.id)}" aria-label="Upload photos for ${esc(p.project)}">${icon('image')}</button>
+        <button class="round ink" data-cam="${esc(p.id)}" aria-label="Take photo for ${esc(p.project)}">${icon('camera')}</button>
+      </div></div>`;
+  }).join('') : `<div class="empty">No projects yet. Add one in Settings.</div>`;
+  $('projList').querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { selId = b.dataset.cam; $('camIn').click(); });
+  $('projList').querySelectorAll('[data-up]').forEach(b => b.onclick = () => { selId = b.dataset.up; $('upIn').click(); });
+
+  const u = S.undo;
+  $('undoBox').innerHTML = u ? `<div class="notice"><span class="grow">Last sync <b>${esc(u.code)}</b> · ${esc(u.when)}${tip('Undo reverses your last Apply for 24 hours: added events are removed, moved ones go back to their old time, removed ones come back.')}<br>${countsHtml(u.added, u.updated, u.removed)}</span>
+      <button class="btn sm" id="undoBtn">${icon('undo')}Undo</button></div>` : '';
+  if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
+
+  $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
+
+  $('hist').innerHTML = S.history.length ? S.history.slice(0, 8).map(h => {
+    const p = S.profiles.find(x => x.code === h.code);
+    return `<div class="act">${chip(p || { code: h.code }, true)}<div class="txt"><div>${esc(h.range || 'Sync')}</div>
+      <div class="when">${esc(h.when)}</div></div><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div></div>`;
+  }).join('') : `<div class="empty">Your syncs will show up here.</div>`;
+}
+
+/* ───────── capture → read ───────── */
+function fileToJpeg(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const sc = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const d = c.toDataURL('image/jpeg', 0.85);
+      res({ mime: 'image/jpeg', data: d.split(',')[1], src: d });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('That file could not be opened as an image.')); };
+    img.src = url;
+  });
+}
+function progress(on, stepIdx, hint) {
+  $('progress').hidden = !on;
+  if (!on) return;
+  const p = prof(selId);
+  $('pgTitle').textContent = 'Reading ' + (p ? p.project : 'calendar');
+  const steps = ['Preparing photo', 'Reading the calendar', 'Checking your calendar for changes'];
+  $('pgSteps').innerHTML = steps.map((s, i) => `<div class="step ${i < stepIdx ? 'done' : i === stepIdx ? 'on' : ''}">
+    <span class="st">${i < stepIdx ? icon('check') : ''}</span><span>${s}</span></div>`).join('');
+  $('pgHint').textContent = hint || '';
+}
+let slowT;
+async function onFiles(ev) {
+  const files = Array.from(ev.target.files || []);
+  ev.target.value = '';
+  if (!files.length || !selId) return;
+  if (!S.settings.hasKey) { showError(mkErr('key', 'Add your Gemini API key in Settings to start reading photos.')); return; }
+  progress(true, 0);
+  try {
+    images = [];
+    for (const f of files) images.push(await fileToJpeg(f));
+  } catch (e) {
+    progress(false);
+    dialog({ tone: 'warn', title: "Couldn't open that photo", body: errMsg(e) + ' Try taking the photo again, or pick a JPEG or PNG.', primary: 'OK' });
+    return;
+  }
+  analyzeNow();
+}
+/** Reads the current photos. Also used by "Try again" so you don't retake the photo. */
+async function analyzeNow() {
+  progress(true, 1);
+  try {
+    const dc = prof(selId) && prof(selId).doubleCheck;
+    progress(true, 1, dc ? 'Two AI models are reading it at the same time. Usually about 10 seconds.' : 'Usually about 10 seconds.');
+    slowT = setTimeout(() => progress(true, 2, 'Taking longer than usual. Busy AI models are skipped automatically; this can take up to a minute.'), 9000);
+    review = await run('analyze', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
+    review.photos = images.map(i => i.src);
+    prepReview();
+    clearTimeout(slowT);
+    progress(false);
+    renderReview();
+    go('review');
+  } catch (e) {
+    clearTimeout(slowT);
+    progress(false);
+    showError(e, { retry: analyzeNow });
+  }
+}
+function prepReview() {
+    review.editing = null;
+    review.items.forEach(it => {
+      const g = GROUPS.find(x => x.kind === it.kind);
+      it.sel = g ? g.on : false;
+      if (it.check === 'cancel' || (it.check === 'single' && it.checkBy === 'second')) it.sel = false;
+      if (it.alt) { it.optA = { start: it.start, end: it.end }; it.pick = 0; }
+    });
+}
+async function runSample(profileId) {
+  selId = profileId;
+  await withBusy($('tSample'), 'Creating sample…', async () => {
+    try {
+      review = await run('analyze', { profileId, sample: true });
+      review.photos = [];
+      prepReview();
+      renderReview();
+      go('review');
+    } catch (e) { showError(e, { retry: () => runSample(profileId) }); }
+  });
+}
+$('camIn').onchange = onFiles;
+$('upIn').onchange = onFiles;
+
+/* ───────── review ───────── */
+function renderReview() {
+  const r = review, p = prof(r.profileId);
+  const n = k => r.items.filter(i => i.kind === k).length;
+  const rm = n('canceled') + n('missing');
+  const pills = [];
+  if (n('new')) pills.push(`<span class="pill new">${n('new')} new</span>`);
+  if (n('moved') + n('changed')) pills.push(`<span class="pill moved">${n('moved') + n('changed')} changed</span>`);
+  if (rm) pills.push(`<span class="pill remove">${rm} to check</span>`);
+  if (n('unchanged')) pills.push(`<span class="pill">${n('unchanged')} already in calendar</span>`);
+
+  let side = `<div class="group">
+    <div class="sum">${chip(p)}
+      <div class="txt"><div class="title">${esc(p ? p.name : r.profileName)}</div>
+        <div class="small muted">${esc(r.range ? r.range.label : 'No dates found')}</div></div>
+      ${r.photos && r.photos.length ? `<button class="thumb" id="thumbBtn" aria-label="View photo"><img src="${r.photos[0]}" alt="">${r.photos.length > 1 ? `<span class="n">${r.photos.length}</span>` : ''}</button>` : ''}
+    </div>
+    ${pills.length ? `<div class="pills" style="border-top:0">${pills.join('')}</div>` : ''}
+    ${r.sameTz ? '' : `<div class="tzline">${icon('globe')}<span>Photo shows ${esc(tzName(r.srcTz))} time. Times below are converted to yours.${tip('Events are saved at the right moment, so Google Calendar shows them in your time. The grey line under each event shows the time as it appears in the photo.')}</span></div>`}
+    ${r.doubleCheck ? dcLine(r.doubleCheck) : ''}
+  </div>`;
+
+  (r.warnings || []).forEach(w => { side += `<div class="notice">${icon('info')}<span class="grow">${esc(w)}</span></div>`; });
+
+  let html = '';
+  GROUPS.forEach(g => {
+    const list = r.items.filter(i => i.kind === g.kind);
+    if (!list.length) return;
+    html += `<div class="section"><div class="ghead">${esc(g.label)} <span class="cnt">${list.length}</span></div>
+      ${g.hint ? `<div class="hint">${esc(g.hint)}</div>` : ''}<div class="group">`;
+    list.forEach(it => { html += rowHtml(it, g); if (r.editing === it.idx) html += editorHtml(it); });
+    html += `</div></div>`;
+  });
+
+  const quiet = r.items.filter(i => i.kind === 'unchanged' || i.kind === 'ignored');
+  if (quiet.length) {
+    html += `<details class="section"><summary class="ghead" style="cursor:pointer;list-style:none">
+      ${icon('chevdown')} Already handled <span class="cnt">${quiet.length}</span></summary><div class="group">` +
+      quiet.map(it => { const w = when(it, r.homeTz); return `<div class="row"><div class="txt"><div class="t">${esc(it.title)}</div>
+        <div class="when tnum"><span class="d">${esc(w.day)}</span> ${esc(w.time)}</div>
+        ${it.kind === 'ignored' ? '<div class="tags"><span class="tag">Ignored</span></div>' : ''}</div></div>`; }).join('') + `</div></details>`;
+  }
+  if (!r.items.length) {
+    html = `<div class="done-hero"><span class="alert-ico warn">${icon('image')}</span><h2>No meetings found</h2>
+      <div class="muted">The AI couldn't find any meetings in this photo. Try again with the calendar filling the frame, taken straight on, without glare.</div></div>
+      <div class="stack"><button class="btn ink block" id="retake">${icon('camera')}Take the photo again</button>
+      <button class="btn ghost block" id="retry">Read this photo again</button></div>` + html;
+  } else if (!r.items.some(i => ['new', 'moved', 'changed', 'canceled', 'missing'].includes(i.kind))) {
+    html = `<div class="done-hero"><span class="badge">${icon('check')}</span><h2>All caught up</h2>
+      <div class="muted">Everything in this photo is already in your calendar.</div></div>` + html;
+  }
+  $('v-review').innerHTML = `<div class="rv-side">${side}</div><div class="rv-main">${html}</div>`;
+
+  if ($('thumbBtn')) $('thumbBtn').onclick = openViewer;
+  if ($('retake')) $('retake').onclick = () => { selId = r.profileId; $('camIn').click(); };
+  if ($('retry')) { if (r.photos && r.photos.length) $('retry').onclick = analyzeNow; else $('retry').hidden = true; }
+  $('v-review').querySelectorAll('.cb input').forEach(cb => {
+    cb.onclick = e => e.stopPropagation();
+    cb.onchange = () => { r.items[+cb.dataset.i].sel = cb.checked; renderReview(); };
+  });
+  $('v-review').querySelectorAll('.choice').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const it = r.items[+b.dataset.i], k = +b.dataset.pick;
+    const o = k === 0 ? it.optA : it.alt;
+    it.pick = k; it.start = o.start; it.end = o.end; it.sel = true;
+    renderReview();
+  });
+  $('v-review').querySelectorAll('.row.tap').forEach(row => row.onclick = () => {
+    const i = +row.dataset.i;
+    r.editing = r.editing === i ? null : i;
+    renderReview();
+    const ed = $('ed'); if (ed) ed.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  if (r.editing != null && $('ed')) wireEditor();
+  updateApply();
+}
+
+function rowHtml(it, g) {
+  const r = review;
+  const editable = ['new', 'moved', 'changed'].includes(it.kind) && !it.ignore;
+  const w = when(it, r.homeTz);
+  let lines = `<div class="when tnum"><span class="d">${esc(w.day)}</span> ${esc(w.time)}</div>`;
+  if ((it.kind === 'moved' || it.kind === 'changed') && it.oldStart != null) {
+    const o = when(it, r.homeTz, 'oldStart', 'oldEnd');
+    lines += `<div class="was tnum">was <s>${esc(o.day)} ${esc(o.time)}</s></div>`;
+  }
+  if (!r.sameTz && !it.allDay && it.start != null) {
+    const s = when(it, r.srcTz);
+    lines += `<div class="src tnum">${esc(s.time)} in the photo</div>`;
+  }
+  const tags = [];
+  const disagree = it.alt && !it.edited;
+  const T = (cls, ic, text, why) => `<button type="button" class="tag ${cls}" data-tip="${esc(why)}">${ic ? icon(ic) : ''}${esc(text)}</button>`;
+  if (it.edited) tags.push(T('edit', 'pencil', 'Edited', 'You changed this event. Future photos still recognise it by the title the AI read.'));
+  else if (disagree) tags.push(T('warn', 'double', 'Models disagree on the time', 'Two AI models read different times for this meeting. Tap the time that matches the photo.'));
+  else if (it.check === 'agree') tags.push(T('ok', 'double', 'Both models agree', 'Two AI models read this photo separately and got the same time.'));
+  else if (it.check === 'cancel') tags.push(T('warn', '', 'One model saw this as cancelled', "Only one of the two models thought this meeting was cancelled, so it's unticked. Tick it to add it anyway."));
+  else if (it.check === 'single') tags.push(T('warn', '', 'Only one model saw this', 'Only one of the two AI models found this meeting. Check it against the photo before adding.'));
+  else if (it.estimated) tags.push(T('warn', 'clock', 'Time estimated', "This calendar doesn't print times on events, so the AI measured the block against the hour grid. Tap the row to correct it."));
+  else if (it.confidence === 'low') tags.push(T('warn', '', 'Check this one', 'The AI was unsure about this event. Compare it with the photo.'));
+  if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
+  if (disagree) {
+    const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
+      <small>${esc(modelShort(r.doubleCheck ? r.doubleCheck.models[i] : ''))}</small>${esc(w2.time.replace(/ [A-Z]{2,5}$/, ''))}</button>`; };
+    lines += `<div class="choices">${opt(Object.assign({ date: it.date }, it.optA), 0)}${opt(Object.assign({ date: it.date }, it.alt), 1)}</div>`;
+  }
+  const on = it.sel && !it.ignore;
+  return `<div class="row ${editable ? 'tap' : ''} ${on ? '' : 'off'} ${it.ignore ? 'ignored' : ''}" data-i="${it.idx}">
+    <label class="cb" aria-label="Include ${esc(it.title)}"><input type="checkbox" data-i="${it.idx}" ${on ? 'checked' : ''} ${it.ignore ? 'disabled' : ''}>
+      <span class="box">${icon('check')}</span></label>
+    <div class="txt"><div class="t">${esc(it.title)}</div>${lines}${tags.length ? `<div class="tags">${tags.join('')}</div>` : ''}</div>
+    ${editable ? icon(review.editing === it.idx ? 'chevdown' : 'chev', 'chev') : ''}
+  </div>`;
+}
+
+/* inline editor: times typed as shown in the PHOTO (srcTz) */
+function editorHtml(it) {
+  const tz = review.srcTz;
+  const date = it.allDay ? it.date : localDate(it.start, tz);
+  const st = it.allDay ? '09:00' : localTime(it.start, tz);
+  const en = it.allDay ? '09:30' : localTime(it.end, tz);
+  const isNew = it.kind === 'new';
+  return `<div class="editor" id="ed">
+    <label class="f"><span>Title</span><input class="in" id="eTitle" value="${esc(it.title)}" autocomplete="off"></label>
+    <div class="two">
+      <label class="f"><span>Date</span><input class="in" type="date" id="eDate" value="${date}"></label>
+      ${isNew ? `<label class="toggle" style="align-self:end"><span class="cb"><input type="checkbox" id="eAll" ${it.allDay ? 'checked' : ''}><span class="box">${icon('check')}</span></span>All day</label>` : '<span></span>'}
+    </div>
+    <div class="two" id="eTimes" ${it.allDay ? 'hidden' : ''}>
+      <label class="f"><span>Start</span><input class="in" type="time" id="eStart" value="${st}" step="300"></label>
+      <label class="f"><span>End</span><input class="in" type="time" id="eEnd" value="${en}" step="300"></label>
+    </div>
+    <div class="hint" id="eHint"></div>
+    <div class="err" id="eErr"></div>
+    <div class="two">
+      <button class="btn" id="eCancel" type="button">Cancel</button>
+      <button class="btn ink" id="eSave" type="button">Save</button>
+    </div>
+    ${isNew ? `<button class="btn ghost sm" id="eIgnore" type="button">${it.ignore ? 'Suggest this meeting again' : "Don't suggest this meeting again"}</button>` : ''}
+  </div>`;
+}
+function readEditor() {
+  const it = review.items[review.editing];
+  const title = $('eTitle').value.replace(/\s+/g, ' ').trim(), date = $('eDate').value;
+  if (!title) return { err: 'Give the meeting a title.' };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { err: 'Pick a date.' };
+  const allDay = $('eAll') ? $('eAll').checked : it.allDay;
+  if (allDay) return { title, allDay: true, date, endDate: date };
+  const s = $('eStart').value, e = $('eEnd').value;
+  if (!s || !e) return { err: 'Set a start and an end time.' };
+  const start = zoned(date, s, review.srcTz);
+  let end = zoned(date, e, review.srcTz);
+  if (end <= start) end = zoned(nextDay(date), e, review.srcTz);
+  if (s === e || end - start > 12 * 3600000) return { err: 'The end time needs to be after the start time.' };
+  return { title, allDay: false, date, start, end };
+}
+function wireEditor() {
+  const it = review.items[review.editing];
+  const refresh = () => {
+    const v = readEditor();
+    $('eErr').textContent = v.err || '';
+    if ($('eAll')) $('eTimes').hidden = $('eAll').checked;
+    if (v.err) { $('eHint').textContent = ''; return; }
+    if (v.allDay) { $('eHint').textContent = 'All-day event on ' + dateDay(v.date) + '.'; return; }
+    $('eHint').textContent = review.sameTz
+      ? 'Times in ' + tzName(review.homeTz) + ' time.'
+      : 'Type the times shown in the photo (' + tzName(review.srcTz) + '). In your calendar: ' + fmtRange(v.start, v.end, review.homeTz) + ' ' + tzAbbr(review.homeTz, v.start) + '.';
+  };
+  ['eTitle', 'eDate', 'eStart', 'eEnd', 'eAll'].forEach(id => { const el = $(id); if (el) { el.addEventListener('input', refresh); el.addEventListener('change', refresh); } });
+  refresh();
+  $('eCancel').onclick = () => { review.editing = null; renderReview(); };
+  if ($('eIgnore')) $('eIgnore').onclick = () => { it.ignore = !it.ignore; review.editing = null; renderReview(); };
+  $('eSave').onclick = () => {
+    const v = readEditor();
+    if (v.err) { $('eErr').textContent = v.err; return; }
+    Object.assign(it, { title: v.title, allDay: v.allDay, date: v.date, endDate: v.allDay ? v.endDate : null,
+      start: v.allDay ? null : v.start, end: v.allDay ? null : v.end, edited: true, estimated: false, guessedEnd: false, sel: true });
+    review.editing = null;
+    renderReview();
+  };
+}
+
+const modelShort = m => String(m || '').replace(/^gemini-/, '');
+function dcLine(d) {
+  const bits = [];
+  if (d.agree) bits.push(`<b>${d.agree}</b> agree`);
+  if (d.differ) bits.push(`<b>${d.differ}</b> differ`);
+  if (d.onlyMain + d.onlySecond) bits.push(`<b>${d.onlyMain + d.onlySecond}</b> seen by one model`);
+  return `<div class="dcline">${icon('double')}<span>Double-checked by ${esc(modelShort(d.models[0]))} and ${esc(modelShort(d.models[1]))}${bits.length ? ' · ' + bits.join(' · ') : ''}</span></div>`;
+}
+function pendingActions() {
+  const out = [];
+  review.items.forEach(it => {
+    if (it.ignore) { out.push({ action: 'ignore', item: it }); return; }
+    if (!it.sel) return;
+    if (it.kind === 'new') out.push({ action: 'add', item: it });
+    else if (it.kind === 'moved' || it.kind === 'changed') out.push({ action: 'update', item: it });
+    else if (it.kind === 'missing' || it.kind === 'canceled') out.push({ action: 'delete', item: it });
+  });
+  return out;
+}
+function updateApply() {
+  const n = pendingActions().filter(a => a.action !== 'ignore').length;
+  $('abPrimary').textContent = n ? `Apply ${n} change${n > 1 ? 's' : ''}` : 'Done';
+  $('abSecondary').textContent = 'Cancel';
+}
+$('abSecondary').onclick = async () => { if (!(await leaveReview())) return; review = null; go('home'); };
+$('abPrimary').onclick = () => applyNow();
+async function applyNow() {
+  const actions = pendingActions();
+  if (!actions.length) { review = null; go('home'); return; }
+  $('abSecondary').disabled = true;
+  await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
+    try {
+      const clean = actions.map(a => ({ action: a.action, item: Object.assign({}, a.item, { photos: undefined }) }));
+      lastResult = await run('applyChanges', { profileId: review.profileId, range: review.range ? review.range.label : '',
+        rangeStart: review.range ? review.range.start : '', actions: clean });
+      try { S = await run('getState'); } catch (e) { /* done screen still works */ }
+      renderDone();
+      go('done');
+    } catch (e) { showError(e, { retry: applyNow }); }
+  });
+  $('abSecondary').disabled = false;
+}
+
+/* ───────── done ───────── */
+function renderDone() {
+  const r = lastResult, p = prof(review.profileId);
+  const total = r.added + r.updated + r.removed;
+  $('v-done').innerHTML = `<div class="done-hero"><span class="badge">${icon('check')}</span>
+      <h2>${total ? total + ' change' + (total > 1 ? 's' : '') + ' saved' : 'Nothing changed'}</h2>
+      <div class="muted">${esc(p ? p.name : '')}${review.range ? ' · ' + esc(review.range.label) : ''}</div>
+      <div>${countsHtml(r.added, r.updated, r.removed)}</div></div>
+    ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
+    <div class="stack">
+      <a class="btn ink block" href="${esc(r.calendarUrl || 'https://calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
+      ${S.undo ? `<button class="btn block" id="dUndo">${icon('undo')}Undo these changes</button>` : ''}
+      <button class="btn ghost block" id="dHome">Back to projects</button>
+    </div>`;
+  $('dHome').onclick = () => { review = null; renderHome(); go('home'); };
+  if ($('dUndo')) $('dUndo').onclick = e => doUndo(e.currentTarget);
+}
+async function doUndo(btn) {
+  await withBusy(btn || $('undoBtn'), 'Undoing…', async () => {
+    try {
+      const u = await run('undoLast');
+      try { S = await run('getState'); } catch (e) {}
+      renderHome(); go('home');
+      const bits = [u.removed && u.removed + ' removed', u.restored && u.restored + ' moved back', u.readded && u.readded + ' put back'].filter(Boolean);
+      toast('Undone' + (bits.length ? ': ' + bits.join(', ') : ''), { type: 'ok' });
+      if (u.errors && u.errors.length) dialog({ tone: 'warn', title: 'Some changes could not be undone', body: u.errors.join(' '), primary: 'OK' });
+    } catch (e) { showError(e, { retry: () => doUndo() }); }
+  });
+}
+
+/* ───────── photo viewer ───────── */
+let vIdx = 0;
+function openViewer() {
+  vIdx = 0; $('viewer').hidden = false; $('viewer').classList.remove('zoom'); showPhoto();
+}
+function showPhoto() {
+  const ph = review.photos || [];
+  $('vBody').innerHTML = `<img src="${ph[vIdx]}" alt="Calendar photo ${vIdx + 1}">`;
+  $('vCount').textContent = ph.length > 1 ? (vIdx + 1) + ' of ' + ph.length + ' · tap photo for next' : '';
+  $('vBody').querySelector('img').onclick = () => { if (ph.length > 1) { vIdx = (vIdx + 1) % ph.length; showPhoto(); } };
+}
+$('vClose').onclick = () => $('viewer').hidden = true;
+$('vZoom').onclick = () => $('viewer').classList.toggle('zoom');
+
+/* ───────── settings ───────── */
+async function renderSettings() {
+  const st = S.settings;
+  const calName = cals ? ((cals.find(c => c.id === st.calendarId) || {}).name || 'Main calendar') : 'Main calendar';
+  $('v-settings').innerHTML = `
+    <div class="section"><div class="eyebrow">Projects</div><div class="group">
+      ${S.profiles.map(p => `<button class="srow" data-p="${esc(p.id)}">${chip(p)}<span class="txt"><span class="lbl">${esc(p.project)}${p.person ? ' · ' + esc(p.person) : ''}</span>
+        <span class="val" style="display:block">${esc(tzName(p.tz))} · ${esc((APPS.find(a => a[0] === p.app) || ['', 'Other'])[1])}${p.doubleCheck ? ' · double-check' : ''} · label ${p.placement === 'none' ? 'off' : esc(p.label)}</span></span>${icon('chev', 'chev')}</button>`).join('')}
+      <button class="srow" id="addProj"><span class="chip" style="background:var(--surface-2);color:var(--fg)">${icon('plus')}</span><span class="txt lbl">Add project</span></button>
+    </div></div>
+
+    <div class="section"><div class="eyebrow">Your calendar</div><div class="group"><div class="pad">
+      <label class="f"><span>Add events to${tip('The Google Calendar Trace writes to. Only calendars you can edit are listed.')}</span><select class="in" id="sCal">${cals ? cals.map(c => `<option value="${esc(c.id)}" ${c.id === st.calendarId ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="${esc(st.calendarId)}">${esc(calName)}</option>`}</select></label>
+      <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
+    </div></div></div>
+
+    <div class="section"><div class="eyebrow">AI model${tip('On the free tier some models allow only 20 photos a day. Limits reset at midnight Pacific (3 AM Eastern). Paused models are skipped automatically.')}</div>
+      <div class="group" id="modelRows">${skelRows(3)}</div>
+      <div class="group"><div class="pad">
+        <label class="f"><span>Model${tip('Automatic is recommended. Pick a specific model only to test it; it will still fall back if that model is busy.')}</span><select class="in" id="sModel"><option value="">Automatic (recommended)</option></select></label>
+        <div class="hint">Automatic uses the most accurate model that's available and skips any that are overloaded or out of free requests for the day.</div>
+        <div id="keyBox"></div>
+      </div></div>
+    </div>
+    <button class="btn ink block" id="sSave">Save settings</button>
+
+    <div class="section"><div class="eyebrow">Test${tip('Checks that Trace can write to your calendar, without using any AI requests.')}</div><div class="group"><div class="pad">
+      <div class="small">Adds a "Trace test event" at the next full hour today, using the normal review and Apply steps. No photo or AI is used. Remove it afterwards with Undo.</div>
+      <label class="f"><span>As project</span><select class="in" id="tProj">${S.profiles.map(p => `<option value="${esc(p.id)}">${esc(p.code)} · ${esc(p.name)}</option>`).join('')}</select></label>
+      <button class="btn block" id="tSample" type="button">Add a sample event for today</button>
+    </div></div></div>`;
+
+  $('v-settings').querySelectorAll('[data-p]').forEach(b => b.onclick = () => openProject(prof(b.dataset.p)));
+  $('addProj').onclick = () => openProject(null);
+  renderKeyBox(false);
+  $('sSave').onclick = saveSettings;
+  $('tSample').onclick = () => runSample($('tProj').value);
+
+  try {
+    const [m, c] = await Promise.all([run('getModelStatus'), cals ? Promise.resolve(cals) : run('listCalendars')]);
+    models = m; cals = c;
+    if (view !== 'settings') return;
+    $('sCal').innerHTML = cals.map(x => `<option value="${esc(x.id)}" ${x.id === st.calendarId ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    $('modelRows').innerHTML = models.map(x => `<div class="srow"><span class="dot ${x.state === 'paused' ? 'paused' : ''}"></span>
+      <span class="txt"><span class="lbl mono" style="font-size:14px">${esc(x.name.replace(/^gemini-/, ''))}</span>
+      <span class="val" style="display:block">${esc(x.detail)}${x.usedToday ? ' · ' + x.usedToday + ' today' : ''}</span></span>
+      ${x.role ? `<span class="role">${esc(x.role)}</span>` : ''}</div>`).join('');
+    $('sModel').innerHTML = '<option value="">Automatic (recommended)</option>' +
+      models.map(x => `<option value="${esc(x.name)}" ${x.name === st.model ? 'selected' : ''}>${esc(x.name.replace(/^gemini-/, ''))}</option>`).join('');
+  } catch (e) {
+    if (!$('modelRows')) return;
+    $('modelRows').innerHTML = `<div class="empty">Couldn't check the models. ${esc(errMsg(e))} <button class="btn sm" id="mRetry" type="button">Try again</button></div>`;
+    $('mRetry').onclick = renderSettings;
+  }
+}
+function renderKeyBox(editing) {
+  const has = S.settings.hasKey;
+  $('keyBox').innerHTML = has && !editing
+    ? `<div class="toggle" style="justify-content:space-between"><span class="small"><b>Gemini API key</b> <span class="muted">· saved</span></span><button class="btn sm" id="kReplace" type="button">Replace</button></div>`
+    : `<label class="f" id="fKey"><span>Gemini API key${tip('Stored only in your private Apps Script project, never in this page.')}</span><input class="in mono" id="sKey" type="password" autocomplete="off" placeholder="Paste key"><span class="ferr" id="err-sKey"></span></label>
+       <div class="hint">Get a free key at aistudio.google.com/apikey</div>`;
+  if ($('kReplace')) $('kReplace').onclick = () => renderKeyBox(true);
+  if ($('sKey')) $('sKey').oninput = () => {
+    const v = $('sKey').value.trim(), bad = v && !/^(AIza|AQ\.)[\w\-.]{20,}$/.test(v);
+    $('err-sKey').textContent = bad ? "This doesn't look like a Gemini key. Keys start with AIza or AQ." : '';
+    $('fKey').classList.toggle('invalid', !!bad);
+  };
+}
+function tzOptions(val) {
+  const opts = TZS.slice();
+  if (val && !opts.find(o => o[0] === val)) opts.unshift([val, val, '']);
+  return opts.map(([v, l, c]) => `<option value="${esc(v)}" ${v === val ? 'selected' : ''}>${esc(l)}${c ? ' (' + esc(c) + ')' : ''}</option>`).join('');
+}
+async function saveSettings() {
+  if ($('fKey') && $('fKey').classList.contains('invalid')) { $('sKey').focus(); return; }
+  await withBusy($('sSave'), 'Saving…', async () => {
+    try {
+      S = await run('saveSettings', { apiKey: $('sKey') ? $('sKey').value.trim() : '', homeTz: $('sTz').value, calendarId: $('sCal').value, model: $('sModel').value });
+      toast('Settings saved', { type: 'ok' });
+      renderHome(); renderSettings();
+    } catch (e) { showError(e, { retry: saveSettings }); }
+  });
+}
+
+/* ───────── project editor ───────── */
+let projSnap = '';
+const projKey = p => JSON.stringify([p.project, p.person, p.code, p.tz, p.shownIn, p.app, p.placement, (p.label || '').trim(), p.colorId || '', +p.defaultMins, !!p.doubleCheck]);
+function projDirty() { if (!editProj || !$('pProject')) return false; return projKey(editProj) !== projSnap; }
+function openProject(p) {
+  editProj = p ? Object.assign({}, p) : { project: '', person: '', code: '', tz: S.settings.homeTz || 'America/New_York', shownIn: 'project',
+    app: 'teams', placement: 'suffix', label: '', colorId: '7', defaultMins: 30 };
+  projSnap = projKey(editProj);
+  go('project');
+  renderProject();
+}
+function renderProject() {
+  const p = editProj;
+  const segBtn = (grp, val, txt) => `<button type="button" data-${grp}="${val}" aria-pressed="${(grp === 'pl' ? p.placement : p.shownIn) === val}">${txt}</button>`;
+  $('v-project').innerHTML = `
+    <div class="group"><div class="pad">
+      <div class="two">
+        <label class="f" id="f-pProject"><span>Project</span><input class="in" id="pProject" value="${esc(p.project)}" placeholder="Acme"><span class="ferr" id="err-pProject"></span></label>
+        <label class="f"><span>Your profile there${tip('The name you use on that project, e.g. Alex. Only shown in Trace.')}</span><input class="in" id="pPerson" value="${esc(p.person)}" placeholder="Alex"></label>
+      </div>
+      <label class="f" id="f-pCode"><span>Code${tip('A short code, up to 8 letters or numbers. It appears on the project chip and in the default title label.')}</span><input class="in mono" id="pCode" value="${esc(p.code)}" placeholder="RA" maxlength="8" autocapitalize="characters"><span class="ferr" id="err-pCode"></span></label>
+    </div></div>
+
+    <div class="section"><div class="eyebrow">Time</div><div class="group"><div class="pad">
+      <label class="f"><span>Project time zone</span><select class="in" id="pTz">${tzOptions(p.tz)}</select></label>
+      <div class="f"><span>Times in the photo are in${tip('Most project calendars show their own time zone. If the laptop converts the calendar to your zone, pick My time.')}</span><div class="seg">${segBtn('sh', 'project', 'Project time')}${segBtn('sh', 'home', 'My time')}</div></div>
+      <div class="hint">Pick "My time" if the laptop already converts this calendar to your time zone.</div>
+      <label class="f"><span>Length when no end time is shown${tip('Used when the photo only shows a start time.')}</span><select class="in" id="pMins">${[15, 30, 45, 60].map(m => `<option value="${m}" ${+p.defaultMins === m ? 'selected' : ''}>${m} minutes</option>`).join('')}</select></label>
+    </div></div></div>
+
+    <div class="section"><div class="eyebrow">Photo source</div><div class="group"><div class="pad">
+      <label class="f"><span>Calendar app in the photo${tip("Tells the AI how that app lays out events, for example Teams week view doesn't print times on blocks.")}</span><select class="in" id="pApp">${APPS.map(([v, l]) => `<option value="${v}" ${p.app === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <div class="hint">Helps the AI read that app's layout, for example Teams blocks without printed times.</div>
+      <label class="toggle"><span class="cb"><input type="checkbox" id="pDouble" ${p.doubleCheck ? 'checked' : ''}><span class="box">${icon('check')}</span></span>Double-check with a second AI model</label>
+      <div class="hint">Two models read each photo at the same time, and times they disagree on are flagged for you to pick. Uses 2 of your free daily requests per photo. Best for busy calendars where times aren't printed.</div>
+    </div></div></div>
+
+    <div class="section"><div class="eyebrow">In your calendar</div><div class="group"><div class="pad">
+      <div class="f"><span>Project label in titles${tip('Added to each event title so you can tell projects apart in your calendar.')}</span><div class="seg">${segBtn('pl', 'prefix', 'Before')}${segBtn('pl', 'suffix', 'After')}${segBtn('pl', 'none', 'Off')}</div></div>
+      <label class="f" id="pLabelWrap"><span>Label text</span><input class="in mono" id="pLabel" value="${esc(p.label)}" maxlength="20"></label>
+      <div class="f"><span>Colour${tip('Same colours as Google Calendar. Events from this project get this colour.')}</span><div class="swatches" id="pColors">${Object.keys(GCOLORS).map(k => `<button type="button" class="sw ${k ? '' : 'none'}" style="--c:${GCOLORS[k][1]}" data-c="${k}" aria-label="${GCOLORS[k][0]}" aria-pressed="${(p.colorId || '') === k}"></button>`).join('')}</div></div>
+      <div class="notice"><span class="grow small"><span class="muted">Preview</span><br><b id="pPreview"></b></span></div>
+    </div></div></div>
+
+    <div class="err" id="pErr"></div>
+    <button class="btn ink block" id="pSave">${p.id ? 'Save project' : 'Add project'}</button>
+    ${p.id ? `<div class="section"><div class="eyebrow">Danger zone</div><div class="group"><div class="pad" id="danger">
+      <button class="btn danger block" id="pRemoveAll" type="button">Remove this project's events from my calendar</button>
+      <button class="btn ghost block sm" id="pDelete" type="button">Delete project (keeps its events)</button></div></div></div>` : ''}`;
+
+  const sync = () => {
+    p.project = $('pProject').value; p.person = $('pPerson').value; p.code = $('pCode').value.toUpperCase();
+    p.tz = $('pTz').value; p.app = $('pApp').value; p.defaultMins = +$('pMins').value; p.doubleCheck = $('pDouble').checked;
+    const auto = '(' + (p.code || 'RA') + ')';
+    $('pLabel').placeholder = auto;
+    p.label = $('pLabel').value;
+    const lbl = p.label.trim() || auto;
+    const t = 'AI use cases for IFS';
+    $('pPreview').textContent = p.placement === 'none' ? t : p.placement === 'suffix' ? t + ' ' + lbl : lbl + ' ' + t;
+    $('pLabelWrap').hidden = p.placement === 'none';
+  };
+  ['pProject', 'pPerson', 'pCode', 'pTz', 'pApp', 'pMins', 'pLabel', 'pDouble'].forEach(id => { $(id).addEventListener('input', sync); $(id).addEventListener('change', sync); });
+  $('v-project').querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { sync(); p.shownIn = b.dataset.sh; renderProject(); });
+  $('v-project').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { sync(); p.placement = b.dataset.pl; renderProject(); });
+  $('v-project').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { sync(); p.colorId = b.dataset.c; renderProject(); });
+  sync();
+  ['pProject', 'pCode'].forEach(id => $(id).addEventListener('input', () => { $('f-' + id).classList.remove('invalid'); $('err-' + id).textContent = ''; }));
+  $('pSave').onclick = async () => {
+    sync();
+    if (!validateProject(p)) return;
+    await withBusy($('pSave'), 'Saving…', async () => {
+      try {
+        S = await run('saveProfile', Object.assign({}, p, { label: p.label.trim() || '(' + p.code + ')' }));
+        projSnap = projKey(p);
+        renderHome(); go('settings'); renderSettings(); toast(p.id ? 'Project saved' : 'Project added', { type: 'ok' });
+      } catch (e) {
+        const er = parseErr(e);
+        if (er.code === 'form') $('pErr').textContent = er.msg; else showError(e);
+      }
+    });
+  };
+  if (p.id) {
+    $('pDelete').onclick = async () => {
+      if (!(await dialog({ title: 'Delete ' + (p.project || 'project') + '?', body: 'The project is removed from Trace. Events it already added stay in your calendar.', primary: 'Delete project', secondary: 'Cancel', danger: true }))) return;
+      const saved = S.profiles.find(x => x.id === p.id);
+      await withBusy($('pDelete'), 'Deleting…', async () => {
+        try {
+          S = await run('deleteProfile', p.id);
+          projSnap = projKey(editProj);
+          renderHome(); go('settings'); renderSettings();
+          toast('Project deleted', { type: 'ok', action: { label: 'Undo', fn: async () => {
+            try { S = await run('saveProfile', saved); renderHome(); if (view === 'settings') renderSettings(); toast('Project restored', { type: 'ok' }); }
+            catch (e) { showError(e); }
+          } } });
+        } catch (e) { showError(e); }
+      });
+    };
+    $('pRemoveAll').onclick = async () => {
+      $('danger').innerHTML = `<div class="hint" style="display:flex;gap:8px;align-items:center"><span class="spin-sm"></span>Counting this project's events…</div>`;
+      let n = '?';
+      try { n = await run('countForProfile', p.id); } catch (e) {}
+      $('danger').innerHTML = `<div class="small">This removes <b>${n}</b> event${n === 1 ? '' : 's'} Trace added for ${esc(p.project)} in the last year and any older ones. Your own events are never touched.</div>
+        <label class="f"><span>Type ${esc(p.code)} to confirm</span><input class="in mono" id="pConfirm" autocomplete="off" autocapitalize="characters"></label>
+        <div class="two"><button class="btn" id="pRmCancel" type="button">Cancel</button><button class="btn danger" id="pRmGo" type="button" disabled>Remove events</button></div>`;
+      $('pConfirm').oninput = () => $('pRmGo').disabled = $('pConfirm').value.trim().toUpperCase() !== p.code;
+      $('pRmCancel').onclick = renderProject;
+      $('pRmGo').onclick = () => withBusy($('pRmGo'), 'Removing…', async () => {
+        try { const r = await run('removeAllForProfile', p.id, $('pConfirm').value.trim()); toast(r.removed + ' event' + (r.removed === 1 ? '' : 's') + ' removed from your calendar', { type: 'ok' }); renderProject(); }
+        catch (e) { showError(e); }
+      });
+    };
+  }
+}
+
+function validateProject(p) {
+  const errs = {};
+  if (!String(p.project || '').trim()) errs.pProject = 'Give the project a name.';
+  const code = String(p.code || '').trim().toUpperCase();
+  const dup = S.profiles.find(x => x.id !== p.id && String(x.code).toUpperCase() === code);
+  if (!code) errs.pCode = 'Add a short code, for example RA.';
+  else if (!/^[A-Z0-9]{1,8}$/.test(code)) errs.pCode = 'Use up to 8 letters or numbers, no spaces.';
+  else if (dup) errs.pCode = code + ' is already used by ' + dup.project + '.';
+  ['pProject', 'pCode'].forEach(id => { $('f-' + id).classList.toggle('invalid', !!errs[id]); $('err-' + id).textContent = errs[id] || ''; });
+  const first = Object.keys(errs)[0];
+  if (first) { $(first).focus(); $(first).scrollIntoView({ block: 'center', behavior: 'smooth' }); return false; }
+  return true;
+}
+
+/* ───────── boot ───────── */
+function lockedScreen() {
+  document.body.innerHTML = `<main style="max-width:420px;margin:0 auto;padding:max(64px,calc(env(safe-area-inset-top,0px) + 40px)) 20px 40px">
+    <h1 style="font-size:22px;margin:0 0 8px">Open your Trace link</h1>
+    <p style="color:var(--muted);margin:0 0 16px;line-height:1.5">This copy of Trace doesn't have your key yet. Paste the full Trace link you saved (the one ending in <span class="mono">#k=…</span>).</p>
+    <input class="in" id="kLink" placeholder="Paste your Trace link" autocomplete="off">
+    <p id="kErr" style="color:var(--remove);min-height:1.4em;margin:8px 0"></p>
+    <button class="btn ink block" id="kGo">Open Trace</button></main>`;
+  document.getElementById('kGo').onclick = () => {
+    const m = document.getElementById('kLink').value.match(/k=([A-Za-z0-9]{24,})/);
+    if (!m) { document.getElementById('kErr').textContent = "That doesn't look like a Trace link."; return; }
+    location.hash = 'k=' + m[1]; location.reload();
+  };
+}
+async function init() {
+  if (!(window.google && google.script && google.script.run) && !traceKey()) return lockedScreen();
+  go('home');
+  $('projList').innerHTML = skelRows(3);
+  $('hist').innerHTML = skelRows(2);
+  $('offline').hidden = navigator.onLine !== false;
+  try { S = await run('getState'); renderHome(); }
+  catch (e) {
+    $('projList').innerHTML = `<div class="empty">Couldn't load your projects.</div>`;
+    $('hist').innerHTML = '';
+    showError(e, { retry: init });
+  }
+}
+init();
+</script>
+</body>
+</html>
