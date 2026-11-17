@@ -776,7 +776,7 @@ function prepReview() {
       const g = GROUPS.find(x => x.kind === it.kind);
       it.sel = g ? g.on : false;
       if (it.check === 'cancel' || (it.check === 'single' && it.checkBy === 'second')) it.sel = false;
-      if (it.alt) { it.optA = { start: it.start, end: it.end }; it.pick = 0; }
+      if (it.alt) { it.optA = { start: it.start, end: it.end, date: it.date }; it.pick = 0; }
     });
 }
 async function runSample(profileId) {
@@ -858,7 +858,7 @@ function renderReview() {
     e.stopPropagation();
     const it = r.items[+b.dataset.i], k = +b.dataset.pick;
     const o = k === 0 ? it.optA : it.alt;
-    it.pick = k; it.start = o.start; it.end = o.end; it.sel = true;
+    it.pick = k; it.start = o.start; it.end = o.end; if (o.date) it.date = o.date; it.sel = true;
     renderReview();
   });
   $('v-review').querySelectorAll('.row.tap').forEach(row => row.onclick = () => {
@@ -871,6 +871,11 @@ function renderReview() {
   updateApply();
 }
 
+/** Double-check put this meeting on two different days (compare in the home time zone). */
+function dayDiffers(it) {
+  if (!it.alt || !it.optA) return false;
+  return fmtDay(it.optA.start, review.homeTz) !== fmtDay(it.alt.start, review.homeTz);
+}
 function rowHtml(it, g) {
   const r = review;
   const editable = ['new', 'moved', 'changed'].includes(it.kind) && !it.ignore;
@@ -888,6 +893,7 @@ function rowHtml(it, g) {
   const disagree = it.alt && !it.edited;
   const T = (cls, ic, text, why) => `<button type="button" class="tag ${cls}" data-tip="${esc(why)}">${ic ? icon(ic) : ''}${esc(text)}</button>`;
   if (it.edited) tags.push(T('edit', 'pencil', 'Edited', 'You changed this event. Future photos still recognise it by the title the AI read.'));
+  else if (disagree && dayDiffers(it)) tags.push(T('warn', 'double', 'Models disagree on the day', 'Two AI models put this meeting in different day columns. Tap the day that matches the photo.'));
   else if (disagree) tags.push(T('warn', 'double', 'Models disagree on the time', 'Two AI models read different times for this meeting. Tap the time that matches the photo.'));
   else if (it.check === 'agree') tags.push(T('ok', 'double', 'Both models agree', 'Two AI models read this photo separately and got the same time.'));
   else if (it.check === 'cancel') tags.push(T('warn', '', 'One model saw this as cancelled', "Only one of the two models thought this meeting was cancelled, so it's unticked. Tick it to add it anyway."));
@@ -897,7 +903,7 @@ function rowHtml(it, g) {
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
     const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
-      <small>${esc(modelShort(r.doubleCheck ? r.doubleCheck.models[i] : ''))}</small>${esc(w2.time.replace(/ [A-Z]{2,5}$/, ''))}</button>`; };
+      <small>${esc(modelShort(r.doubleCheck ? r.doubleCheck.models[i] : ''))}</small>${dayDiffers(it) ? esc(w2.day) + ' ' : ''}${esc(w2.time.replace(/ [A-Z]{2,5}$/, ''))}</button>`; };
     lines += `<div class="choices">${opt(Object.assign({ date: it.date }, it.optA), 0)}${opt(Object.assign({ date: it.date }, it.alt), 1)}</div>`;
   }
   const on = it.sel && !it.ignore;
@@ -1010,7 +1016,8 @@ async function applyNow() {
     try {
       const clean = actions.map(a => ({ action: a.action, item: Object.assign({}, a.item, { photos: undefined }) }));
       lastResult = await run('applyChanges', { profileId: review.profileId, range: review.range ? review.range.label : '',
-        rangeStart: review.range ? review.range.start : '', actions: clean });
+        rangeStart: review.range ? review.range.start : '', actions: clean,
+        model: review.doubleCheck && review.doubleCheck.models ? review.doubleCheck.models.join(' + ') : (review.model || '') });
       try { S = await run('getState'); } catch (e) { /* done screen still works */ }
       renderDone();
       go('done');
