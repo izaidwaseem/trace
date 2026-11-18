@@ -624,7 +624,8 @@ const GROUPS = [
   { kind: 'moved', label: 'Moved', on: true },
   { kind: 'changed', label: 'End time changed', on: true },
   { kind: 'canceled', label: 'Cancelled', hint: 'Shown as cancelled in the photo. Ticked ones are removed.', on: true },
-  { kind: 'missing', label: 'Not in the photo', hint: 'Tick only if the meeting was really cancelled; the photo may be cropped.', on: false }];
+  { kind: 'missing', label: 'Not in the photo', hint: 'Tick only if the meeting was really cancelled; the photo may be cropped.', on: false },
+  { kind: 'mine', label: 'Your own meetings, not in the photo', hint: "You added these yourself for this project. Ticked ones are removed from your calendar. Trace ticks the ones the photo shows at a new time.", on: false }];
 
 /* ───────── state ───────── */
 let S = { settings: {}, profiles: [], history: [], undo: null };
@@ -1019,6 +1020,7 @@ function prepReview() {
     review.items.forEach(it => {
       const g = GROUPS.find(x => x.kind === it.kind);
       it.sel = g ? g.on : false;
+      if (it.kind === 'mine') { it.sel = !!it.movedTo; it.endSeries = false; }
       if (it.check === 'cancel' || (it.check === 'single' && it.checkBy === 'second')) it.sel = false;
       if (it.alt) { it.optA = { start: it.start, end: it.end, date: it.date }; it.pick = 0; }
     });
@@ -1042,7 +1044,7 @@ $('upIn').onchange = onFiles;
 function renderReview() {
   const r = review, p = prof(r.profileId);
   const n = k => r.items.filter(i => i.kind === k).length;
-  const rm = n('canceled') + n('missing');
+  const rm = n('canceled') + n('missing') + n('mine');
   const pills = [];
   if (n('new')) pills.push(`<span class="pill new">${n('new')} new</span>`);
   if (n('moved') + n('changed')) pills.push(`<span class="pill moved">${n('moved') + n('changed')} changed</span>`);
@@ -1086,7 +1088,7 @@ function renderReview() {
       <div class="muted">The AI couldn't find any meetings in this photo. Try again with the calendar filling the frame, taken straight on, without glare.</div></div>
       <div class="stack"><button class="btn ink block" id="retake">${icon('camera')}Take the photo again</button>
       <button class="btn ghost block" id="retry">Read this photo again</button></div>` + html;
-  } else if (!r.items.some(i => ['new', 'moved', 'changed', 'canceled', 'missing'].includes(i.kind))) {
+  } else if (!r.items.some(i => ['new', 'moved', 'changed', 'canceled', 'missing', 'mine'].includes(i.kind))) {
     html = `<div class="done-hero"><span class="badge">${icon('check')}</span><h2>All caught up</h2>
       <div class="muted">Everything in this photo is already in your calendar.</div></div>` + html;
   }
@@ -1100,6 +1102,11 @@ function renderReview() {
     cb.onchange = () => { r.items[+cb.dataset.i].sel = cb.checked; renderReview(); };
   });
   $('v-review').querySelectorAll('[data-wk]').forEach(l => l.onclick = e => e.stopPropagation());
+  $('v-review').querySelectorAll('[data-endser]').forEach(cb => cb.onchange = () => {
+    const sid = r.items[+cb.dataset.endser].seriesId;
+    r.items.forEach(x => { if (x.kind === 'mine' && x.seriesId === sid) { x.endSeries = cb.checked; if (cb.checked) x.sel = true; } });
+    renderReview();
+  });
   $('v-review').querySelectorAll('[data-weekly]').forEach(cb => cb.onchange = () => { const it = r.items[+cb.dataset.weekly]; it.weekly = cb.checked; if (cb.checked) it.sel = true; renderReview(); });
   $('v-review').querySelectorAll('.choice').forEach(b => b.onclick = e => {
     e.stopPropagation();
@@ -1149,6 +1156,7 @@ function rowHtml(it, g) {
   else if (it.confidence === 'low') tags.push(T('warn', '', 'Check this one', 'The AI was unsure about this event. Compare it with the photo.'));
   if (it.weeklyFrom && it.weekly && !it.ignore) tags.push(T('ok', 'repeat', 'Weekly', 'Seen at the same time last week, so it will be added as a weekly series.'));
   if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
+  if (it.kind === 'mine') tags.push(T('', '', it.seriesId ? 'Yours · repeats' : 'Yours', "You added this meeting yourself. Trace removes it only if it's ticked, and Undo brings it back."));
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
     const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
@@ -1158,6 +1166,17 @@ function rowHtml(it, g) {
   if (it.weeklyFrom && it.kind === 'new' && !it.ignore) {
     lines += `<label class="wk" data-wk="${it.idx}"><span class="cb"><input type="checkbox" data-weekly="${it.idx}" ${it.weekly ? 'checked' : ''}><span class="box">${icon('check')}</span></span>
       <span><b>Repeat every ${esc(it.weekday || fmtDay(it.start, r.srcTz).split(',')[0])}</b><br><span class="muted">Same time last week (${esc(fmtDay(it.weeklyFrom, r.homeTz))}). ${it.weekly ? 'Added as a weekly series with no end date. Stop it any time in Google Calendar.' : 'Added as a single meeting.'}</span></span></label>`;
+  }
+  if (it.kind === 'mine') {
+    if (it.movedTo) lines += `<div class="was">The photo shows “${esc(it.movedTitle)}” at ${esc(fmtT(it.movedTo, r.homeTz))} instead</div>`;
+    else if (it.dupOf) lines += `<div class="was">Trace already has “${esc(it.dupOf)}” at this time, so this is a second copy</div>`;
+    if (it.seriesId && review.items.find(x => x.kind === 'mine' && x.seriesId === it.seriesId) === it) {
+      const n = review.items.filter(x => x.kind === 'mine' && x.seriesId === it.seriesId).length;
+      lines += `<label class="wk" data-wk="${it.idx}"><span class="cb"><input type="checkbox" data-endser="${it.idx}" ${it.endSeries ? 'checked' : ''}><span class="box">${icon('check')}</span></span>
+        <span><b>Stop it repeating after this week</b><br><span class="muted">${it.endSeries
+          ? 'Later weeks of this repeating meeting are removed. Earlier weeks stay. Photos add this project\'s meetings from now on.'
+          : 'This meeting repeats in your calendar. Ticking above only removes ' + (n > 1 ? 'these ' + n + ' days' : 'this day') + '.'}</span></span></label>`;
+    }
   }
   if (it.clashes && it.clashes.length && !it.ignore) lines += it.clashes.map(c => `<div class="clashline">Clashes with ${esc(c.title)}, ${esc(fmtRange(c.start, c.end, r.homeTz))}</div>`).join('');
   const on = it.sel && !it.ignore;
@@ -1252,6 +1271,11 @@ function pendingActions() {
     if (it.kind === 'new') out.push({ action: 'add', item: it });
     else if (it.kind === 'moved' || it.kind === 'changed') out.push({ action: 'update', item: it });
     else if (it.kind === 'missing' || it.kind === 'canceled') out.push({ action: 'delete', item: it });
+    else if (it.kind === 'mine') out.push({ action: 'deleteOwn', item: it });
+  });
+  const ended = {};
+  review.items.forEach(it => {
+    if (it.kind === 'mine' && it.endSeries && it.seriesId && !ended[it.seriesId]) { ended[it.seriesId] = 1; out.push({ action: 'endSeries', item: it }); }
   });
   return out;
 }
@@ -1286,12 +1310,13 @@ async function applyNow() {
 /* ───────── done ───────── */
 function renderDone() {
   const r = lastResult, p = r.voice ? null : prof(review.profileId);
-  const total = r.added + r.updated + r.removed;
+  const total = r.added + r.updated + r.removed + (r.ended || 0);
   $('v-done').innerHTML = `<div class="done-hero"><span class="badge">${icon('check')}</span>
       <h2>${total ? total + ' change' + (total > 1 ? 's' : '') + ' saved' : 'Nothing changed'}</h2>
       <div class="muted">${r.voice ? 'From your voice note' : esc(p ? p.name : '') + (review.range ? ' · ' + esc(review.range.label) : '')}</div>
       <div>${countsHtml(r.added, r.updated, r.removed)}</div>
-      ${r.series ? `<div class="muted small">${r.series} of them ${r.series > 1 ? 'are weekly series' : 'is a weekly series'}. Next weeks are already in your calendar.</div>` : ''}</div>
+      ${r.series ? `<div class="muted small">${r.series} of them ${r.series > 1 ? 'are weekly series' : 'is a weekly series'}. Next weeks are already in your calendar.</div>` : ''}
+      ${r.ended ? `<div class="muted small">${r.ended} repeating meeting${r.ended > 1 ? 's' : ''} of yours stop${r.ended > 1 ? '' : 's'} after this week.</div>` : ''}</div>
     ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
     <div class="stack">
       <a class="btn ink block" href="${esc(r.calendarUrl || 'https://calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
