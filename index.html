@@ -705,9 +705,10 @@ function renderHome() {
 
   $('hist').innerHTML = S.history.length ? S.history.slice(0, 8).map(h => {
     const p = S.profiles.find(x => x.code === h.code);
-    const canUndo = !h.undone && !/^Undo of/.test(h.range || '') && (h.batch || h.added > 0);
+    const undone = h.undone || S.history.some(x => x.code === h.code && x.range === 'Undo of ' + h.when);   // older entries
+    const canUndo = !undone && !/^Undo of/.test(h.range || '') && (h.batch || h.added > 0);
     return `<div class="act">${chip(p || { code: h.code }, true)}<div class="txt"><div>${esc(h.range || 'Sync')}</div>
-      <div class="when">${esc(h.when)}${h.undone ? ' · <span class="undone">Undone</span>' : ''}</div></div>
+      <div class="when">${esc(h.when)}${undone ? ' · <span class="undone">Undone</span>' : ''}</div></div>
       <div class="act-end"><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div>
       ${canUndo ? `<button class="btn sm ghost hundo" data-ts="${h.ts}" aria-label="Undo this sync">${icon('undo')}Undo</button>` : ''}</div></div>`;
   }).join('') : `<div class="empty">Your syncs will show up here.</div>`;
