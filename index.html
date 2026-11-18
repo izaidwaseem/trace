@@ -197,6 +197,9 @@
   .cl-m .s { font-size: 12px; color: var(--muted); }
   .cl-a { display: flex; gap: 8px; justify-content: flex-end; }
   .linkbtn { border: 0; background: none; padding: 0; font: inherit; color: var(--fg); text-decoration: underline; cursor: pointer; }
+  .row .wk { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 10px; border-radius: 10px; background: var(--note-soft); font-size: 13px; line-height: 1.4; cursor: pointer; }
+  .row .wk b { font-weight: 600; font-size: 14px; }
+  .row .wk .cb { flex-shrink: 0; }
   .row .clashline { font-size: 13px; color: var(--moved); margin-top: 2px; }
   /* voice */
   .voicecard { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; padding: 8px 8px 8px 8px; border-radius: 16px;
@@ -485,6 +488,7 @@
   <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
   <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -1095,6 +1099,8 @@ function renderReview() {
     cb.onclick = e => e.stopPropagation();
     cb.onchange = () => { r.items[+cb.dataset.i].sel = cb.checked; renderReview(); };
   });
+  $('v-review').querySelectorAll('[data-wk]').forEach(l => l.onclick = e => e.stopPropagation());
+  $('v-review').querySelectorAll('[data-weekly]').forEach(cb => cb.onchange = () => { const it = r.items[+cb.dataset.weekly]; it.weekly = cb.checked; if (cb.checked) it.sel = true; renderReview(); });
   $('v-review').querySelectorAll('.choice').forEach(b => b.onclick = e => {
     e.stopPropagation();
     const it = r.items[+b.dataset.i], k = +b.dataset.pick;
@@ -1141,12 +1147,17 @@ function rowHtml(it, g) {
   else if (it.check === 'single') tags.push(T('warn', '', 'Only one model saw this', 'Only one of the two AI models found this meeting. Check it against the photo before adding.'));
   else if (it.estimated) tags.push(T('warn', 'clock', 'Time estimated', "This calendar doesn't print times on events, so the AI measured the block against the hour grid. Tap the row to correct it."));
   else if (it.confidence === 'low') tags.push(T('warn', '', 'Check this one', 'The AI was unsure about this event. Compare it with the photo.'));
+  if (it.weeklyFrom && it.weekly && !it.ignore) tags.push(T('ok', 'repeat', 'Weekly', 'Seen at the same time last week, so it will be added as a weekly series.'));
   if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
     const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
       <small>${esc(modelShort(r.doubleCheck ? r.doubleCheck.models[i] : ''))}</small>${dayDiffers(it) ? esc(w2.day) + ' ' : ''}${esc(w2.time.replace(/ [A-Z]{2,5}$/, ''))}</button>`; };
     lines += `<div class="choices">${opt(Object.assign({ date: it.date }, it.optA), 0)}${opt(Object.assign({ date: it.date }, it.alt), 1)}</div>`;
+  }
+  if (it.weeklyFrom && it.kind === 'new' && !it.ignore) {
+    lines += `<label class="wk" data-wk="${it.idx}"><span class="cb"><input type="checkbox" data-weekly="${it.idx}" ${it.weekly ? 'checked' : ''}><span class="box">${icon('check')}</span></span>
+      <span><b>Repeat every ${esc(it.weekday || fmtDay(it.start, r.srcTz).split(',')[0])}</b><br><span class="muted">Same time last week (${esc(fmtDay(it.weeklyFrom, r.homeTz))}). ${it.weekly ? 'Added as a weekly series with no end date. Stop it any time in Google Calendar.' : 'Added as a single meeting.'}</span></span></label>`;
   }
   if (it.clashes && it.clashes.length && !it.ignore) lines += it.clashes.map(c => `<div class="clashline">Clashes with ${esc(c.title)}, ${esc(fmtRange(c.start, c.end, r.homeTz))}</div>`).join('');
   const on = it.sel && !it.ignore;
@@ -1279,7 +1290,8 @@ function renderDone() {
   $('v-done').innerHTML = `<div class="done-hero"><span class="badge">${icon('check')}</span>
       <h2>${total ? total + ' change' + (total > 1 ? 's' : '') + ' saved' : 'Nothing changed'}</h2>
       <div class="muted">${r.voice ? 'From your voice note' : esc(p ? p.name : '') + (review.range ? ' · ' + esc(review.range.label) : '')}</div>
-      <div>${countsHtml(r.added, r.updated, r.removed)}</div></div>
+      <div>${countsHtml(r.added, r.updated, r.removed)}</div>
+      ${r.series ? `<div class="muted small">${r.series} of them ${r.series > 1 ? 'are weekly series' : 'is a weekly series'}. Next weeks are already in your calendar.</div>` : ''}</div>
     ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
     <div class="stack">
       <a class="btn ink block" href="${esc(r.calendarUrl || 'https://calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
