@@ -1192,7 +1192,7 @@ const projKey = p => JSON.stringify([p.project, p.person, p.code, p.tz, p.shownI
 function projDirty() { if (!editProj || !$('pProject')) return false; return projKey(editProj) !== projSnap; }
 function openProject(p) {
   editProj = p ? Object.assign({}, p) : { project: '', person: '', code: '', tz: S.settings.homeTz || 'America/New_York', shownIn: 'project',
-    app: 'teams', placement: 'suffix', label: '', colorId: '7', defaultMins: 30 };
+    app: 'teams', placement: 'prefix', label: '', colorId: '7', defaultMins: 30 };
   projSnap = projKey(editProj);
   go('project');
   renderProject();
@@ -1239,7 +1239,7 @@ function renderProject() {
   const sync = () => {
     p.project = $('pProject').value; p.person = $('pPerson').value; p.code = $('pCode').value.toUpperCase();
     p.tz = $('pTz').value; p.app = $('pApp').value; p.defaultMins = +$('pMins').value; p.doubleCheck = $('pDouble').checked;
-    const auto = '(' + (p.code || 'RA') + ')';
+    const auto = (p.code || 'RA') + ' |';
     $('pLabel').placeholder = auto;
     p.label = $('pLabel').value;
     const lbl = p.label.trim() || auto;
@@ -1258,7 +1258,7 @@ function renderProject() {
     if (!validateProject(p)) return;
     await withBusy($('pSave'), 'Saving…', async () => {
       try {
-        S = await run('saveProfile', Object.assign({}, p, { label: p.label.trim() || '(' + p.code + ')' }));
+        S = await run('saveProfile', Object.assign({}, p, { label: p.label.trim() || p.code + ' |' }));
         projSnap = projKey(p);
         renderHome(); go('settings'); renderSettings(); toast(p.id ? 'Project saved' : 'Project added', { type: 'ok' });
       } catch (e) {
