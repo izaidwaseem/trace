@@ -134,6 +134,54 @@
   .act { display: flex; gap: 12px; align-items: center; padding: 12px 14px; font-size: 14px; }
   .act .txt { flex: 1; min-width: 0; }
   .act .when { color: var(--muted); font-size: 13px; }
+  /* today + clashes */
+  .todaycard { margin-bottom: 12px; }
+  .todaycard:empty { display: none; }
+  .tc { display: grid; gap: 0; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+  .tc-top { display: flex; align-items: center; gap: 12px; padding: 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+  .tc-top .grow { flex: 1; min-width: 0; }
+  .tc-k { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .tc-next { font-size: 16px; font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tc-when { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tc-when b { color: var(--fg); font-weight: 600; }
+  .tc-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 14px 14px; }
+  .tpill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg);
+    border: 0; font-family: inherit; cursor: pointer; }
+  .tpill svg { width: 14px; height: 14px; }
+  .tpill.warn { background: var(--moved-soft); color: var(--moved); }
+  .tpill.join { background: var(--ink); color: var(--ink-fg); text-decoration: none; }
+  .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-2); margin-bottom: 16px; }
+  .seg2 button { min-height: 38px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 600 14px var(--font); cursor: pointer; }
+  .seg2 button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .daynav .grow { flex: 1; text-align: center; font-weight: 600; }
+  .daynav .grow small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .ag { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; position: relative; }
+  .ag.past { opacity: .5; }
+  .ag.clash::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--moved); }
+  .ag-t { width: 64px; flex-shrink: 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .ag-t small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  .ag-b { flex: 1; min-width: 0; display: grid; gap: 3px; }
+  .ag-title { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 15px; }
+  .ag-title a { color: inherit; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ag-sub { font-size: 13px; color: var(--muted); }
+  .ag-warn { font-size: 13px; color: var(--moved); display: flex; gap: 6px; align-items: flex-start; }
+  .ag-warn svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+  .ag .tpill.join { flex-shrink: 0; align-self: center; }
+  .nowline { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 0; position: relative; z-index: 1; }
+  .nowline::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--remove); margin-left: -4px; }
+  .nowline::after { content: ""; flex: 1; height: 2px; background: var(--remove); }
+  .agsec { padding: 6px 14px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+  .cl { padding: 14px; display: grid; gap: 10px; }
+  .cl-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .cl-h b { font-size: 14px; }
+  .cl-m { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .cl-m .grow { flex: 1; min-width: 0; }
+  .cl-m .t { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cl-m .s { font-size: 12px; color: var(--muted); }
+  .cl-a { display: flex; gap: 8px; justify-content: flex-end; }
+  .linkbtn { border: 0; background: none; padding: 0; font: inherit; color: var(--fg); text-decoration: underline; cursor: pointer; }
+  .row .clashline { font-size: 13px; color: var(--moved); margin-top: 2px; }
   /* voice */
   .voicecard { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; padding: 8px 8px 8px 8px; border-radius: 16px;
     background: var(--surface); border: 1px solid var(--line); }
@@ -393,7 +441,7 @@
   @media (min-width: 900px) {
     :root { --maxw: 1040px; }
     #v-home { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
-    #v-home > #undoBox, #v-home > #setupBox, #v-home > #voiceCard { grid-column: 1 / -1; }
+    #v-home > #undoBox, #v-home > #setupBox, #v-home > #voiceCard, #v-home > #todayCard { grid-column: 1 / -1; }
     #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
     .rv-side { position: sticky; top: 88px; }
     #v-settings, #v-project { display: block; columns: 2; column-gap: 32px; }
@@ -414,6 +462,9 @@
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-type" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-clash" viewBox="0 0 24 24"><rect x="3" y="5" width="11" height="8" rx="2"/><rect x="10" y="11" width="11" height="8" rx="2"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -444,6 +495,7 @@
   <section class="view" id="v-home">
     <div id="undoBox"></div>
     <div id="setupBox"></div>
+    <div class="todaycard" id="todayCard"></div>
     <div class="voicecard" id="voiceCard">
       <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
         <span class="vc-ico"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></span>
@@ -464,6 +516,9 @@
 
   <!-- REVIEW -->
   <section class="view" id="v-review" hidden></section>
+
+  <!-- TODAY -->
+  <section class="view" id="v-today" hidden></section>
 
   <!-- VOICE REVIEW -->
   <section class="view" id="v-voice" hidden></section>
@@ -741,11 +796,11 @@ window.addEventListener('error', () => toast('Something went wrong in the app. R
 /* ───────── navigation ───────── */
 function go(v) {
   view = v;
-  ['home', 'review', 'voice', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -794,6 +849,8 @@ function renderHome() {
   $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
 
   renderHist();
+  renderTodayCard();
+  if (S.settings.hasKey !== undefined && (!ag || agOffset !== 0 || Date.now() - agAt > 60000)) loadToday(0);
 }
 
 /* ───────── recent syncs: own scrolling card, grouped by day ───────── */
@@ -1064,12 +1121,14 @@ function rowHtml(it, g) {
   else if (it.check === 'single') tags.push(T('warn', '', 'Only one model saw this', 'Only one of the two AI models found this meeting. Check it against the photo before adding.'));
   else if (it.estimated) tags.push(T('warn', 'clock', 'Time estimated', "This calendar doesn't print times on events, so the AI measured the block against the hour grid. Tap the row to correct it."));
   else if (it.confidence === 'low') tags.push(T('warn', '', 'Check this one', 'The AI was unsure about this event. Compare it with the photo.'));
+  if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
     const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
       <small>${esc(modelShort(r.doubleCheck ? r.doubleCheck.models[i] : ''))}</small>${dayDiffers(it) ? esc(w2.day) + ' ' : ''}${esc(w2.time.replace(/ [A-Z]{2,5}$/, ''))}</button>`; };
     lines += `<div class="choices">${opt(Object.assign({ date: it.date }, it.optA), 0)}${opt(Object.assign({ date: it.date }, it.alt), 1)}</div>`;
   }
+  if (it.clashes && it.clashes.length && !it.ignore) lines += it.clashes.map(c => `<div class="clashline">Clashes with ${esc(c.title)}, ${esc(fmtRange(c.start, c.end, r.homeTz))}</div>`).join('');
   const on = it.sel && !it.ignore;
   return `<div class="row ${editable ? 'tap' : ''} ${on ? '' : 'off'} ${it.ignore ? 'ignored' : ''}" data-i="${it.idx}">
     <label class="cb" aria-label="Include ${esc(it.title)}"><input type="checkbox" data-i="${it.idx}" ${on ? 'checked' : ''} ${it.ignore ? 'disabled' : ''}>
@@ -1354,6 +1413,7 @@ function renderProject() {
     <div class="section"><div class="eyebrow">Photo source</div><div class="group"><div class="pad">
       <label class="f"><span>Calendar app in the photo${tip("Tells the AI how that app lays out events, for example Teams week view doesn't print times on blocks.")}</span><select class="in" id="pApp">${APPS.map(([v, l]) => `<option value="${v}" ${p.app === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <div class="hint">Helps the AI read that app's layout, for example Teams blocks without printed times.</div>
+      <label class="f"><span>Other names in your calendar${tip('Words that mark a meeting as this project in your own calendar, for the Today screen and clash checker. Separate with commas, e.g. IFS, IFSC.')}</span><input class="in" id="pAliases" value="${esc(p.aliases || '')}" placeholder="e.g. IFS, IFSC" autocomplete="off"></label>
       <label class="toggle"><span class="cb"><input type="checkbox" id="pDouble" ${p.doubleCheck ? 'checked' : ''}><span class="box">${icon('check')}</span></span>Double-check with a second AI model</label>
       <div class="hint">Two models read each photo at the same time, and times they disagree on are flagged for you to pick. Uses 2 of your free daily requests per photo. Best for busy calendars where times aren't printed.</div>
     </div></div></div>
@@ -1373,7 +1433,7 @@ function renderProject() {
 
   const sync = () => {
     p.project = $('pProject').value; p.person = $('pPerson').value; p.code = $('pCode').value.toUpperCase();
-    p.tz = $('pTz').value; p.app = $('pApp').value; p.defaultMins = +$('pMins').value; p.doubleCheck = $('pDouble').checked;
+    p.tz = $('pTz').value; p.app = $('pApp').value; p.defaultMins = +$('pMins').value; p.doubleCheck = $('pDouble').checked; p.aliases = $('pAliases').value;
     const auto = (p.code || 'RA') + ' |';
     $('pLabel').placeholder = auto;
     p.label = $('pLabel').value;
@@ -1382,7 +1442,7 @@ function renderProject() {
     $('pPreview').textContent = p.placement === 'none' ? t : p.placement === 'suffix' ? t + ' ' + lbl : lbl + ' ' + t;
     $('pLabelWrap').hidden = p.placement === 'none';
   };
-  ['pProject', 'pPerson', 'pCode', 'pTz', 'pApp', 'pMins', 'pLabel', 'pDouble'].forEach(id => { $(id).addEventListener('input', sync); $(id).addEventListener('change', sync); });
+  ['pProject', 'pPerson', 'pCode', 'pTz', 'pApp', 'pMins', 'pLabel', 'pDouble', 'pAliases'].forEach(id => { $(id).addEventListener('input', sync); $(id).addEventListener('change', sync); });
   $('v-project').querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { sync(); p.shownIn = b.dataset.sh; renderProject(); });
   $('v-project').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { sync(); p.placement = b.dataset.pl; renderProject(); });
   $('v-project').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { sync(); p.colorId = b.dataset.c; renderProject(); });
@@ -1449,6 +1509,147 @@ function validateProject(p) {
   return true;
 }
 
+
+
+/* ───────── today screen + clash checker ───────── */
+let ag = null, agOffset = 0, agTab = 'agenda', agLoading = false, agAt = 0;
+const fmtT = (ms, tz) => new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' }).format(ms);
+const fmtDur = m => m < 60 ? m + ' min' : (Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : ''));
+function inLabel(ms) {
+  const m = Math.round((ms - Date.now()) / 60000);
+  if (m <= 0) return 'now';
+  if (m < 60) return 'in ' + m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return 'in ' + h + ' h' + (r ? ' ' + r + ' min' : '');
+}
+function otherSide(e) {   // the project's own clock, when it differs from yours
+  const p = prof(e.proj), home = S.settings.homeTz;
+  if (!p || !p.tz || p.tz === home) return '';
+  const a = tzAbbr(p.tz, e.start);
+  return fmtT(e.start, p.tz) + ' ' + (tzName(p.tz) || a);
+}
+async function loadToday(offset) {
+  if (agLoading) return;
+  agLoading = true;
+  try { ag = await run('agenda', offset || 0); agOffset = offset || 0; agAt = Date.now(); }
+  catch (e) { if (view === 'today') showError(e, { retry: () => loadToday(offset) }); ag = ag && agOffset === (offset || 0) ? ag : null; }
+  finally { agLoading = false; }
+  if (view === 'home') renderTodayCard();
+  if (view === 'today') renderToday();
+}
+function renderTodayCard() {
+  const el = $('todayCard');
+  if (!S.settings.hasKey && !ag) { el.innerHTML = ''; return; }
+  if (!ag || agOffset !== 0) { el.innerHTML = `<div class="tc"><div class="tc-top"><div class="grow"><div class="tc-k">Today</div><div class="skel" style="height:18px;width:60%;margin-top:6px"></div></div></div></div>`; return; }
+  const tz = ag.homeTz, n = ag.next, st = ag.stats;
+  const clashes = ag.clashList.filter(c => c.type === 'clash').length, dups = ag.clashList.filter(c => c.type === 'duplicate').length;
+  const nowOn = n && n.start <= Date.now();
+  const p = n ? prof(n.proj) : null;
+  el.innerHTML = `<div class="tc">
+    <button class="tc-top" id="tcOpen" type="button">
+      <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)">${icon('sun')}</span>
+      <span class="grow">
+        <span class="tc-k">${nowOn ? 'On now' : 'Next up'}</span>
+        <div class="tc-next">${n ? esc(n.title) : 'Nothing else today'}</div>
+        <div class="tc-when">${n ? `<b>${esc(nowOn ? 'until ' + fmtT(n.end, tz) : inLabel(n.start))}</b> · ${esc(fmtDay(n.start, tz))}, ${esc(fmtT(n.start, tz))}${otherSide(n) ? ' · ' + esc(otherSide(n)) : ''}` : 'Enjoy the break.'}</div>
+      </span>
+      ${icon('chev', 'chev')}
+    </button>
+    <div class="tc-bar">
+      ${n && n.join ? `<a class="tpill join" href="${esc(n.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
+      <button class="tpill" id="tcAll" type="button">${st.count} meeting${st.count === 1 ? '' : 's'} today · ${fmtDur(st.mins)}</button>
+      ${clashes ? `<button class="tpill warn" id="tcClash" type="button">${icon('clash')}${clashes} clash${clashes > 1 ? 'es' : ''} ahead</button>` : ''}
+      ${dups ? `<button class="tpill" id="tcDup" type="button">${dups} listed twice</button>` : ''}
+    </div></div>`;
+  const open = tab => { agTab = tab; go('today'); renderToday(); };
+  $('tcOpen').onclick = () => open('agenda');
+  $('tcAll').onclick = () => open('agenda');
+  if ($('tcClash')) $('tcClash').onclick = () => open('clashes');
+  if ($('tcDup')) $('tcDup').onclick = () => open('clashes');
+}
+function renderToday() {
+  const el = $('v-today');
+  if (!ag) { el.innerHTML = skelRows(5); loadToday(agOffset); return; }
+  const n = ag.clashList.length;
+  let html = `<div class="seg2" role="tablist">
+      <button type="button" data-tab="agenda" aria-pressed="${agTab === 'agenda'}">Agenda</button>
+      <button type="button" data-tab="clashes" aria-pressed="${agTab === 'clashes'}">Clashes${n ? ' · ' + n : ''}</button></div>`;
+  html += agTab === 'agenda' ? agendaHtml() : clashesHtml();
+  el.innerHTML = html;
+  el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { agTab = b.dataset.tab; renderToday(); });
+  if ($('agPrev')) $('agPrev').onclick = () => { el.querySelector('.daynav').style.opacity = .5; loadToday(agOffset - 1); };
+  if ($('agNext')) $('agNext').onclick = () => { el.querySelector('.daynav').style.opacity = .5; loadToday(agOffset + 1); };
+  if ($('agToday')) $('agToday').onclick = () => loadToday(0);
+  el.querySelectorAll('[data-hide]').forEach(b => b.onclick = async () => {
+    await withBusy(b, 'Hiding…', async () => {
+      try { await run('ignoreClash', b.dataset.hide, true); ag.clashList = ag.clashList.filter(c => c.key !== b.dataset.hide); ag.ignoredCount++; renderToday(); renderTodayCard(); toast('Clash hidden', { type: 'ok' }); }
+      catch (e) { showError(e); }
+    });
+  });
+  if ($('clUnhide')) $('clUnhide').onclick = async e => {
+    await withBusy(e.currentTarget, 'Showing…', async () => { try { await run('ignoreClash', '*', false); await loadToday(agOffset); } catch (er) { showError(er); } });
+  };
+}
+function agendaHtml() {
+  const tz = ag.homeTz, now = Date.now();
+  const label = agOffset === 0 ? 'Today' : agOffset === 1 ? 'Tomorrow' : agOffset === -1 ? 'Yesterday' : fmtDay(ag.from, tz);
+  let html = `<div class="daynav">
+      <button class="iconbtn" id="agPrev" type="button" aria-label="Previous day">${icon('back')}</button>
+      <div class="grow">${esc(label)}<small>${esc(fmtDay(ag.from, tz))}, 6 AM – ${esc(fmtDay(ag.to, tz))}, 6 AM</small></div>
+      <button class="iconbtn" id="agNext" type="button" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
+  const st = ag.stats;
+  html += `<div class="pills" style="margin-bottom:12px">
+      <span class="pill">${st.count} meeting${st.count === 1 ? '' : 's'}</span><span class="pill">${fmtDur(st.mins)}</span>
+      ${st.clashes ? `<span class="pill moved">${st.clashes} clash${st.clashes > 1 ? 'es' : ''}</span>` : ''}
+      ${st.unanswered ? `<span class="pill">${st.unanswered} not answered</span>` : ''}
+      ${agOffset ? `<button class="tpill" id="agToday" type="button">Back to today</button>` : ''}</div>`;
+  if (!ag.events.length) return html + `<div class="group"><div class="empty">No meetings this day.</div></div>`;
+  let rows = '', nowDone = agOffset !== 0, lastSec = '';
+  const midnight = zoned(nextDay(ag.day), '00:00', tz);
+  ag.events.forEach(e => {
+    const sec = e.start >= midnight ? 'After midnight' : (+localTime(e.start, tz).slice(0, 2) < 17 ? 'Daytime' : 'Evening');
+    if (sec !== lastSec) { lastSec = sec; rows += `<div class="agsec">${sec}</div>`; }
+    if (!nowDone && e.start > now) { nowDone = true; rows += `<div class="nowline" aria-label="Now"></div>`; }
+    const p = prof(e.proj);
+    const past = e.end <= now, cl = e.clashes.filter(c => c.type === 'clash'), dup = e.clashes.filter(c => c.type === 'duplicate');
+    const sub = [otherSide(e), fmtDur(Math.round((e.end - e.start) / 60000)), e.weekly ? 'Weekly' : '',
+      e.resp === 'needsAction' ? 'Not answered' : e.resp === 'tentative' ? 'Maybe' : e.resp === 'declined' ? 'Declined' : ''].filter(Boolean).join(' · ');
+    rows += `<div class="ag ${past ? 'past' : ''} ${cl.length ? 'clash' : ''}" ${e.resp === 'declined' ? 'style="opacity:.45"' : ''}>
+      <div class="ag-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtT(e.end, tz))}</small></div>
+      <div class="ag-b">
+        <div class="ag-title">${p ? chip(p, true) : ''}<a href="${esc(e.link || '#')}" target="_blank" rel="noopener">${esc(e.title)}</a></div>
+        ${sub ? `<div class="ag-sub tnum">${esc(sub)}</div>` : ''}
+        ${cl.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${fmtDur(c.mins)})</span></div>`).join('')}
+        ${dup.map(c => `<div class="ag-sub">Also in your calendar as “${esc(c.title)}”</div>`).join('')}
+      </div>
+      ${e.join && !past ? `<a class="tpill join" href="${esc(e.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
+    </div>`;
+  });
+  if (!nowDone) rows += `<div class="nowline" aria-label="Now"></div>`;
+  return html + `<div class="group">${rows}</div><div class="hint">Tap a meeting to open it in Google Calendar. A day runs 6 AM to 6 AM, so your late-night meetings stay on the same day.</div>`;
+}
+function clashesHtml() {
+  const tz = ag.homeTz, list = ag.clashList;
+  if (!list.length) return `<div class="done-hero"><span class="badge">${icon('check')}</span><h2>No clashes</h2><div class="muted">Nothing overlaps in the next 14 days.</div></div>` +
+    (ag.ignoredCount ? `<div class="stack"><button class="btn ghost block" id="clUnhide">Show ${ag.ignoredCount} hidden clash${ag.ignoredCount > 1 ? 'es' : ''}</button></div>` : '');
+  const mrow = m => { const p = prof(m.proj); return `<div class="cl-m">${p ? chip(p, true) : '<span class="chip sm" style="opacity:.4">·</span>'}
+      <div class="grow"><div class="t">${esc(m.title)}</div><div class="s tnum">${esc(fmtT(m.start, tz))} – ${esc(fmtT(m.end, tz))}${otherSide(m) ? ' · ' + esc(otherSide(m)) : ''}${m.resp === 'needsAction' ? ' · Not answered' : ''}</div></div>
+      ${m.link ? `<a class="btn sm ghost" href="${esc(m.link)}" target="_blank" rel="noopener" aria-label="Open in Google Calendar">${icon('external')}</a>` : ''}</div>`; };
+  const cards = list.map(g => {
+    const first = g.times[0];
+    const when = g.repeats ? `Every ${new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' }).format(first)} · next ${fmtDay(first, tz)}` : fmtDay(first, tz);
+    return `<div class="cl">
+      <div class="cl-h"><b>${esc(when)}</b>${g.type === 'duplicate' ? '<span class="pill">Listed twice</span>' : `<span class="pill moved">${fmtDur(g.mins)} overlap</span>`}${g.repeats ? `<span class="pill">${g.times.length}×</span>` : ''}</div>
+      ${mrow(g.a)}${mrow(g.b)}
+      ${g.type === 'duplicate' ? `<div class="hint" style="margin:0">Same meeting twice, usually an invite plus your own copy. Delete one in Google Calendar.</div>` : ''}
+      <div class="cl-a"><button class="btn sm ghost" type="button" data-hide="${esc(g.key)}">${g.repeats ? 'Hide every week' : 'Hide'}</button></div>
+    </div>`;
+  }).join('');
+  return `<div class="group">${cards}</div>
+    <div class="hint">Overlaps in the next 14 days, in your time. Declined meetings are left out.${ag.ignoredCount ? ` <button class="linkbtn" id="clUnhide" type="button">Show ${ag.ignoredCount} hidden</button>` : ''}</div>`;
+}
+
+setInterval(() => { if (view === 'home' && ag && agOffset === 0) renderTodayCard(); }, 60000);
 
 /* ───────── voice notes ───────── */
 let vReview = null, rec = null;
@@ -1597,6 +1798,7 @@ function voiceItemHtml(it) {
           <option value="" ${!it.profileId ? 'selected' : ''}>No project</option></select></label>
       </div>
       ${conv ? `<div class="vconv tnum">${esc(conv)}</div>` : ''}
+      ${(it.clashes || []).map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)}, ${esc(fmtRange(c.start, c.end, home))}</span></div>`).join('')}
       ${it.action === 'add' ? `<div class="vconv">Saved as “${esc(p ? (p.placement === 'suffix' ? it.title + ' ' + p.label : p.placement === 'none' ? it.title : p.label + ' ' + it.title) : it.title)}”</div>` : ''}`;
   }
   return `<div class="vitem ${it.sel ? '' : 'off'}" data-i="${it.idx}">
@@ -1643,6 +1845,27 @@ function renderVoice() {
     it._lastP = it._lastP || it.profileId;
   });
   updateVoiceApply();
+  voiceClashesSoon();
+}
+/** Check the voice changes against your calendar (re-checked when you change a time). */
+let vClashT = null, vClashSig = '';
+function voiceClashesSoon() {
+  clearTimeout(vClashT);
+  vClashT = setTimeout(async () => {
+    const r = vReview; if (!r || view !== 'voice') return;
+    const q = r.items.map(it => it.action !== 'cancel' && voiceReady(it)
+      ? { start: zoned(it.date, it.start, it.tz), end: zoned(it.date, it.start, it.tz) + it.mins * 60000, existingId: it.existingId || null, title: it.existingTitle || it.title } : null);
+    const sig = JSON.stringify(q);
+    if (sig === vClashSig) return;
+    vClashSig = sig;
+    try {
+      const res = await run('busyFor', q);
+      if (vReview !== r || JSON.stringify(q) !== vClashSig) return;
+      r.items.forEach((it, i) => { it.clashes = res[i] || []; });
+      if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest('#v-voice')) renderVoice();
+      else { vClashSig = sig; }   // keep focus; shown on next render
+    } catch (e) { /* clash check is a bonus; never block */ }
+  }, 500);
 }
 function updateVoiceApply() {
   if (view !== 'voice' || !vReview) return;
@@ -1695,7 +1918,7 @@ async function init() {
   $('projList').innerHTML = skelRows(3);
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
-  try { S = await run('getState'); renderHome(); }
+  try { S = await run('getState'); renderHome(); loadToday(0); }
   catch (e) {
     $('projList').innerHTML = `<div class="empty">Couldn't load your projects.</div>`;
     $('hist').innerHTML = '';
