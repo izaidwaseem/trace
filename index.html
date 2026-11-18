@@ -173,6 +173,24 @@
   .vconv { font-size: 13px; color: var(--muted); }
   .vnote { font-size: 13px; color: var(--moved); }
   @media (max-width: 380px) { .vbody .three { grid-template-columns: 1fr 1fr; } .vbody .three > :first-child { grid-column: 1 / -1; } }
+  /* recent: its own scrolling frame */
+  .group.hist { position: relative; }
+  .hscroll { max-height: min(460px, 58vh); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+  .hscroll::-webkit-scrollbar { width: 6px; }
+  .hscroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+  .group.hist::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 36px; pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--surface)); opacity: 0; transition: opacity .2s; border-radius: 0 0 var(--r-lg) var(--r-lg); }
+  .group.hist.more::after { opacity: 1; }
+  .hday { position: sticky; top: 0; z-index: 1; padding: 7px 14px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .hscroll .act + .act { border-top: 1px solid var(--line); }
+  .act .ht { font-size: 14px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .act .hk { display: inline-flex; align-items: center; gap: 4px; }
+  .act .hk svg { width: 13px; height: 13px; }
+  .act.is-undo .ht, .act.is-undone .ht { color: var(--muted); }
+  .hscroll .act > .chip.sm { width: 52px; min-width: 52px; flex-shrink: 0; }
+  .act.is-undone .counts { opacity: .5; }
   .act-end { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
   .act .hundo { min-height: 32px; padding: 0 8px; font-size: 13px; margin-right: -8px; color: var(--muted); }
   .act .hundo svg { width: 14px; height: 14px; }
@@ -199,7 +217,7 @@
 
   /* change rows */
   .ghead { display: flex; align-items: baseline; gap: 8px; font-weight: 600; font-size: 15px; }
-  .ghead .cnt { font: 600 13px var(--mono); color: var(--muted); }
+  .ghead .cnt, .eyebrow .cnt { font: 600 12px var(--mono); color: var(--muted); margin-left: 4px; letter-spacing: 0; }
   .ghead .hint { font-weight: 400; font-size: 13px; color: var(--muted); }
   .row { display: flex; gap: 12px; align-items: flex-start; padding: 14px; position: relative; }
   .row.tap { cursor: pointer; }
@@ -439,8 +457,8 @@
       <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
     </div>
     <div class="section">
-      <div class="eyebrow">Recent</div>
-      <div class="group" id="hist"></div>
+      <div class="eyebrow">Recent <span class="cnt" id="histCnt"></span></div>
+      <div class="group hist" id="hist"></div>
     </div>
   </section>
 
@@ -775,16 +793,58 @@ function renderHome() {
 
   $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
 
-  $('hist').innerHTML = S.history.length ? S.history.slice(0, 8).map(h => {
-    const p = S.profiles.find(x => x.code === h.code);
-    const undone = h.undone || S.history.some(x => x.code === h.code && x.range === 'Undo of ' + h.when);   // older entries
-    const canUndo = !undone && !/^Undo of/.test(h.range || '') && (h.batch || h.added > 0);
-    return `<div class="act">${chip(p || { code: h.code }, true)}<div class="txt"><div>${esc(h.range || 'Sync')}</div>
-      <div class="when">${esc(h.when)}${undone ? ' · <span class="undone">Undone</span>' : ''}</div></div>
-      <div class="act-end"><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div>
-      ${canUndo ? `<button class="btn sm ghost hundo" data-ts="${h.ts}" aria-label="Undo this sync">${icon('undo')}Undo</button>` : ''}</div></div>`;
-  }).join('') : `<div class="empty">Your syncs will show up here.</div>`;
+  renderHist();
+}
+
+/* ───────── recent syncs: own scrolling card, grouped by day ───────── */
+function renderHist() {
+  const H = S.history || [];
+  $('histCnt').textContent = H.length ? H.length : '';
+  if (!H.length) { $('hist').innerHTML = `<div class="empty">Your syncs will show up here.</div>`; return; }
+  const tz = S.settings.homeTz;
+  const today = localDate(Date.now(), tz), yest = localDate(Date.now() - 864e5, tz);
+  const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
+  let html = '', last = '';
+  H.forEach(h => {
+    const k = localDate(h.ts, tz);
+    if (k !== last) { last = k; html += `<div class="hday">${k === today ? 'Today' : k === yest ? 'Yesterday' : esc(fmtDay(h.ts, tz))}</div>`; }
+    html += histRow(h, H, timeFmt);
+  });
+  $('hist').innerHTML = `<div class="hscroll" id="hScroll">${html}</div>`;
   $('hist').querySelectorAll('.hundo').forEach(b => b.onclick = () => undoHistory(+b.dataset.ts, b));
+  const sc = $('hScroll');
+  const fade = () => $('hist').classList.toggle('more', sc.scrollTop + sc.clientHeight < sc.scrollHeight - 4);
+  sc.addEventListener('scroll', fade, { passive: true });
+  fade();
+}
+function histRow(h, H, timeFmt) {
+  const p = S.profiles.find(x => x.code === h.code);
+  const range = h.range || '';
+  const isUndo = /^Undo of /.test(range);
+  const isVoice = h.voice || /^Voice: /.test(range);
+  let title, kind;
+  if (isUndo) {
+    const w = range.slice(8);
+    const o = H.find(x => x.code === h.code && x.when === w && !/^Undo of /.test(x.range || ''));
+    title = 'Undid ' + (o ? (o.voice || /^Voice: /.test(o.range || '') ? 'voice note' : o.range) : 'sync from ' + w);
+    kind = 'Undo';
+  } else if (isVoice) {
+    title = '“' + range.replace(/^Voice: /, '') + '”';
+    kind = 'Voice note';
+  } else {
+    title = range || 'Sync';
+    kind = 'Photo';
+  }
+  const undone = h.undone || H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when);   // older entries
+  const canUndo = !undone && !isUndo && (h.batch || h.added > 0);
+  const ico = isUndo ? 'undo' : isVoice ? 'mic' : 'camera';
+  return `<div class="act ${isUndo ? 'is-undo' : ''} ${undone ? 'is-undone' : ''}">
+    ${chip(p || { code: h.code === 'VOICE' ? 'MIX' : h.code }, true)}
+    <div class="txt"><div class="ht">${esc(title)}</div>
+      <div class="when"><span class="hk">${icon(ico)}${kind}</span> · ${esc(timeFmt.format(h.ts))}${undone ? ' · <span class="undone">Undone</span>' : ''}</div></div>
+    <div class="act-end"><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div>
+      ${canUndo ? `<button class="btn sm ghost hundo" data-ts="${h.ts}" aria-label="Undo this sync">${icon('undo')}Undo</button>` : ''}</div>
+  </div>`;
 }
 
 /** Undo any sync in Recents, not just the last one. */
