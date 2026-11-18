@@ -134,6 +134,45 @@
   .act { display: flex; gap: 12px; align-items: center; padding: 12px 14px; font-size: 14px; }
   .act .txt { flex: 1; min-width: 0; }
   .act .when { color: var(--muted); font-size: 13px; }
+  /* voice */
+  .voicecard { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; padding: 8px 8px 8px 8px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--line); }
+  .vc-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 6px; border: 0; background: none; color: inherit;
+    font: inherit; text-align: left; cursor: pointer; border-radius: 12px; }
+  .vc-ico { flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--ink-fg); }
+  .vc-ico .i { width: 22px; height: 22px; }
+  .vc-txt { display: grid; gap: 2px; min-width: 0; }
+  .vc-txt b { font-weight: 600; font-size: 15px; }
+  .vc-txt span { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vc-type { flex-shrink: 0; }
+  .sheet.rec { justify-items: center; text-align: center; }
+  .sheet.rec .two { width: 100%; }
+  .rec-ring { position: relative; width: 112px; height: 112px; display: grid; place-items: center; }
+  .rec-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--remove); opacity: .18;
+    transform: scale(calc(.82 + var(--lvl, 0) * .35)); transition: transform .08s linear; }
+  .rec-stop { position: relative; width: 76px; height: 76px; border-radius: 50%; border: 0; background: var(--remove); color: #fff; display: grid; place-items: center; cursor: pointer; }
+  .rec-stop .i { width: 28px; height: 28px; }
+  .rec-time { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+  #typer textarea { min-height: 110px; resize: vertical; font: inherit; line-height: 1.45; }
+  .heard { padding: 14px; font-size: 15px; line-height: 1.5; }
+  .heard .q { color: var(--fg); }
+  .vitem { padding: 14px; display: grid; gap: 12px; }
+  .vitem + .vitem { border-top: 1px solid var(--line); }
+  .vitem.off .vbody { opacity: .55; }
+  .vhead { display: flex; align-items: center; gap: 10px; }
+  .vhead .grow { flex: 1; min-width: 0; }
+  .vact { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+  .vact.add { background: var(--new-soft); color: var(--new); }
+  .vact.move { background: var(--moved-soft); color: var(--moved); }
+  .vact.cancel { background: var(--remove-soft); color: var(--remove); }
+  .vbody { display: grid; gap: 10px; }
+  .vbody .three { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+  .vbody .two2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vnow { font-size: 14px; }
+  .vnow s { color: var(--muted); }
+  .vconv { font-size: 13px; color: var(--muted); }
+  .vnote { font-size: 13px; color: var(--moved); }
+  @media (max-width: 380px) { .vbody .three { grid-template-columns: 1fr 1fr; } .vbody .three > :first-child { grid-column: 1 / -1; } }
   .act-end { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
   .act .hundo { min-height: 32px; padding: 0 8px; font-size: 13px; margin-right: -8px; color: var(--muted); }
   .act .hundo svg { width: 14px; height: 14px; }
@@ -354,6 +393,9 @@
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-type" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -384,6 +426,13 @@
   <section class="view" id="v-home">
     <div id="undoBox"></div>
     <div id="setupBox"></div>
+    <div class="voicecard" id="voiceCard">
+      <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
+        <span class="vc-ico"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></span>
+        <span class="vc-txt"><b>Add or change meetings by voice</b><span>e.g. “START data review tomorrow 9:30 Central”</span></span>
+      </button>
+      <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
+    </div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
@@ -397,6 +446,9 @@
 
   <!-- REVIEW -->
   <section class="view" id="v-review" hidden></section>
+
+  <!-- VOICE REVIEW -->
+  <section class="view" id="v-voice" hidden></section>
 
   <!-- DONE -->
   <section class="view" id="v-done" hidden></section>
@@ -420,6 +472,25 @@
     <h2 id="pgTitle">Reading calendar</h2>
     <div class="steps" id="pgSteps"></div>
     <div class="hint" id="pgHint"></div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="recorder" hidden>
+  <div class="sheet rec" role="dialog" aria-modal="true" aria-labelledby="recTitle">
+    <h2 id="recTitle">Listening</h2>
+    <div class="rec-ring" id="recRing"><button class="rec-stop" id="recStop" type="button" aria-label="Stop and read"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg></button></div>
+    <div class="rec-time tnum" id="recTime">0:00</div>
+    <div class="hint" id="recHint">Say the project, the meeting, the day and the time. You can add, move or cancel several meetings in one go.</div>
+    <div class="two"><button class="btn" id="recCancel" type="button">Cancel</button><button class="btn ink" id="recDone" type="button">Done</button></div>
+  </div>
+</div>
+
+<div class="sheet-wrap" id="typer" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tyTitle">
+    <h2 id="tyTitle">Type a meeting change</h2>
+    <textarea class="in" id="tyText" rows="4" placeholder="START data pipeline review tomorrow 9:30 Central, 45 min. Move my Scorpion 1-1 to Friday 2pm."></textarea>
+    <div class="hint">You can also tap the microphone on your keyboard to dictate.</div>
+    <div class="two"><button class="btn" id="tyCancel" type="button">Cancel</button><button class="btn ink" id="tyGo" type="button">Read it</button></div>
   </div>
 </div>
 
@@ -652,19 +723,20 @@ window.addEventListener('error', () => toast('Something went wrong in the app. R
 /* ───────── navigation ───────── */
 function go(v) {
   view = v;
-  ['home', 'review', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'review', 'voice', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
-  $('actionbar').hidden = v !== 'review';
+  $('actionbar').hidden = v !== 'review' && v !== 'voice';
   window.scrollTo(0, 0);
 }
 $('backBtn').onclick = async () => {
   if (view === 'project' && projDirty() && !(await confirmDiscard('Discard changes?', "Your changes to this project haven't been saved.", 'Keep editing'))) return;
   if (view === 'review' && !(await leaveReview())) return;
+  if (view === 'voice' && !(await leaveVoice())) return;
   go(view === 'project' ? 'settings' : 'home');
 };
 function confirmDiscard(title, body, keep) { return dialog({ title, body, primary: 'Discard', secondary: keep, danger: true }); }
@@ -754,12 +826,12 @@ function fileToJpeg(file) {
     img.src = url;
   });
 }
-function progress(on, stepIdx, hint) {
+function progress(on, stepIdx, hint, o) {
   $('progress').hidden = !on;
   if (!on) return;
   const p = prof(selId);
-  $('pgTitle').textContent = 'Reading ' + (p ? p.project : 'calendar');
-  const steps = ['Preparing photo', 'Reading the calendar', 'Checking your calendar for changes'];
+  $('pgTitle').textContent = o && o.title ? o.title : 'Reading ' + (p ? p.project : 'calendar');
+  const steps = o && o.steps ? o.steps : ['Preparing photo', 'Reading the calendar', 'Checking your calendar for changes'];
   $('pgSteps').innerHTML = steps.map((s, i) => `<div class="step ${i < stepIdx ? 'done' : i === stepIdx ? 'on' : ''}">
     <span class="st">${i < stepIdx ? icon('check') : ''}</span><span>${s}</span></div>`).join('');
   $('pgHint').textContent = hint || '';
@@ -1038,8 +1110,11 @@ function updateApply() {
   $('abPrimary').textContent = n ? `Apply ${n} change${n > 1 ? 's' : ''}` : 'Done';
   $('abSecondary').textContent = 'Cancel';
 }
-$('abSecondary').onclick = async () => { if (!(await leaveReview())) return; review = null; go('home'); };
-$('abPrimary').onclick = () => applyNow();
+$('abSecondary').onclick = async () => {
+  if (view === 'voice') { if (!(await leaveVoice())) return; vReview = null; go('home'); return; }
+  if (!(await leaveReview())) return; review = null; go('home');
+};
+$('abPrimary').onclick = () => view === 'voice' ? applyVoiceNow() : applyNow();
 async function applyNow() {
   const actions = pendingActions();
   if (!actions.length) { review = null; go('home'); return; }
@@ -1060,11 +1135,11 @@ async function applyNow() {
 
 /* ───────── done ───────── */
 function renderDone() {
-  const r = lastResult, p = prof(review.profileId);
+  const r = lastResult, p = r.voice ? null : prof(review.profileId);
   const total = r.added + r.updated + r.removed;
   $('v-done').innerHTML = `<div class="done-hero"><span class="badge">${icon('check')}</span>
       <h2>${total ? total + ' change' + (total > 1 ? 's' : '') + ' saved' : 'Nothing changed'}</h2>
-      <div class="muted">${esc(p ? p.name : '')}${review.range ? ' · ' + esc(review.range.label) : ''}</div>
+      <div class="muted">${r.voice ? 'From your voice note' : esc(p ? p.name : '') + (review.range ? ' · ' + esc(review.range.label) : '')}</div>
       <div>${countsHtml(r.added, r.updated, r.removed)}</div></div>
     ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
     <div class="stack">
@@ -1312,6 +1387,232 @@ function validateProject(p) {
   const first = Object.keys(errs)[0];
   if (first) { $(first).focus(); $(first).scrollIntoView({ block: 'center', behavior: 'smooth' }); return false; }
   return true;
+}
+
+
+/* ───────── voice notes ───────── */
+let vReview = null, rec = null;
+const VOICE_STEPS = ['Sending your note', 'Understanding it', 'Finding your meetings'];
+const LENGTHS = [15, 30, 45, 60, 90, 120];
+
+$('vcMic').onclick = () => startRecording();
+$('vcType').onclick = () => openTyper();
+
+function openTyper(prefill) {
+  if (!S.settings.hasKey) { showError(mkErr('key', 'Add your Gemini API key in Settings first.')); return; }
+  $('typer').hidden = false;
+  if (prefill != null) $('tyText').value = prefill;
+  setTimeout(() => $('tyText').focus(), 50);
+}
+$('tyCancel').onclick = () => { $('typer').hidden = true; };
+$('tyGo').onclick = () => {
+  const t = $('tyText').value.trim();
+  if (!t) { $('tyText').focus(); return; }
+  $('typer').hidden = true;
+  readVoice({ text: t });
+};
+
+function pickMime() {
+  if (!window.MediaRecorder) return null;
+  const opts = ['audio/mp4', 'audio/aac', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+  for (const m of opts) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {} }
+  return '';
+}
+
+async function startRecording() {
+  if (!S.settings.hasKey) { showError(mkErr('key', 'Add your Gemini API key in Settings first.')); return; }
+  const mime = pickMime();
+  if (mime === null || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast("This browser can't record audio here. Type it instead.", { type: 'err' });
+    openTyper(); return;
+  }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) {
+    const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+    dialog({ tone: 'warn', title: denied ? 'Microphone is blocked' : "Couldn't start the microphone",
+      body: denied ? 'Allow microphone access for Trace (iPhone: Settings → Safari → Microphone, or tap "aA" in the address bar → Website Settings). Or type the meeting instead.'
+        : 'Another app may be using the microphone. You can type the meeting instead.',
+      primary: 'Type instead', secondary: 'Close', onPrimary: () => openTyper() });
+    return;
+  }
+  const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  rec = { mr, stream, chunks: [], t0: Date.now(), cancelled: false, timer: null, raf: null, ctx: null };
+  mr.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+  mr.onstop = onRecordingStop;
+  mr.start(250);
+  $('recorder').hidden = false;
+  $('recTitle').textContent = 'Listening';
+  $('recTime').textContent = '0:00';
+  rec.timer = setInterval(() => {
+    const sec = Math.floor((Date.now() - rec.t0) / 1000);
+    $('recTime').textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    if (sec >= 90) stopRecording(false);   // keep notes short
+  }, 250);
+  try {   // live level on the ring (optional)
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC(); const src = ctx.createMediaStreamSource(stream); const an = ctx.createAnalyser();
+    an.fftSize = 512; src.connect(an); rec.ctx = ctx;
+    const buf = new Uint8Array(an.fftSize);
+    const tick = () => {
+      an.getByteTimeDomainData(buf);
+      let peak = 0; for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+      $('recRing').style.setProperty('--lvl', Math.min(1, peak / 64).toFixed(2));
+      rec && (rec.raf = requestAnimationFrame(tick));
+    };
+    tick();
+  } catch (e) {}
+}
+function stopRecording(cancel) {
+  if (!rec) return;
+  rec.cancelled = !!cancel;
+  clearInterval(rec.timer); cancelAnimationFrame(rec.raf);
+  try { rec.ctx && rec.ctx.close(); } catch (e) {}
+  if (rec.mr.state !== 'inactive') rec.mr.stop(); else onRecordingStop();
+  rec.stream.getTracks().forEach(t => t.stop());
+  $('recorder').hidden = true;
+}
+$('recStop').onclick = () => stopRecording(false);
+$('recDone').onclick = () => stopRecording(false);
+$('recCancel').onclick = () => stopRecording(true);
+
+async function onRecordingStop() {
+  const r = rec; rec = null;
+  if (!r || r.cancelled) return;
+  if (Date.now() - r.t0 < 800 || !r.chunks.length) { toast('That was too short. Tap the mic and speak, then tap Done.', { type: 'err' }); return; }
+  const type = (r.mr.mimeType || r.chunks[0].type || 'audio/mp4').split(';')[0];
+  const blob = new Blob(r.chunks, { type });
+  const data = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(blob); });
+  readVoice({ audio: { data, mime: type } });
+}
+
+async function readVoice(req) {
+  progress(true, 0, '', { title: req.audio ? 'Reading your voice note' : 'Reading your note', steps: VOICE_STEPS });
+  const t1 = setTimeout(() => progress(true, 1, '', { title: req.audio ? 'Reading your voice note' : 'Reading your note', steps: VOICE_STEPS }), 700);
+  const t2 = setTimeout(() => progress(true, 2, '', { title: req.audio ? 'Reading your voice note' : 'Reading your note', steps: VOICE_STEPS }), 4000);
+  try {
+    const r = await run('voice', req);
+    r.items.forEach(it => { it.title0 = it.title; });
+    vReview = r; vReview.req = req.audio ? null : req.text;
+    go('voice'); renderVoice();
+  } catch (e) {
+    showError(e, { retry: () => readVoice(req) });
+  } finally { clearTimeout(t1); clearTimeout(t2); progress(false); }
+}
+
+const tzOpts = sel => {
+  const list = TZS.slice();
+  if (!list.some(t => t[0] === sel)) list.unshift([sel, sel.replace(/_/g, ' '), '']);
+  if (!list.some(t => t[0] === S.settings.homeTz)) list.unshift([S.settings.homeTz, tzName(S.settings.homeTz), '']);
+  return list.map(t => `<option value="${esc(t[0])}" ${t[0] === sel ? 'selected' : ''}>${esc(t[1])}</option>`).join('');
+};
+function voiceReady(it) {
+  if (it.action === 'cancel') return !!it.existingId;
+  return !!(it.title && /^\d{4}-\d{2}-\d{2}$/.test(it.date || '') && /^\d{2}:\d{2}$/.test(it.start || '') && it.mins > 0);
+}
+function voiceItemHtml(it) {
+  const p = prof(it.profileId);
+  const label = { add: 'New', move: 'Move', cancel: 'Cancel' }[it.action];
+  const locked = it.action !== 'add';
+  const home = S.settings.homeTz;
+  const now = it.oldStart ? `${fmtDay(it.oldStart, home)} · ${fmtRange(it.oldStart, it.oldEnd, home)}` : '';
+  let body = '';
+  if (it.action === 'cancel') {
+    body = it.existingId ? `<div class="vnow"><b>${esc(it.existingTitle)}</b><br><span class="muted">${esc(now)}</span></div>` : '';
+  } else {
+    const lens = LENGTHS.includes(+it.mins) ? LENGTHS : LENGTHS.concat([+it.mins]).sort((a, b) => a - b);
+    let conv = '';
+    if (voiceReady(it) && it.tz !== home) { const ms = zoned(it.date, it.start, it.tz); conv = `= ${fmtDay(ms, home)} · ${fmtRange(ms, ms + it.mins * 60000, home)} your time`; }
+    body = `${it.action === 'move' ? `<div class="vnow"><b>${esc(it.existingTitle)}</b><br><span class="muted">Now <s>${esc(now)}</s></span></div>`
+        : `<label class="f"><span>Title</span><input class="in" data-k="title" value="${esc(it.title)}" autocomplete="off"></label>`}
+      <div class="three">
+        <label class="f"><span>${it.action === 'move' ? 'New date' : 'Date'}</span><input class="in" type="date" data-k="date" value="${esc(it.date || '')}"></label>
+        <label class="f"><span>Start</span><input class="in" type="time" data-k="start" value="${esc(it.start || '')}" step="300"></label>
+        <label class="f"><span>Length</span><select class="in" data-k="mins">${lens.map(m => `<option value="${m}" ${m === +it.mins ? 'selected' : ''}>${m < 60 ? m + ' min' : (m / 60) + ' h'}</option>`).join('')}</select></label>
+      </div>
+      <div class="two2">
+        <label class="f"><span>Time zone of these times</span><select class="in" data-k="tz">${tzOpts(it.tz)}</select></label>
+        <label class="f"><span>Project</span><select class="in" data-k="profileId" ${locked ? 'disabled' : ''}>
+          ${S.profiles.map(q => `<option value="${q.id}" ${q.id === it.profileId ? 'selected' : ''}>${esc(q.code)} · ${esc(q.project)}</option>`).join('')}
+          <option value="" ${!it.profileId ? 'selected' : ''}>No project</option></select></label>
+      </div>
+      ${conv ? `<div class="vconv tnum">${esc(conv)}</div>` : ''}
+      ${it.action === 'add' ? `<div class="vconv">Saved as “${esc(p ? (p.placement === 'suffix' ? it.title + ' ' + p.label : p.placement === 'none' ? it.title : p.label + ' ' + it.title) : it.title)}”</div>` : ''}`;
+  }
+  return `<div class="vitem ${it.sel ? '' : 'off'}" data-i="${it.idx}">
+    <div class="vhead"><label class="cb" aria-label="Include"><input type="checkbox" data-k="sel" ${it.sel ? 'checked' : ''} ${it.action === 'cancel' && !it.existingId ? 'disabled' : ''}><span class="box">${icon('check')}</span></label>
+      <span class="vact ${it.action}">${label}</span>${p ? chip(p, true) : ''}
+      <span class="grow t">${it.action === 'add' ? '' : esc(it.title)}</span></div>
+    ${it.note ? `<div class="vnote">${esc(it.note)}</div>` : ''}
+    <div class="vbody">${body}</div>
+  </div>`;
+}
+function renderVoice() {
+  const r = vReview;
+  let html = `<div class="section"><div class="eyebrow">${r.heard ? 'You said' : 'Your note'}</div>
+    <div class="group heard"><span class="q">“${esc(r.transcript || '')}”</span></div>
+    ${r.note ? `<div class="notice" style="margin-top:12px">${icon('info')}<span class="grow">${esc(r.note)}</span></div>` : ''}</div>`;
+  if (!r.items.length) {
+    html += `<div class="done-hero"><span class="alert-ico warn">${icon('mic')}</span><h2>No meeting changes heard</h2>
+      <div class="muted">Say the project, the meeting, the day and the time, e.g. “Scorpion pricing sync Friday 3pm Eastern”.</div></div>
+      <div class="stack"><button class="btn ink block" id="vAgain">${icon('mic')}Try again</button>
+      <button class="btn ghost block" id="vTypeIt">Type it instead</button></div>`;
+  } else {
+    html += `<div class="section"><div class="eyebrow">Changes <span class="cnt">${r.items.length}</span></div>
+      <div class="group">${r.items.map(voiceItemHtml).join('')}</div>
+      <div class="hint">Times are in the time zone shown on each meeting. Nothing changes in your calendar until you tap Apply.</div></div>`;
+  }
+  $('v-voice').innerHTML = html;
+  if ($('vAgain')) $('vAgain').onclick = () => { vReview = null; go('home'); startRecording(); };
+  if ($('vTypeIt')) $('vTypeIt').onclick = () => { const t = r.transcript; vReview = null; go('home'); openTyper(t); };
+  $('v-voice').querySelectorAll('.vitem').forEach(row => {
+    const it = r.items[+row.dataset.i];
+    row.querySelectorAll('[data-k]').forEach(el => {
+      const k = el.dataset.k;
+      const evName = el.tagName === 'INPUT' && el.type === 'text' ? 'input' : 'change';
+      el.addEventListener(evName, () => {
+        if (k === 'sel') it.sel = el.checked;
+        else if (k === 'mins') it.mins = +el.value;
+        else it[k] = el.value;
+        if (k === 'profileId') { const q = prof(it.profileId); if (q && it.tz === (prof(it._lastP) || {}).tz) it.tz = q.tz; it._lastP = it.profileId; }
+        if (k !== 'sel' && voiceReady(it) && !it.sel && !it.note.startsWith('Someone')) it.sel = true;
+        if (k === 'title') { updateVoiceApply(); return; }   // keep focus while typing
+        renderVoice();
+      });
+    });
+    it._lastP = it._lastP || it.profileId;
+  });
+  updateVoiceApply();
+}
+function updateVoiceApply() {
+  if (view !== 'voice' || !vReview) return;
+  const n = vReview.items.filter(it => it.sel && voiceReady(it)).length;
+  $('abPrimary').textContent = n ? `Apply ${n} change${n > 1 ? 's' : ''}` : 'Done';
+  $('abSecondary').textContent = 'Cancel';
+}
+async function leaveVoice() {
+  const n = vReview ? vReview.items.filter(it => it.sel && voiceReady(it)).length : 0;
+  if (!n) return true;
+  return confirmDiscard('Discard this voice note?', 'Nothing has been changed in your calendar yet.', 'Keep reviewing');
+}
+async function applyVoiceNow() {
+  const r = vReview;
+  const bad = r.items.find(it => it.sel && !voiceReady(it));
+  if (bad) { toast(`Set a ${bad.title ? 'day and time' : 'title'} for “${bad.title || 'the new meeting'}”, or untick it.`, { type: 'err' }); return; }
+  const items = r.items.filter(it => it.sel).map(it => ({ action: it.action, profileId: it.profileId, title: it.title.trim(), date: it.date,
+    start: it.start, mins: it.mins, tz: it.tz, existingId: it.existingId || null, existingTitle: it.existingTitle || '' }));
+  if (!items.length) { vReview = null; go('home'); return; }
+  $('abSecondary').disabled = true;
+  await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
+    try {
+      lastResult = await run('applyVoice', { transcript: r.transcript, items });
+      lastResult.voice = true;
+      try { S = await run('getState'); } catch (e) {}
+      vReview = null;
+      renderDone(); go('done');
+    } catch (e) { showError(e, { retry: applyVoiceNow }); }
+  });
+  $('abSecondary').disabled = false;
 }
 
 /* ───────── boot ───────── */
