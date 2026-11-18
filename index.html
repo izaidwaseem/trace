@@ -1021,6 +1021,7 @@ function prepReview() {
       const g = GROUPS.find(x => x.kind === it.kind);
       it.sel = g ? g.on : false;
       if (it.kind === 'mine') { it.sel = !!it.movedTo; it.endSeries = false; }
+      if (it.maybe) it.sel = false;
       if (it.check === 'cancel' || (it.check === 'single' && it.checkBy === 'second')) it.sel = false;
       if (it.alt) { it.optA = { start: it.start, end: it.end, date: it.date }; it.pick = 0; }
     });
@@ -1152,8 +1153,9 @@ function rowHtml(it, g) {
   else if (it.check === 'agree') tags.push(T('ok', 'double', 'Both models agree', 'Two AI models read this photo separately and got the same time.'));
   else if (it.check === 'cancel') tags.push(T('warn', '', 'One model saw this as cancelled', "Only one of the two models thought this meeting was cancelled, so it's unticked. Tick it to add it anyway."));
   else if (it.check === 'single') tags.push(T('warn', '', 'Only one model saw this', 'Only one of the two AI models found this meeting. Check it against the photo before adding.'));
-  else if (it.estimated) tags.push(T('warn', 'clock', 'Time estimated', "This calendar doesn't print times on events, so the AI measured the block against the hour grid. Tap the row to correct it."));
+  else if (it.estimated && !it.maybe) tags.push(T('warn', 'clock', 'Time estimated', "This calendar doesn't print times on events, so the AI measured the block against the hour grid. Tap the row to correct it."));
   else if (it.confidence === 'low') tags.push(T('warn', '', 'Check this one', 'The AI was unsure about this event. Compare it with the photo.'));
+  if (it.maybe && !it.edited) tags.push(T('warn', 'clock', 'Maybe moved', "This photo puts the meeting half an hour away from your calendar, but its time was estimated from the grid by one AI model. Compare with the photo and tick it if it really moved."));
   if (it.weeklyFrom && it.weekly && !it.ignore) tags.push(T('ok', 'repeat', 'Weekly', 'Seen at the same time last week, so it will be added as a weekly series.'));
   if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
   if (it.kind === 'mine') tags.push(T('', '', it.seriesId ? 'Yours · repeats' : 'Yours', "You added this meeting yourself. Trace removes it only if it's ticked, and Undo brings it back."));
