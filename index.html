@@ -134,6 +134,10 @@
   .act { display: flex; gap: 12px; align-items: center; padding: 12px 14px; font-size: 14px; }
   .act .txt { flex: 1; min-width: 0; }
   .act .when { color: var(--muted); font-size: 13px; }
+  .act-end { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .act .hundo { min-height: 32px; padding: 0 8px; font-size: 13px; margin-right: -8px; color: var(--muted); }
+  .act .hundo svg { width: 14px; height: 14px; }
+  .act .undone { color: var(--muted); font-style: italic; }
   .counts { display: inline-flex; gap: 10px; flex-wrap: wrap; }
   .c-new { color: var(--new); } .c-moved { color: var(--moved); } .c-remove { color: var(--remove); }
 
@@ -701,9 +705,35 @@ function renderHome() {
 
   $('hist').innerHTML = S.history.length ? S.history.slice(0, 8).map(h => {
     const p = S.profiles.find(x => x.code === h.code);
+    const canUndo = !h.undone && !/^Undo of/.test(h.range || '') && (h.batch || h.added > 0);
     return `<div class="act">${chip(p || { code: h.code }, true)}<div class="txt"><div>${esc(h.range || 'Sync')}</div>
-      <div class="when">${esc(h.when)}</div></div><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div></div>`;
+      <div class="when">${esc(h.when)}${h.undone ? ' · <span class="undone">Undone</span>' : ''}</div></div>
+      <div class="act-end"><div class="small">${countsHtml(h.added, h.updated, h.removed)}</div>
+      ${canUndo ? `<button class="btn sm ghost hundo" data-ts="${h.ts}" aria-label="Undo this sync">${icon('undo')}Undo</button>` : ''}</div></div>`;
   }).join('') : `<div class="empty">Your syncs will show up here.</div>`;
+  $('hist').querySelectorAll('.hundo').forEach(b => b.onclick = () => undoHistory(+b.dataset.ts, b));
+}
+
+/** Undo any sync in Recents, not just the last one. */
+async function undoHistory(ts, btn) {
+  const h = S.history.find(x => x.ts === ts);
+  if (!h) return;
+  const p = S.profiles.find(x => x.code === h.code);
+  const what = [h.added && `remove the ${h.added} event${h.added === 1 ? '' : 's'} it added`, h.updated && `move ${h.updated} back`,
+    h.removed && `put ${h.removed} back`].filter(Boolean).join(', ');
+  const ok = await dialog({ title: `Undo ${p ? p.name : h.code} sync?`, body: `${h.range || 'Sync'} (${h.when}). This will ${what || 'reverse it'} in your Google Calendar.`,
+    primary: 'Undo sync', secondary: 'Cancel', danger: true });
+  if (!ok) return;
+  await withBusy(btn, 'Undoing…', async () => {
+    try {
+      const u = await run('undoEntry', ts);
+      try { S = await run('getState'); } catch (e) {}
+      renderHome();
+      const bits = [u.removed && u.removed + ' removed', u.restored && u.restored + ' moved back', u.readded && u.readded + ' put back'].filter(Boolean);
+      toast('Undone' + (bits.length ? ': ' + bits.join(', ') : ''), { type: 'ok' });
+      if (u.errors && u.errors.length) dialog({ tone: 'warn', title: 'Some changes could not be undone', body: u.errors.join(' '), primary: 'OK' });
+    } catch (e) { showError(e, { retry: () => undoHistory(ts, btn) }); }
+  });
 }
 
 /* ───────── capture → read ───────── */
@@ -834,7 +864,8 @@ function renderReview() {
       ${icon('chevdown')} Already handled <span class="cnt">${quiet.length}</span></summary><div class="group">` +
       quiet.map(it => { const w = when(it, r.homeTz); return `<div class="row"><div class="txt"><div class="t">${esc(it.title)}</div>
         <div class="when tnum"><span class="d">${esc(w.day)}</span> ${esc(w.time)}</div>
-        ${it.kind === 'ignored' ? '<div class="tags"><span class="tag">Ignored</span></div>' : ''}</div></div>`; }).join('') + `</div></details>`;
+        ${it.kind === 'ignored' ? '<div class="tags"><span class="tag">Ignored</span></div>' : ''}
+        ${it.ownTitle ? `<div class="was">In your calendar as “${esc(it.ownTitle)}”</div>` : ''}</div></div>`; }).join('') + `</div></details>`;
   }
   if (!r.items.length) {
     html = `<div class="done-hero"><span class="alert-ico warn">${icon('image')}</span><h2>No meetings found</h2>
