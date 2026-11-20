@@ -352,6 +352,15 @@
 
   /* settings rows */
   .srow { display: flex; align-items: center; gap: 12px; padding: 14px; min-height: 56px; }
+  .shr { flex-wrap: wrap; }
+  .shr .lbl { word-break: break-all; }
+  .shr .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
+  .ivchk { display: grid; gap: 5px; margin-top: 8px; font-size: 13px; }
+  .ivchk div { display: flex; gap: 6px; align-items: flex-start; }
+  .ivchk .i { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+  .ivchk .bad { color: var(--remove); }
+  .ivchk .warn { color: var(--moved); }
+  .ivok { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .srow .txt { flex: 1; min-width: 0; }
   .srow .lbl { font-weight: 500; }
   .srow .val { font-size: 13px; color: var(--muted); }
@@ -500,6 +509,8 @@
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></symbol>
   <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4M11 8.5v5M8.5 11h5"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M3.5 6.5l1.5 1.5 3-3M3.5 13.5l1.5 1.5 3-3M11 7h9.5M11 14h9.5M11 20h9.5M5 20h.01"/></symbol>
   <symbol id="i-double" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="12" height="12" rx="2.5"/><path d="M8.5 20.5h9.5a2.5 2.5 0 0 0 2.5-2.5V8.5"/><path d="M6.5 9.5l2 2 4-4"/></symbol>
 </svg>
 
@@ -519,6 +530,7 @@
   <section class="view" id="v-home">
     <div id="undoBox"></div>
     <div id="setupBox"></div>
+    <div id="shareBox"></div>
     <div class="todaycard" id="todayCard"></div>
     <div class="voicecard" id="voiceCard">
       <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
@@ -527,6 +539,10 @@
       </button>
       <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
     </div>
+    <div class="group"><button class="srow" id="ivOpen" type="button">
+      <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
+      <span class="txt"><span class="lbl">Check interviews</span><span class="val" style="display:block">Paste rows from your sheet. Trace checks each one is in your calendar.</span></span>
+      <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button></div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
@@ -555,6 +571,9 @@
 
   <!-- PROJECT EDITOR -->
   <section class="view" id="v-project" hidden></section>
+
+  <!-- INTERVIEW CHECK -->
+  <section class="view" id="v-check" hidden></section>
 </main>
 
 <div class="actionbar" id="actionbar" hidden>
@@ -821,11 +840,11 @@ window.addEventListener('error', () => toast('Something went wrong in the app. R
 /* ───────── navigation ───────── */
 function go(v) {
   view = v;
-  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -844,6 +863,7 @@ async function leaveReview() {
   return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
 }
 $('setBtn').onclick = () => { go('settings'); renderSettings(); };
+$('ivOpen').onclick = () => { go('check'); renderCheck(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
@@ -871,6 +891,7 @@ function renderHome() {
       <button class="btn sm" id="undoBtn">${icon('undo')}Undo</button></div>` : '';
   if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
 
+  renderShareBox();
   $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
 
   renderHist();
@@ -1371,6 +1392,16 @@ async function renderSettings() {
       <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
     </div></div></div>
 
+    <div class="section" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Trace can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
+      <div class="group" id="shareRows">${skelRows(3)}</div>
+      <div class="group"><div class="pad">
+        <label class="f" id="fShEmail"><span>Share busy blocks with</span><input class="in" id="shEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@example.com"><span class="ferr" id="err-shEmail"></span></label>
+        <label class="toggle"><span class="cb"><input type="checkbox" id="shNotify" checked><span class="box">${icon('check')}</span></span><span class="small">Email them a link to add your calendar</span></label>
+        <button class="btn block" id="shAdd" type="button">${icon('shield')}Share busy blocks only</button>
+        <div class="hint">They see when you're busy, with no titles, notes, guests or links, and can send you invites. To give someone more, use Google Calendar.</div>
+      </div></div>
+    </div>
+
     <div class="section"><div class="eyebrow">Appearance</div><div class="group"><div class="pad">
       <div class="seg" role="radiogroup" aria-label="Appearance">${['system', 'light', 'dark'].map(t => `<button type="button" data-theme-pick="${t}" role="radio" aria-pressed="${getTheme() === t}" aria-checked="${getTheme() === t}">${icon(t === 'system' ? 'auto' : t === 'light' ? 'sun' : 'moon')}${t === 'system' ? 'System' : t === 'light' ? 'Light' : 'Dark'}</button>`).join('')}</div>
       <div class="hint">System follows your phone's light or dark mode. Saved on this device and applied straight away.</div>
@@ -1401,6 +1432,10 @@ async function renderSettings() {
   renderKeyBox(false);
   $('sSave').onclick = saveSettings;
   $('tSample').onclick = () => runSample($('tProj').value);
+  $('shAdd').onclick = shareAdd;
+  $('shEmail').onkeydown = e => { if (e.key === 'Enter') shareAdd(); };
+  $('shEmail').oninput = () => { $('err-shEmail').textContent = ''; $('fShEmail').classList.remove('invalid'); };
+  loadSharing();
 
   try {
     const [m, c] = await Promise.all([run('getModelStatus'), cals ? Promise.resolve(cals) : run('listCalendars')]);
@@ -1736,6 +1771,131 @@ function clashesHtml() {
 }
 
 setInterval(() => { if (view === 'home' && ag && agOffset === 0) renderTodayCard(); }, 60000);
+
+/* ───────── who can see your calendar ───────── */
+function renderShareBox() {
+  const sa = S.sharing && S.sharing.alerts;
+  $('shareBox').innerHTML = sa ? `<div class="notice warn">${icon('shield')}<span class="grow"><b>${sa} ${sa === 1 ? 'person or link sees' : 'people or links see'} your meeting details.</b><br>They can read titles, notes and guests${tip('Anyone above "busy blocks only" can read your meetings, and some can edit them. Review who in Settings.')}</span>
+      <button class="btn sm" id="shareFix" type="button">Review</button></div>` : '';
+  if (sa) $('shareFix').onclick = openSharing;
+}
+let shareList = null;
+function openSharing() {
+  go('settings'); renderSettings();
+  setTimeout(() => { const el = $('shareSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+}
+async function loadSharing() {
+  try { applySharing(await run('sharing')); }
+  catch (e) {
+    if (!$('shareRows')) return;
+    $('shareRows').innerHTML = `<div class="empty">Couldn't load who has access. ${esc(errMsg(e))} <button class="btn sm" id="shRetry" type="button">Try again</button></div>`;
+    $('shRetry').onclick = loadSharing;
+  }
+}
+function applySharing(res) {
+  shareList = res;
+  S.sharing = { alerts: res.alerts };
+  renderShareBox();
+  if (view === 'settings' && $('shareRows')) renderShareRows();
+}
+function renderShareRows() {
+  const ppl = shareList.people;
+  $('shareRows').innerHTML = ppl.map(p => `<div class="srow shr">
+      <span class="dot" style="background:var(${p.self ? '--faint' : p.risky ? '--remove' : '--new'})"></span>
+      <span class="txt"><span class="lbl">${esc(p.who)}${p.self ? ' <span class="muted">(you)</span>' : ''}</span>
+        <span class="val" style="display:block">${esc(p.self ? 'Owner' : p.label)}</span></span>
+      ${p.self ? '' : `<span class="acts">
+        ${p.level !== 'busy' ? `<button class="btn sm" type="button" data-shb="${esc(p.id)}">Busy only</button>` : ''}
+        <button class="btn sm ghost" type="button" data-shr="${esc(p.id)}" aria-label="Remove ${esc(p.who)}">${icon('x')}Remove</button></span>`}
+    </div>`).join('') + (ppl.some(p => !p.self) ? '' : `<div class="empty">Nobody else has access.</div>`) +
+    (shareList.alerts ? `<div class="pad"><div class="notice warn">${icon('info')}<span class="grow small">Red means they can read your meetings' titles, notes, guests and links. <b>Busy only</b> hides all of that and still lets them invite you.</span></div></div>` : '');
+  $('shareRows').querySelectorAll('[data-shb]').forEach(b => b.onclick = () => shareChange(b, 'shareMakeBusy', b.dataset.shb));
+  $('shareRows').querySelectorAll('[data-shr]').forEach(b => b.onclick = () => shareChange(b, 'shareRemove', b.dataset.shr));
+}
+async function shareChange(btn, fn, id) {
+  const p = shareList.people.find(x => x.id === id);
+  if (fn === 'shareRemove' && !(await dialog({ title: `Remove ${p ? p.who : 'this person'}?`, body: "They lose all access to your calendar, including busy blocks. Google doesn't tell them. Meetings they invited you to stay.", primary: 'Remove', secondary: 'Cancel', danger: true }))) return;
+  await withBusy(btn, fn === 'shareRemove' ? 'Removing…' : 'Changing…', async () => {
+    try { applySharing(await run(fn, id)); toast(fn === 'shareRemove' ? 'Removed' : `${p ? p.who : 'They'} now sees busy blocks only`, { type: 'ok' }); }
+    catch (e) { showError(e, { retry: () => shareChange(btn, fn, id) }); }
+  });
+}
+async function shareAdd() {
+  const v = $('shEmail').value.trim();
+  if (!/^[^\s@<>(),;:"]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(v)) {
+    $('err-shEmail').textContent = v ? "That doesn't look like an email address." : 'Type an email address first.';
+    $('fShEmail').classList.add('invalid'); $('shEmail').focus(); return;
+  }
+  await withBusy($('shAdd'), 'Sharing…', async () => {
+    try {
+      const res = await run('shareBusy', v, $('shNotify').checked);
+      applySharing(res); $('shEmail').value = '';
+      toast(res.done === 'already' ? `${v} already sees busy blocks only` : res.done === 'lowered' ? `${v} now sees busy blocks only` : `Shared busy blocks with ${v}`, { type: 'ok' });
+    } catch (e) { showError(e); }
+  });
+}
+
+/* ───────── check interviews ───────── */
+let ivRes = null, ivText = '';
+const IV_TZ_KEY = 'trace_iv_tz';
+function renderCheck() {
+  const el = $('v-check');
+  const tz = store.get(IV_TZ_KEY) || 'America/New_York';
+  let html = `<div class="section"><div class="group"><div class="pad">
+      <label class="f"><span>Rows from your sheet${tip('Select the rows in Google Sheets, copy, and paste here. Each row needs a date and a time. Links and names can be in any of the usual columns.')}</span>
+        <textarea class="in" id="ivText" rows="${ivRes ? 3 : 6}" spellcheck="false" placeholder="11/20	2:00 PM	Candidate name	resume link	Company	Role	job link	Interviewer	meeting link">${esc(ivText)}</textarea></label>
+      <label class="f"><span>Times in the sheet are in${tip('Used for rows whose time has no zone. A time like “2:00 PM EST” uses its own zone.')}</span><select class="in" id="ivTz">${tzOptions(tz)}</select></label>
+      <button class="btn ink block" id="ivGo" type="button">${icon('listcheck')}${ivRes ? 'Check again' : 'Check my calendar'}</button>
+      <div class="hint">Read-only: Trace looks, it doesn't change anything.</div>
+    </div></div></div>`;
+  if (ivRes) html += ivResultHtml(ivRes);
+  el.innerHTML = html;
+  $('ivGo').onclick = runCheck;
+  $('ivTz').onchange = () => store.set(IV_TZ_KEY, $('ivTz').value);
+  $('ivText').oninput = () => { ivText = $('ivText').value; };
+}
+async function runCheck() {
+  ivText = $('ivText').value;
+  if (!ivText.trim()) { toast('Paste some rows from your sheet first.'); $('ivText').focus(); return; }
+  const tz = $('ivTz').value;
+  store.set(IV_TZ_KEY, tz);
+  await withBusy($('ivGo'), 'Checking…', async () => {
+    try { ivRes = await run('checkInterviews', { text: ivText, tz }); if (view === 'check') { renderCheck(); const r = $('ivSum'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+    catch (e) { showError(e, { retry: runCheck }); }
+  });
+}
+function ivResultHtml(r) {
+  const home = r.homeTz, n = { ok: 0, issues: 0, missing: 0 };
+  r.rows.forEach(x => n[x.status]++);
+  const zone = tz => tzName(tz).replace(/\s*\(.*\)$/, '');
+  let html = `<div class="section" id="ivSum"><div class="eyebrow">${r.rows.length} row${r.rows.length === 1 ? '' : 's'} checked${r.skipped ? ` · ${r.skipped} skipped${tip('Lines without a date and a time, like the header row, are skipped.')}` : ''}</div>
+    <div class="pills" style="padding:0">${n.ok ? `<span class="pill new">${n.ok} all good</span>` : ''}${n.issues ? `<span class="pill moved">${n.issues} need${n.issues === 1 ? 's' : ''} a look</span>` : ''}${n.missing ? `<span class="pill remove">${n.missing} not in calendar</span>` : ''}</div>`;
+  if (!r.rows.length) html += `<div class="group"><div class="empty">No rows with a date and a time were found. Copy whole rows from the sheet, including the date and time columns.</div></div>`;
+  else html += `<div class="group">${r.rows.map(x => {
+    const w = x.row, head = [w.candidate || 'Row ' + w.line, w.company].filter(Boolean).join(' · ');
+    const when = `${fmtDay(w.start, w.tz)}, ${fmtT(w.start, w.tz)} ${zone(w.tz)}${w.tz !== home ? ` · ${fmtT(w.start, home)} your time${fmtDay(w.start, home) !== fmtDay(w.start, w.tz) ? ' (' + fmtDay(w.start, home) + ')' : ''}` : ''}`;
+    const pill = x.status === 'ok' ? '<span class="pill new">All good</span>' : x.status === 'issues' ? '<span class="pill moved">Check</span>' : '<span class="pill remove">Not in calendar</span>';
+    const okChecks = x.checks.filter(c => c.ok), bad = x.checks.filter(c => !c.ok);
+    return `<div class="row"><div class="txt">
+      <div class="t">${esc(head)}</div>
+      <div class="when tnum">${esc(when)}</div>
+      ${w.role || w.interviewer ? `<div class="was">${esc([w.role, w.interviewer && 'with ' + w.interviewer, w.type].filter(Boolean).join(' · '))}</div>` : ''}
+      ${x.event ? `<div class="src">In calendar: <a href="${esc(x.event.link)}" target="_blank" rel="noopener">${esc(x.event.title)}</a>${x.event.organizer !== 'you' ? ' · invite from ' + esc(x.event.organizer) : ''}</div>` : `<div class="ivchk"><div class="bad">${icon('info')}<span>No meeting for this candidate within a day of this time. Add it, or check the name and date in the sheet.</span></div></div>`}
+      ${bad.length ? `<div class="ivchk">${bad.map(c => `<div class="${c.warn ? 'warn' : 'bad'}">${icon(c.warn ? 'shield' : 'x')}<span><b>${esc(c.label)}:</b> ${esc(c.note)}</span></div>`).join('')}</div>` : ''}
+      ${okChecks.length ? `<div class="ivok">${okChecks.map(c => `<span class="tag ok">${icon('check')}${esc(c.label)}</span>`).join('')}</div>` : ''}
+    </div>${pill}</div>`;
+  }).join('')}</div>`;
+  html += `</div>`;
+  if (r.extra.length) html += `<div class="section"><div class="eyebrow">In your calendar, not in these rows${tip('Interview-like meetings on the same days that no pasted row matched. Maybe a row is missing from the sheet, or you pasted only some rows.')}</div>
+    <div class="group">${r.extra.map(e => `<div class="srow"><span class="txt"><span class="lbl"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.title)}</a></span>
+      <span class="val tnum" style="display:block">${esc(fmtDay(e.start, home))}, ${esc(fmtT(e.start, home))} your time</span></span></div>`).join('')}</div></div>`;
+  html += `<div class="section"><div class="eyebrow">Personal details in meeting notes${tip('Meetings from yesterday to 30 days ahead whose notes mention an SSN, a date of birth or a passport number. Anyone who can see your meeting details can read them.')}</div>
+    ${r.sensitive.length ? `<div class="group">${r.sensitive.map(e => `<div class="srow"><span class="txt"><span class="lbl"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.title)}</a></span>
+      <span class="val tnum" style="display:block">${esc(fmtDay(e.start, home))}, ${esc(fmtT(e.start, home))} · notes include ${esc(e.kinds.join(' and '))}${e.organizer !== 'you' ? ' · from ' + esc(e.organizer) : ''}</span></span><span class="pill moved">${icon('shield')}</span></div>`).join('')}</div>
+      <div class="hint">Ask whoever sent the invite to remove these details, or delete them from the event yourself.</div>`
+    : `<div class="group"><div class="empty">None found. No meeting notes mention an SSN, date of birth or passport number.</div></div>`}</div>`;
+  return html;
+}
 
 /* ───────── voice notes ───────── */
 let vReview = null, rec = null;
