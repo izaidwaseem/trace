@@ -102,7 +102,9 @@
 
   main { max-width: var(--maxw); margin: 0 auto; padding-block: 20px 120px;
     padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
-  .view { display: grid; gap: 20px; }
+  .view { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+  .view > * { min-width: 0; }
+  #voiceCard { margin-bottom: 0; }
   .section { display: grid; gap: 10px; }
   .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .muted { color: var(--muted); }
@@ -353,7 +355,8 @@
   /* settings rows */
   .srow { display: flex; align-items: center; gap: 12px; padding: 14px; min-height: 56px; }
   .shr { flex-wrap: wrap; }
-  .shr .lbl { word-break: break-all; }
+  .srow.shr .txt { flex: 1 1 170px; }
+  .shr .lbl { overflow-wrap: anywhere; }
   .shr .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
   .ivchk { display: grid; gap: 5px; margin-top: 8px; font-size: 13px; }
   .ivchk div { display: flex; gap: 6px; align-items: flex-start; }
@@ -539,10 +542,13 @@
       </button>
       <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
     </div>
-    <div class="group"><button class="srow" id="ivOpen" type="button">
-      <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
-      <span class="txt"><span class="lbl">Check interviews</span><span class="val" style="display:block">Paste rows from your sheet. Trace checks each one is in your calendar.</span></span>
-      <svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></button></div>
+    <div class="voicecard" id="ivCard">
+      <button class="vc-main" id="ivOpen" type="button" aria-label="Check interviews against your calendar">
+        <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
+        <span class="vc-txt"><b>Check interviews</b><span>Paste sheet rows, see if each is in your calendar</span></span>
+      </button>
+      <svg class="i chev" aria-hidden="true" style="flex-shrink:0;margin-right:10px;color:var(--faint)"><use href="#i-chev"/></svg>
+    </div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
@@ -863,7 +869,7 @@ async function leaveReview() {
   return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
 }
 $('setBtn').onclick = () => { go('settings'); renderSettings(); };
-$('ivOpen').onclick = () => { go('check'); renderCheck(); };
+$('ivCard').onclick = () => { go('check'); renderCheck(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
