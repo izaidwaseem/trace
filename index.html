@@ -75,6 +75,10 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.45 var(--font);
     -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  /* Safari sizes a grid's single column to its widest child (buttons don't shrink), so pin columns to the container. */
+  .tc, .section, .pad, .stack, .cl { grid-template-columns: minmax(0, 1fr); }
+  .tc > *, .section > *, .pad > *, .stack > *, .cl > * { min-width: 0; }
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -160,7 +164,7 @@
   .tc-top .grow { flex: 1; min-width: 0; }
   .tc-k { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .tc-next { font-size: 16px; font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tc-when { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tc-when { font-size: 13px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tc-when b { color: var(--fg); font-weight: 600; }
   .tc-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 14px 14px; }
   .tpill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg);
