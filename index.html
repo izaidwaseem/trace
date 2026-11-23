@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '84b7e26261';</script>
+<script>window.TRACE_VER = '75cdb1c06f';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -191,6 +191,14 @@
   .ag-warn { font-size: 13px; color: var(--moved); display: flex; gap: 6px; align-items: flex-start; }
   .ag-warn svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
   .ag .tpill.join { flex-shrink: 0; align-self: center; }
+  .seg2.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tpill[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); }
+  .ivpeople { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 12px; scrollbar-width: none; }
+  .ivpeople::-webkit-scrollbar { display: none; }
+  .ivpeople .tpill { flex-shrink: 0; border: 0; cursor: pointer; font: 500 13px var(--font); }
+  .ivlinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+  .ivlinks .tag { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .ag.dim { opacity: .45; }
   .nowline { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 0; position: relative; z-index: 1; }
   .nowline::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--remove); margin-left: -4px; }
   .nowline::after { content: ""; flex: 1; height: 2px; background: var(--remove); }
@@ -558,9 +566,9 @@
       <div class="group" id="projList"></div>
       <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
       <div class="voicecard" id="ivCard">
-        <button class="vc-main" id="ivOpen" type="button" aria-label="Check interviews against your calendar">
+        <button class="vc-main" id="ivOpen" type="button" aria-label="Interviews">
           <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
-          <span class="vc-txt"><b>Check interviews</b><span>Paste sheet rows, see if each is in your calendar</span></span>
+          <span class="vc-txt"><b>Interviews</b><span id="ivCardSub">Upcoming and completed, clashes, sheet check</span></span>
         </button>
         <svg class="i chev" aria-hidden="true" style="flex-shrink:0;margin-right:10px;color:var(--faint)"><use href="#i-chev"/></svg>
       </div>
@@ -588,6 +596,9 @@
 
   <!-- PROJECT EDITOR -->
   <section class="view" id="v-project" hidden></section>
+
+  <!-- INTERVIEWS -->
+  <section class="view" id="v-iv" hidden></section>
 
   <!-- INTERVIEW CHECK -->
   <section class="view" id="v-check" hidden></section>
@@ -857,11 +868,11 @@ window.addEventListener('error', () => toast('Something went wrong in the app. R
 /* ───────── navigation ───────── */
 function go(v) {
   view = v;
-  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -871,6 +882,7 @@ $('backBtn').onclick = async () => {
   if (view === 'project' && projDirty() && !(await confirmDiscard('Discard changes?', "Your changes to this project haven't been saved.", 'Keep editing'))) return;
   if (view === 'review' && !(await leaveReview())) return;
   if (view === 'voice' && !(await leaveVoice())) return;
+  if (view === 'check') { go('iv'); renderIv(); return; }
   go(view === 'project' ? 'settings' : 'home');
 };
 function confirmDiscard(title, body, keep) { return dialog({ title, body, primary: 'Discard', secondary: keep, danger: true }); }
@@ -880,7 +892,7 @@ async function leaveReview() {
   return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
 }
 $('setBtn').onclick = () => { go('settings'); renderSettings(); };
-$('ivCard').onclick = () => { go('check'); renderCheck(); };
+$('ivCard').onclick = () => { go('iv'); renderIv(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
@@ -915,6 +927,7 @@ function renderHome() {
   renderHist();
   renderTodayCard();
   if (S.settings.hasKey !== undefined && (!ag || agOffset !== 0 || Date.now() - agAt > 60000)) loadToday(0);
+  if (S.settings.hasKey !== undefined) { renderIvCardSub(); loadIv(); }
 }
 
 /* ───────── recent syncs: own scrolling card, grouped by day ───────── */
@@ -2012,6 +2025,107 @@ async function ivCalAdd(email, btn) {
     catch (e) { showError(e); }
   });
 }
+
+/* ───────── interviews: upcoming and completed (read-only) ───────── */
+let ivl = null, ivlAt = 0, ivlLoading = false, ivTab = 'up', ivWho = '';
+async function loadIv(force) {
+  if (ivlLoading || (!force && ivl && Date.now() - ivlAt < 60000)) return;
+  ivlLoading = true;
+  try { ivl = await run('ivList'); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); }
+  catch (e) {
+    if (view === 'iv' && !ivl) {
+      $('v-iv').innerHTML = ivTabsHtml() + `<div class="group"><div class="empty">Couldn't load your interviews. ${esc(errMsg(e))} <button class="btn sm" id="ivlRetry" type="button">Try again</button></div></div>`;
+      bindIvTabs(); $('ivlRetry').onclick = () => { renderIv(); loadIv(true); };
+    } else if (view === 'iv') showError(e, { retry: () => loadIv(true) });
+  } finally { ivlLoading = false; }
+}
+function renderIvCardSub() {
+  const el = $('ivCardSub');
+  if (!el || !ivl) return;
+  const c = ivl.counts, nx = ivl.upcoming.find(x => x.resp !== 'declined');
+  el.textContent = c.upcoming ? [`${c.week} this week`, nx ? 'next ' + fmtDay(nx.start, ivl.homeTz) + ', ' + fmtT(nx.start, ivl.homeTz) : '', c.attention ? `${c.attention} need${c.attention === 1 ? 's' : ''} a look` : ''].filter(Boolean).join(' · ')
+    : 'No interviews in the next 30 days';
+}
+function ivTabsHtml() {
+  const n = ivl ? ivl.counts.upcoming : 0;
+  return `<div class="seg2 three" role="tablist">
+    <button type="button" data-ivtab="up" aria-pressed="${ivTab === 'up'}">Upcoming${n ? ' · ' + n : ''}</button>
+    <button type="button" data-ivtab="done" aria-pressed="${ivTab === 'done'}">Completed</button>
+    <button type="button" data-ivtab="check" aria-pressed="false">Check sheet</button></div>`;
+}
+function bindIvTabs() {
+  $('v-iv').querySelectorAll('[data-ivtab]').forEach(b => b.onclick = () => {
+    if (b.dataset.ivtab === 'check') { go('check'); renderCheck(); return; }
+    ivTab = b.dataset.ivtab; renderIv(); window.scrollTo(0, 0);
+  });
+}
+function renderIv() {
+  const el = $('v-iv');
+  if (!ivl) { el.innerHTML = ivTabsHtml() + `<div class="group">${skelRows(4)}</div>`; bindIvTabs(); loadIv(); return; }
+  if (Date.now() - ivlAt > 60000) loadIv();
+  const tz = ivl.homeTz, now = Date.now(), c = ivl.counts;
+  const list = (ivTab === 'up' ? ivl.upcoming : ivl.done).filter(x => !ivWho || x.who === ivWho);
+  let html = ivTabsHtml();
+  const bad = ivl.busyCals.filter(b => b.error);
+  if (bad.length && ivTab === 'up') html += `<div class="notice warn" style="margin-bottom:12px">${icon('info')}<span class="grow small">${bad.map(b => `<b>${esc(b.name || 'Other calendars')}</b>: ${esc(b.error)}`).join('<br>')}. Busy times there aren't checked.</span><button class="btn sm" id="ivFixCals" type="button">Settings</button></div>`;
+  if (ivTab === 'up') html += `<div class="pills" style="margin-bottom:12px;padding:0">
+      <span class="pill">${c.week} this week</span><span class="pill">${c.upcoming} in ${ivl.days} days</span>
+      ${c.attention ? `<span class="pill moved">${c.attention} need${c.attention === 1 ? 's' : ''} a look</span>` : ''}
+      ${ivl.busyCals.filter(b => !b.error).length ? `<span class="pill">Checks ${esc(ivl.busyCals.filter(b => !b.error).map(b => b.name).join(', '))}${tip('Interviews are also checked against the busy times of the calendars ticked in Settings → Interview calendars.')}</span>` : ''}</div>`;
+  else html += `<div class="pills" style="margin-bottom:12px;padding:0"><span class="pill">${c.done} in the last ${ivl.days} days</span></div>`;
+  if (ivl.people.length) html += `<div class="ivpeople" role="group" aria-label="Show interviews for">
+      <button type="button" class="tpill" data-who="" aria-pressed="${!ivWho}">Everyone</button>
+      ${ivl.people.map(p => `<button type="button" class="tpill" data-who="${esc(p.who)}" aria-pressed="${ivWho === p.who}">${esc(p.who)} · ${p.n}</button>`).join('')}</div>`;
+
+  if (!list.length) {
+    html += ivTab === 'up'
+      ? `<div class="done-hero"><span class="badge">${icon('check')}</span><h2>No interviews coming up</h2><div class="muted">${ivWho ? 'Nothing for ' + esc(ivWho) + ' in the next ' + ivl.days + ' days.' : 'Nothing in the next ' + ivl.days + ' days.'}</div></div>`
+      : `<div class="group"><div class="empty">No interviews in the last ${ivl.days} days${ivWho ? ' for ' + esc(ivWho) : ''}.</div></div>`;
+  } else {
+    let rows = '', lastDay = '';
+    const rel = ms => { const d = fmtDay(ms - 6 * 3600000, tz); return d === fmtDay(now - 6 * 3600000, tz) ? 'Today' : d === fmtDay(now + 18 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 30 * 3600000, tz) ? 'Yesterday' : ''; };
+    list.forEach(x => {
+      const day = fmtDay(x.start - 6 * 3600000, tz);   // a day runs 6 AM to 6 AM, like Today
+      if (day !== lastDay) { lastDay = day; const r = rel(x.start); rows += `<div class="agsec">${esc(r ? r + ' · ' + day : day)}</div>`; }
+      rows += ivRowHtml(x, tz, now);
+    });
+    html += `<div class="group">${rows}</div>`;
+  }
+  html += `<div class="hint">Interviews found in your main calendar over the ${ivTab === 'up' ? 'next' : 'last'} ${ivl.days} days, with copies of the same invite shown once. Times are yours; tap one to open it in Google Calendar. Nothing here changes your calendar.</div>`;
+  el.innerHTML = html;
+  bindIvTabs();
+  el.querySelectorAll('[data-who]').forEach(b => b.onclick = () => { ivWho = b.dataset.who; renderIv(); });
+  if ($('ivFixCals')) $('ivFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s = $('ivCalSec'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
+}
+function ivRowHtml(x, tz, now) {
+  const past = x.end <= now, live = x.start <= now && !past, declined = x.resp === 'declined';
+  const head = [x.who, x.company].filter(Boolean).join(' · ') || x.title;
+  const zone = x.tz && x.tz !== tz && tzOffsetDiffers(x.tz, tz, x.start) ? `${fmtT(x.start, x.tz)} ${tzName(x.tz).replace(/\s*\(.*\)$/, '')}` : '';
+  const sub = [x.role, x.round, x.with ? 'with ' + x.with : '', zone].filter(Boolean).join(' · ');
+  const tags = [];
+  if (live) tags.push(`<span class="tag ok">On now</span>`);
+  if (declined) tags.push(`<span class="tag">Declined</span>`);
+  else if (x.resp === 'needsAction' && !past) tags.push(`<span class="tag warn">Not answered</span>`);
+  else if (x.resp === 'tentative') tags.push(`<span class="tag">Maybe</span>`);
+  if (x.copies > 1) tags.push(`<span class="tag">Listed ${x.copies === 2 ? 'twice' : x.copies + ' times'}</span>`);
+  if (x.sensitive.length) tags.push(`<span class="tag warn">${icon('shield')}Notes have ${esc(x.sensitive.join(' and '))}</span>`);
+  if (!x.join && !past && !declined) tags.push(`<span class="tag">No meeting link</span>`);
+  if (x.job) tags.push(`<a class="tag" href="${esc(x.job)}" target="_blank" rel="noopener">${icon('external')}Job post</a>`);
+  if (x.resume) tags.push(`<a class="tag" href="${esc(x.resume)}" target="_blank" rel="noopener">${icon('external')}Resume</a>`);
+  return `<div class="ag ${declined ? 'dim' : ''} ${x.clashes.length || x.busyOn.length ? 'clash' : ''}">
+    <div class="ag-t tnum">${esc(fmtT(x.start, tz))}<small>${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</small></div>
+    <div class="ag-b">
+      <div class="ag-title"><a href="${esc(x.link || '#')}" target="_blank" rel="noopener" title="${esc(x.title)}">${esc(head)}</a></div>
+      ${sub ? `<div class="ag-sub">${esc(sub)}</div>` : ''}
+      ${head !== x.title && !(x.who && x.title.indexOf(x.who) >= 0 && x.company && x.title.indexOf(x.company) >= 0) ? `<div class="ag-sub" style="color:var(--faint)">${esc(x.title)}</div>` : ''}
+      ${!past ? x.clashes.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, tz))} – ${esc(fmtT(c.end, tz))})</span></div>`).join('') : ''}
+      ${!past ? x.busyOn.map(n => `<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`).join('') : ''}
+      ${tags.length ? `<div class="ivlinks">${tags.join('')}</div>` : ''}
+    </div>
+    ${x.join && !past && !declined ? `<a class="tpill join" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
+  </div>`;
+}
+function tzOffsetDiffers(a, b, ms) { return fmtT(ms, a) !== fmtT(ms, b); }
 
 /* ───────── check interviews ───────── */
 let ivRes = null, ivText = '';
