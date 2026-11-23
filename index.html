@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '69b5c28b1e';</script>
+<script>window.TRACE_VER = '87d0cef73e';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -199,6 +199,14 @@
   .ivlinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
   .ivlinks .tag { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
   .ag.dim { opacity: .45; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+  .slot { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 10px; padding: 6px 10px; text-align: left;
+    font: 600 14px var(--font); color: var(--fg); cursor: pointer; min-width: 92px; }
+  .slot small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+  .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
+  .wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .wdays .tpill { justify-content: center; border: 0; cursor: pointer; font: 600 13px var(--font); padding: 8px 0; }
   .nowline { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 0; position: relative; z-index: 1; }
   .nowline::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--remove); margin-left: -4px; }
   .nowline::after { content: ""; flex: 1; height: 2px; background: var(--remove); }
@@ -2051,16 +2059,16 @@ function ivTabsHtml() {
   return `<div class="seg2 three" role="tablist">
     <button type="button" data-ivtab="up" aria-pressed="${ivTab === 'up'}">Upcoming${n ? ' · ' + n : ''}</button>
     <button type="button" data-ivtab="done" aria-pressed="${ivTab === 'done'}">Completed</button>
-    <button type="button" data-ivtab="check" aria-pressed="false">Check sheet</button></div>`;
+    <button type="button" data-ivtab="find" aria-pressed="${ivTab === 'find'}">Find a time</button></div>`;
 }
 function bindIvTabs() {
   $('v-iv').querySelectorAll('[data-ivtab]').forEach(b => b.onclick = () => {
-    if (b.dataset.ivtab === 'check') { go('check'); renderCheck(); return; }
     ivTab = b.dataset.ivtab; renderIv(); window.scrollTo(0, 0);
   });
 }
 function renderIv() {
   const el = $('v-iv');
+  if (ivTab === 'find') { renderFind(); return; }
   if (!ivl) { el.innerHTML = ivTabsHtml() + `<div class="group">${skelRows(4)}</div>`; bindIvTabs(); loadIv(); return; }
   if (Date.now() - ivlAt > 60000) loadIv();
   const tz = ivl.homeTz, now = Date.now(), c = ivl.counts;
@@ -2092,8 +2100,13 @@ function renderIv() {
     html += `<div class="group">${rows}</div>`;
   }
   html += `<div class="hint">Interviews found in your main calendar over the ${ivTab === 'up' ? 'next' : 'last'} ${ivl.days} days, with copies of the same invite shown once. Times are yours; tap one to open it in Google Calendar. Nothing here changes your calendar.</div>`;
+  html += `<div class="section"><div class="voicecard"><button class="vc-main" id="ivCheckOpen" type="button">
+      <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)">${icon('listcheck')}</span>
+      <span class="vc-txt"><b>Check sheet</b><span>Paste rows from the interview sheet, see if each is in your calendar</span></span></button>
+      ${icon('chev', 'chev')}</div></div>`;
   el.innerHTML = html;
   bindIvTabs();
+  $('ivCheckOpen').onclick = () => { go('check'); renderCheck(); };
   el.querySelectorAll('[data-who]').forEach(b => b.onclick = () => { ivWho = b.dataset.who; renderIv(); });
   if ($('ivFixCals')) $('ivFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s = $('ivCalSec'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
 }
@@ -2126,6 +2139,124 @@ function ivRowHtml(x, tz, now) {
   </div>`;
 }
 function tzOffsetDiffers(a, b, ms) { return fmtT(ms, a) !== fmtT(ms, b); }
+
+/* ───────── find a time (read-only) ───────── */
+const FIND_KEY = 'trace_iv_find';
+const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'], WD_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+let fq = null, fres = null, fpick = {};
+function findPrefs() {
+  if (fq) return fq;
+  let saved = {};
+  try { saved = JSON.parse(store.get(FIND_KEY) || '{}') || {}; } catch (e) {}
+  fq = Object.assign({ mins: 60, tz: 'America/New_York', from: '09:00', to: '17:00', weekdays: [1, 2, 3, 4, 5], mineOn: false, mineFrom: '19:00', mineTo: '03:00', buffer: 15, span: 7 }, saved);
+  fq.start = dayIn(Date.now(), fq.tz);
+  return fq;
+}
+const dayIn = (ms, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+const addDay = (d, n) => { const p = d.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10); };
+const dayLabel = d => { const p = d.split('-').map(Number); return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.UTC(p[0], p[1] - 1, p[2])); };
+const zoneWord = tz => tzName(tz).replace(/\s*\(.*\)$/, '');
+function renderFind() {
+  const el = $('v-iv'), q = findPrefs(), home = S.settings.homeTz;
+  const opt = (arr, val, f) => arr.map(v => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${f(v)}</option>`).join('');
+  let html = ivTabsHtml() + `<div class="group"><div class="pad">
+    <div class="two">
+      <label class="f"><span>Length</span><select class="in" id="fqMins">${opt([30, 45, 60, 90, 120], q.mins, fmtDur)}</select></label>
+      <label class="f"><span>Gap around meetings${tip('Free time kept before and after your other meetings, so an interview never starts right as another ends.')}</span><select class="in" id="fqBuf">${opt([0, 10, 15, 30], q.buffer, v => v ? v + ' min' : 'None')}</select></label>
+    </div>
+    <div class="two">
+      <label class="f"><span>From</span><input class="in" type="date" id="fqStart" value="${esc(q.start)}"></label>
+      <label class="f"><span>For</span><select class="in" id="fqSpan">${opt([1, 3, 7, 14, 21], q.span, v => v === 1 ? '1 day' : v + ' days')}</select></label>
+    </div>
+    <label class="f"><span>Their hours${tip('The hours the interviewer or company can meet, in their time zone. Times are listed in their zone and yours.')}</span><select class="in" id="fqTz">${tzOptions(q.tz)}</select></label>
+    <div class="two">
+      <label class="f"><span>From</span><input class="in" type="time" id="fqFrom" value="${esc(q.from)}" step="900"></label>
+      <label class="f"><span>To</span><input class="in" type="time" id="fqTo" value="${esc(q.to)}" step="900"></label>
+    </div>
+    <div class="wdays" role="group" aria-label="Their weekdays">${WD.map((w, i) => `<button type="button" class="tpill" data-wd="${i}" aria-pressed="${q.weekdays.includes(i)}" aria-label="${WD_LONG[i]}">${w}</button>`).join('')}</div>
+    <label class="toggle"><span class="cb"><input type="checkbox" id="fqMine" ${q.mineOn ? 'checked' : ''}><span class="box">${icon('check')}</span></span><span class="small">Only when I'm free to take it (${esc(zoneWord(home))} time)</span></label>
+    <div class="two" id="fqMineRow" ${q.mineOn ? '' : 'hidden'}>
+      <label class="f"><span>My hours from</span><input class="in" type="time" id="fqMineFrom" value="${esc(q.mineFrom)}" step="900"></label>
+      <label class="f"><span>To</span><input class="in" type="time" id="fqMineTo" value="${esc(q.mineTo)}" step="900"></label>
+    </div>
+    <button class="btn ink block" id="fqGo" type="button">${icon('clock')}${fres ? 'Look again' : 'Find free times'}</button>
+    <div class="hint">Checks your main calendar and the calendars ticked in Settings → Interview calendars. Read-only: nothing is added.</div>
+  </div></div>`;
+  if (fres) html += findResultHtml(fres);
+  el.innerHTML = html;
+  bindIvTabs();
+  const read = () => {
+    q.mins = +$('fqMins').value; q.buffer = +$('fqBuf').value; q.start = $('fqStart').value || dayIn(Date.now(), q.tz); q.span = +$('fqSpan').value;
+    q.tz = $('fqTz').value; q.from = $('fqFrom').value; q.to = $('fqTo').value; q.mineOn = $('fqMine').checked;
+    q.mineFrom = $('fqMineFrom').value; q.mineTo = $('fqMineTo').value;
+    const keep = Object.assign({}, q); delete keep.start;
+    store.set(FIND_KEY, JSON.stringify(keep));
+  };
+  el.querySelectorAll('[data-wd]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.wd; q.weekdays = q.weekdays.includes(i) ? q.weekdays.filter(x => x !== i) : q.weekdays.concat(i).sort();
+    b.setAttribute('aria-pressed', q.weekdays.includes(i)); read();
+  });
+  $('fqMine').onchange = () => { $('fqMineRow').hidden = !$('fqMine').checked; read(); };
+  el.querySelectorAll('#v-iv select, #v-iv input').forEach(x => { if (!x.dataset.wd) x.addEventListener('change', read); });
+  $('fqGo').onclick = () => { read(); runFind(); };
+  el.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => {
+    const k = b.dataset.slot; if (fpick[k]) delete fpick[k]; else fpick[k] = true;
+    b.setAttribute('aria-pressed', !!fpick[k]); updateCopyBtn();
+  });
+  if ($('fqCopy')) $('fqCopy').onclick = copySlots;
+  if ($('fqFixCals')) $('fqFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s2 = $('ivCalSec'); if (s2) s2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
+}
+async function runFind() {
+  const q = fq;
+  if (!q.weekdays.length) { toast('Pick at least one weekday.'); return; }
+  if (!q.from || !q.to) { toast('Set their hours first.'); return; }
+  await withBusy($('fqGo'), 'Looking…', async () => {
+    try {
+      fres = await run('ivSlots', { mins: q.mins, buffer: q.buffer, tz: q.tz, from: q.from, to: q.to, weekdays: q.weekdays,
+        fromDay: q.start, toDay: addDay(q.start, q.span - 1), mine: q.mineOn ? { from: q.mineFrom, to: q.mineTo } : null, step: 30, lead: 60 });
+      fpick = {};
+      if (view === 'iv' && ivTab === 'find') { renderFind(); const r = $('fqSum'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    } catch (e) { showError(e, { retry: runFind }); }
+  });
+}
+function findResultHtml(r) {
+  const home = r.homeTz, tz = r.tz, same = tz === home;
+  const bad = r.cals.filter(c => c.error);
+  let html = `<div class="section" id="fqSum"><div class="pills" style="padding:0;margin-bottom:12px">
+      <span class="pill ${r.count ? 'new' : ''}">${r.count}${r.truncated ? '+' : ''} start time${r.count === 1 ? '' : 's'}</span>
+      <span class="pill">${esc(fmtDur(r.mins))}${r.buffer ? ' · ' + r.buffer + ' min gap' : ''}</span>
+      <span class="pill">Checked: ${esc(r.cals.filter(c => !c.error).map(c => c.name).join(', '))}</span></div>`;
+  if (bad.length) html += `<div class="notice warn" style="margin-bottom:12px">${icon('info')}<span class="grow small">${bad.map(c => `<b>${esc(c.name)}</b>: ${esc(c.error)}`).join('<br>')}. Their busy times weren't checked.</span><button class="btn sm" id="fqFixCals" type="button">Settings</button></div>`;
+  if (!r.days.length) return html + `<div class="group"><div class="empty">No free ${esc(fmtDur(r.mins))} slot in those hours. Try more days, a shorter length, a smaller gap or wider hours.</div></div></div>`;
+  html += `<div class="group">${r.days.map(d => `<div class="agsec">${esc(dayLabel(d.day))}${same ? '' : ' · ' + esc(zoneWord(tz)) + ' day'}</div>
+    <div class="slots">${d.slots.map(x => `<button type="button" class="slot tnum" data-slot="${x.start}" aria-pressed="${!!fpick[x.start]}">${esc(fmtT(x.start, tz))}${same ? '' : `<small>${esc(fmtT(x.start, home))}${fmtDay(x.start, home) !== dayLabel(d.day) ? ' ' + esc(fmtDay(x.start, home).split(',')[0]) : ''} you</small>`}</button>`).join('')}</div>`).join('')}</div>
+    <div class="stack" style="margin-top:12px"><button class="btn block" id="fqCopy" type="button">${icon('listcheck')}<span id="fqCopyTxt">Copy all as text</span></button></div>
+    <div class="hint">${same ? '' : `Big times are ${esc(zoneWord(tz))}, small ones are yours. `}Tap times to pick a few, then copy them to send to the recruiter. Scheduling from here comes next.</div></div>`;
+  return html;
+}
+function updateCopyBtn() {
+  const n = Object.keys(fpick).length;
+  if ($('fqCopyTxt')) $('fqCopyTxt').textContent = n ? `Copy ${n} picked time${n === 1 ? '' : 's'}` : 'Copy all as text';
+}
+async function copySlots() {
+  const r = fres, tz = r.tz, home = r.homeTz, same = tz === home;
+  const picked = Object.keys(fpick).length;
+  const lines = [];
+  r.days.forEach(d => {
+    const ss = d.slots.filter(x => !picked || fpick[x.start]);
+    if (!ss.length) return;
+    const t = ss.map(x => `${fmtT(x.start, tz)} – ${fmtT(x.end, tz)}`).join(', ');
+    lines.push(`${dayLabel(d.day)}: ${t} ${tzAbbr(tz, ss[0].start)}` + (same ? '' : ` (${ss.map(x => fmtT(x.start, home)).join(', ')} ${zoneWord(home)} time)`));
+  });
+  const text = lines.join('\n');
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); let ok2 = false; try { ok2 = document.execCommand('copy'); } catch (x) {} ta.remove();
+    if (!ok2) { dialog({ title: 'Copy these times', body: text, primary: 'Done' }); return; }
+  }
+  toast(`Copied ${picked || r.count} time${(picked || r.count) === 1 ? '' : 's'}`, { type: 'ok' });
+}
 
 /* ───────── check interviews ───────── */
 let ivRes = null, ivText = '';
