@@ -368,6 +368,11 @@
   .ivchk .bad { color: var(--remove); }
   .ivchk .warn { color: var(--moved); }
   .ivok { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .qrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .qrow .grow { flex: 1 1 180px; min-width: 0; }
+  .qrow .acts { display: flex; gap: 6px; margin-left: auto; }
+  #queueBox { display: grid; gap: 10px; }
+  #queueBox:empty { display: none; }
   .srow .txt { flex: 1; min-width: 0; }
   .srow .lbl { font-weight: 500; }
   .srow .val { font-size: 13px; color: var(--muted); }
@@ -536,6 +541,7 @@
     <span class="grow">You're offline. Trace needs a connection to read photos and update your calendar.</span></div>
   <section class="view" id="v-home">
     <div id="undoBox"></div>
+    <div id="queueBox"></div>
     <div id="setupBox"></div>
     <div id="shareBox"></div>
     <div class="todaycard" id="todayCard"></div>
@@ -688,7 +694,7 @@ function callServer(fn, args, ok, fail) {
     .catch(fail);
 }
 function run(fn, ...args) {
-  const limit = fn === 'analyze' ? 150000 : 60000;
+  const limit = ['analyze', 'processQueue', 'queueScan', 'queueResult'].includes(fn) ? 150000 : 60000;
   return new Promise((res, rej) => {
     if (navigator.onLine === false) return rej(mkErr('offline', "You're offline. Check your connection, then try again."));
     let done = false;
@@ -902,6 +908,7 @@ function renderHome() {
   if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
 
   renderShareBox();
+  renderQueue();
   $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
 
   renderHist();
@@ -1031,8 +1038,8 @@ async function analyzeNow() {
   progress(true, 1);
   try {
     const dc = prof(selId) && prof(selId).doubleCheck;
-    progress(true, 1, dc ? 'Two AI models are reading it at the same time. Usually about 10 seconds.' : 'Usually about 10 seconds.');
-    slowT = setTimeout(() => progress(true, 2, 'Taking longer than usual. Busy AI models are skipped automatically; this can take up to a minute.'), 9000);
+    progress(true, 1, dc ? 'Two AI models are reading it at the same time. Usually 15–30 seconds.' : 'Usually 15–30 seconds.');
+    slowT = setTimeout(() => progress(true, 2, 'Taking longer than usual. Busy AI models are skipped automatically; if they all are, Trace saves the photo and keeps trying.'), 35000);
     review = await run('analyze', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
     review.photos = images.map(i => i.src);
     prepReview();
@@ -1043,8 +1050,19 @@ async function analyzeNow() {
   } catch (e) {
     clearTimeout(slowT);
     progress(false);
+    if (['busy', 'paused', 'timeout', 'google'].includes(parseErr(e).code) && images.length && await queueForLater(e)) return;
     showError(e, { retry: analyzeNow });
   }
+}
+/** Every model busy: save the photo on the server and let it retry. False if that didn't work either. */
+async function queueForLater(e) {
+  const p = prof(selId);
+  try {
+    S.queue = await run('queueScan', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
+  } catch (err) { return false; }
+  renderQueue(); startQueuePoll();
+  dialog({ tone: 'warn', title: 'Saved to try again', body: `The AI models are busy right now, so Trace kept your ${p ? p.project : ''} photo and will keep trying every 5 minutes${S.queueBackground ? ', even with the app closed' : ' while Trace is open'}. It shows on the home screen when it's ready to review. Nothing changes in your calendar until you tap Apply.`, primary: 'OK' });
+  return true;
 }
 function prepReview() {
     review.editing = null;
@@ -1327,7 +1345,7 @@ $('abSecondary').onclick = async () => {
 $('abPrimary').onclick = () => view === 'voice' ? applyVoiceNow() : applyNow();
 async function applyNow() {
   const actions = pendingActions();
-  if (!actions.length) { review = null; go('home'); return; }
+  if (!actions.length) { dropQueued(); review = null; go('home'); return; }
   $('abSecondary').disabled = true;
   await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
     try {
@@ -1335,6 +1353,7 @@ async function applyNow() {
       lastResult = await run('applyChanges', { profileId: review.profileId, range: review.range ? review.range.label : '',
         rangeStart: review.range ? review.range.start : '', actions: clean,
         model: review.doubleCheck && review.doubleCheck.models ? review.doubleCheck.models.join(' + ') : (review.model || '') });
+      if (review.queueId) { try { await run('queueDrop', review.queueId); } catch (e) { /* it expires anyway */ } }
       try { S = await run('getState'); } catch (e) { /* done screen still works */ }
       renderDone();
       go('done');
@@ -1785,6 +1804,72 @@ function clashesHtml() {
 
 setInterval(() => { if (view === 'home' && ag && agOffset === 0) renderTodayCard(); }, 60000);
 
+/* ───────── photos waiting for a free AI model ───────── */
+let qPollT = null, qSeenReady = {};
+function renderQueue() {
+  const box = $('queueBox');
+  if (!box) return;
+  const q = S.queue || [];
+  box.innerHTML = q.map(j => {
+    const p = prof(j.profileId), name = p ? p.project : j.code;
+    if (j.status === 'ready') return `<div class="notice">${icon('check')}<div class="qrow grow"><span class="grow"><b>${esc(name)} photo is ready to review</b><br>
+        <span class="small muted">Read ${esc(ago(j.finished || j.created))}${j.found ? ' · ' + (j.found.items ? j.found.items + ' change' + (j.found.items > 1 ? 's' : '') + ' to check' : 'nothing new') : ''}</span></span>
+        <span class="acts"><button class="btn sm ink" type="button" data-qopen="${esc(j.id)}">Review</button><button class="btn sm ghost" type="button" data-qdrop="${esc(j.id)}" aria-label="Dismiss">${icon('x')}</button></span></div></div>`;
+    if (j.status === 'failed') return `<div class="notice warn">${icon('info')}<div class="qrow grow"><span class="grow"><b>${esc(name)} photo couldn't be read</b><br>
+        <span class="small">${esc(j.lastError || 'Take the photo again.')}</span></span>
+        <span class="acts"><button class="btn sm ghost" type="button" data-qdrop="${esc(j.id)}" aria-label="Dismiss">${icon('x')}</button></span></div></div>`;
+    const mins = Math.max(0, Math.round((j.nextTry - Date.now()) / 60000));
+    return `<div class="notice warn">${icon('clock')}<div class="qrow grow"><span class="grow"><b>${esc(name)} photo: waiting for a free AI model</b><br>
+        <span class="small">Saved ${esc(ago(j.created))}${j.tries ? ' · tried ' + j.tries + ' time' + (j.tries > 1 ? 's' : '') : ''} · next try ${mins ? 'in ' + mins + ' min' : 'soon'}${S.queueBackground ? '' : ' (while Trace is open)'}</span></span>
+        <span class="acts"><button class="btn sm" type="button" data-qnow="${esc(j.id)}">Try now</button><button class="btn sm ghost" type="button" data-qdrop="${esc(j.id)}" aria-label="Stop trying">${icon('x')}</button></span></div></div>`;
+  }).join('');
+  box.querySelectorAll('[data-qopen]').forEach(b => b.onclick = () => openQueued(b.dataset.qopen, b));
+  box.querySelectorAll('[data-qnow]').forEach(b => b.onclick = () => withBusy(b, 'Reading…', async () => {
+    try { S.queue = await run('processQueue', b.dataset.qnow); renderQueue(); queueNotice(); }
+    catch (e) { showError(e); }
+  }));
+  box.querySelectorAll('[data-qdrop]').forEach(b => b.onclick = () => withBusy(b, '', async () => {
+    try { S.queue = await run('queueDrop', b.dataset.qdrop); renderQueue(); } catch (e) { showError(e); }
+  }));
+}
+/** A job finished while you were looking: say so once. */
+function queueNotice() {
+  (S.queue || []).forEach(j => {
+    if (j.status !== 'ready' || qSeenReady[j.id]) return;
+    qSeenReady[j.id] = 1;
+    const p = prof(j.profileId);
+    toast(`${p ? p.project : j.code} photo is ready to review`, { type: 'ok', action: { label: 'Review', fn: () => openQueued(j.id) } });
+  });
+}
+/** While a photo is waiting: nudge the queue every minute (the server only retries when it's due). */
+function startQueuePoll() {
+  clearInterval(qPollT);
+  if (!(S.queue || []).some(j => j.status === 'waiting')) return;
+  qPollT = setInterval(async () => {
+    if (document.hidden || view !== 'home') return;
+    try { S.queue = await run('processQueue'); renderQueue(); queueNotice(); } catch (e) { /* next minute */ }
+    if (!(S.queue || []).some(j => j.status === 'waiting')) clearInterval(qPollT);
+  }, 60000);
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden || !(S.queue || []).length) return;
+  try { S.queue = await run('processQueue'); renderQueue(); queueNotice(); startQueuePoll(); } catch (e) { /* ignore */ }
+});
+async function openQueued(id, btn) {
+  const go2 = async () => {
+    try {
+      const res = await run('queueResult', id);
+      selId = res.profileId;
+      review = res;
+      review.photos = (res.images || []).map(i => `data:${i.mime};base64,${i.data}`);
+      delete review.images;
+      prepReview(); renderReview(); go('review');
+    } catch (e) { showError(e); }
+  };
+  if (btn) await withBusy(btn, 'Opening…', go2); else await go2();
+}
+function dropQueued() { if (review && review.queueId) run('queueDrop', review.queueId).then(q => { S.queue = q; }).catch(() => {}); }
+
 /* ───────── who can see your calendar ───────── */
 function renderShareBox() {
   const sa = S.sharing && S.sharing.alerts;
@@ -2177,7 +2262,7 @@ async function init() {
   $('projList').innerHTML = skelRows(3);
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
-  try { S = await run('getState'); renderHome(); loadToday(0); }
+  try { S = await run('getState'); renderHome(); loadToday(0); queueNotice(); if ((S.queue || []).some(j => j.status === 'waiting')) { startQueuePoll(); run('processQueue').then(q => { S.queue = q; renderQueue(); queueNotice(); }).catch(() => {}); } }
   catch (e) {
     $('projList').innerHTML = `<div class="empty">Couldn't load your projects.</div>`;
     $('hist').innerHTML = '';
