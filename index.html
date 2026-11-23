@@ -715,7 +715,7 @@ const errMsg = e => parseErr(e).msg;
 const ERR_UI = {
   offline: ['No internet connection', 'Try again', 'warn'], timeout: ['That took too long', 'Try again', 'warn'],
   auth: ['Sign in again', 'Reload app', 'err'], busy: ['AI models are busy', 'Try again', 'warn'],
-  paused: ['AI models paused for today', 'See model status', 'warn'], key: ['Gemini key problem', 'Open settings', 'err'],
+  paused: ['AI models paused for today', 'See model status', 'warn'], key: ['Gemini key problem', 'Open settings', 'err'], credit: ['Gemini credit used up', null, 'err'],
   ai: ["Couldn't read the photo", 'Try again', 'warn'], google: ['Temporary Google problem', 'Try again', 'warn'],
   project: ['Project not found', 'Reload app', 'err'], locked: ['Link is missing its key', null, 'err'], photo: ['No photo', null, 'warn'], undo: ['Nothing to undo', null, 'warn'],
   form: ['Check the form', null, 'warn'], other: ['Something went wrong', 'Try again', 'err'] };
