@@ -1190,6 +1190,7 @@ function rowHtml(it, g) {
   if (it.weeklyFrom && it.weekly && !it.ignore) tags.push(T('ok', 'repeat', 'Weekly', 'Seen at the same time last week, so it will be added as a weekly series.'));
   if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
   if (it.kind === 'mine') tags.push(T('', '', it.seriesId ? 'Yours · repeats' : 'Yours', "You added this meeting yourself. Trace removes it only if it's ticked, and Undo brings it back."));
+  if (it.kind === 'canceled' && it.own) tags.push(T('', '', it.seriesId ? 'Yours · this day only' : 'Yours', it.seriesId ? 'You added this repeating meeting yourself. Only this day is removed; the other weeks stay. Undo brings it back.' : "You added this meeting yourself. Undo brings it back."));
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
     const opt = (o, i) => { const w2 = when(o, r.homeTz); return `<button type="button" class="choice" data-pick="${i}" data-i="${it.idx}" aria-pressed="${it.pick === i}">
@@ -1303,6 +1304,7 @@ function pendingActions() {
     if (!it.sel) return;
     if (it.kind === 'new') out.push({ action: 'add', item: it });
     else if (it.kind === 'moved' || it.kind === 'changed') out.push({ action: 'update', item: it });
+    else if (it.kind === 'canceled' && it.own) out.push({ action: 'deleteOwn', item: it });
     else if (it.kind === 'missing' || it.kind === 'canceled') out.push({ action: 'delete', item: it });
     else if (it.kind === 'mine') out.push({ action: 'deleteOwn', item: it });
   });
