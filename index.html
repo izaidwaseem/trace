@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'ac9d700fcc';</script>
+<script>window.TRACE_VER = 'a304fcf8ec';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2136,6 +2136,7 @@ function ivRowHtml(x, tz, now) {
   else if (x.resp === 'needsAction' && !past) tags.push(`<span class="tag warn">Not answered</span>`);
   else if (x.resp === 'tentative') tags.push(`<span class="tag">Maybe</span>`);
   if (x.copies > 1) tags.push(`<span class="tag">Listed ${x.copies === 2 ? 'twice' : x.copies + ' times'}</span>`);
+  if ((x.alsoOn || []).length) tags.push(`<span class="tag">Also on ${esc(x.alsoOn.join(' and '))}'s calendar</span>`);
   if (x.sensitive.length) tags.push(`<span class="tag warn">${icon('shield')}Notes have ${esc(x.sensitive.join(' and '))}</span>`);
   if (!x.join && !past && !declined) tags.push(`<span class="tag">No meeting link</span>`);
   if (x.job) tags.push(`<a class="tag" href="${esc(x.job)}" target="_blank" rel="noopener">${icon('external')}Job post</a>`);
