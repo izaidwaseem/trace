@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '8fa2b3c291';</script>
+<script>window.TRACE_VER = 'ac9d700fcc';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -205,6 +205,9 @@
   .slot small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
+  .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .ivrev { display: grid; gap: 8px; }
+  .ivrev .big { font-size: 17px; font-weight: 600; }
   .wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .wdays .tpill { justify-content: center; border: 0; cursor: pointer; font: 600 13px var(--font); padding: 8px 0; }
   .nowline { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 0; position: relative; z-index: 1; }
@@ -608,6 +611,9 @@
   <!-- INTERVIEWS -->
   <section class="view" id="v-iv" hidden></section>
 
+  <!-- INTERVIEW FORM -->
+  <section class="view" id="v-ivform" hidden></section>
+
   <!-- INTERVIEW CHECK -->
   <section class="view" id="v-check" hidden></section>
 </main>
@@ -876,11 +882,11 @@ window.addEventListener('error', () => toast('Something went wrong in the app. R
 /* ───────── navigation ───────── */
 function go(v) {
   view = v;
-  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv', 'ivform'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -890,7 +896,7 @@ $('backBtn').onclick = async () => {
   if (view === 'project' && projDirty() && !(await confirmDiscard('Discard changes?', "Your changes to this project haven't been saved.", 'Keep editing'))) return;
   if (view === 'review' && !(await leaveReview())) return;
   if (view === 'voice' && !(await leaveVoice())) return;
-  if (view === 'check') { go('iv'); renderIv(); return; }
+  if (view === 'check' || view === 'ivform') { go('iv'); renderIv(); return; }
   go(view === 'project' ? 'settings' : 'home');
 };
 function confirmDiscard(title, body, keep) { return dialog({ title, body, primary: 'Discard', secondary: keep, danger: true }); }
@@ -924,7 +930,7 @@ function renderHome() {
   $('projList').querySelectorAll('[data-up]').forEach(b => b.onclick = () => { selId = b.dataset.up; $('upIn').click(); });
 
   const u = S.undo;
-  $('undoBox').innerHTML = u ? `<div class="notice"><span class="grow">Last sync <b>${esc(u.code)}</b> · ${esc(u.when)}${tip('Undo reverses your last Apply for 24 hours: added events are removed, moved ones go back to their old time, removed ones come back.')}<br>${countsHtml(u.added, u.updated, u.removed)}</span>
+  $('undoBox').innerHTML = u ? `<div class="notice"><span class="grow">${u.code === 'IV' ? 'Last change <b>Interview</b>' : `Last sync <b>${esc(u.code)}</b>`} · ${esc(u.when)}${tip('Undo reverses your last Apply for 24 hours: added events are removed, moved ones go back to their old time, removed ones come back.')}<br>${countsHtml(u.added, u.updated, u.removed)}</span>
       <button class="btn sm" id="undoBtn">${icon('undo')}Undo</button></div>` : '';
   if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
 
@@ -964,6 +970,7 @@ function histRow(h, H, timeFmt) {
   const range = h.range || '';
   const isUndo = /^Undo of /.test(range);
   const isVoice = h.voice || /^Voice: /.test(range);
+  const isIv = h.iv || /^Interview: /.test(range);
   let title, kind;
   if (isUndo) {
     const w = range.slice(8);
@@ -973,13 +980,17 @@ function histRow(h, H, timeFmt) {
   } else if (isVoice) {
     title = '“' + range.replace(/^Voice: /, '') + '”';
     kind = 'Voice note';
+  } else if (isIv) {
+    const t = range.replace(/^Interview: /, '');
+    title = t.charAt(0).toUpperCase() + t.slice(1);
+    kind = 'Interview';
   } else {
     title = range || 'Sync';
     kind = 'Photo';
   }
   const undone = h.undone || H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when);   // older entries
   const canUndo = !undone && !isUndo && (h.batch || h.added > 0);
-  const ico = isUndo ? 'undo' : isVoice ? 'mic' : 'camera';
+  const ico = isUndo ? 'undo' : isVoice ? 'mic' : isIv ? 'listcheck' : 'camera';
   return `<div class="act ${isUndo ? 'is-undo' : ''} ${undone ? 'is-undone' : ''}">
     ${chip(p || { code: h.code === 'VOICE' ? 'MIX' : h.code }, true)}
     <div class="txt"><div class="ht">${esc(title)}</div>
@@ -996,7 +1007,7 @@ async function undoHistory(ts, btn) {
   const p = S.profiles.find(x => x.code === h.code);
   const what = [h.added && `remove the ${h.added} event${h.added === 1 ? '' : 's'} it added`, h.updated && `move ${h.updated} back`,
     h.removed && `put ${h.removed} back`].filter(Boolean).join(', ');
-  const ok = await dialog({ title: `Undo ${p ? p.name : h.code} sync?`, body: `${h.range || 'Sync'} (${h.when}). This will ${what || 'reverse it'} in your Google Calendar.`,
+  const ok = await dialog({ title: h.iv ? 'Undo this interview change?' : `Undo ${p ? p.name : h.code} sync?`, body: `${h.range || 'Sync'} (${h.when}). This will ${what || 'reverse it'} in your Google Calendar.`,
     primary: 'Undo sync', secondary: 'Cancel', danger: true });
   if (!ok) return;
   await withBusy(btn, 'Undoing…', async () => {
@@ -2076,6 +2087,7 @@ function renderIv() {
   let html = ivTabsHtml();
   const bad = ivl.busyCals.filter(b => b.error);
   if (bad.length && ivTab === 'up') html += `<div class="notice warn" style="margin-bottom:12px">${icon('info')}<span class="grow small">${bad.map(b => `<b>${esc(b.name || 'Other calendars')}</b>: ${esc(b.error)}`).join('<br>')}. Busy times there aren't checked.</span><button class="btn sm" id="ivFixCals" type="button">Settings</button></div>`;
+  if (ivTab === 'up') html += `<button class="btn ink block" id="ivNew" type="button" style="margin-bottom:12px">${icon('plus')}Schedule an interview</button>`;
   if (ivTab === 'up') html += `<div class="pills" style="margin-bottom:12px;padding:0">
       <span class="pill">${c.week} this week</span><span class="pill">${c.upcoming} in ${ivl.days} days</span>
       ${c.attention ? `<span class="pill moved">${c.attention} need${c.attention === 1 ? 's' : ''} a look</span>` : ''}
@@ -2107,6 +2119,9 @@ function renderIv() {
   el.innerHTML = html;
   bindIvTabs();
   $('ivCheckOpen').onclick = () => { go('check'); renderCheck(); };
+  if ($('ivNew')) $('ivNew').onclick = () => openIvForm(null);
+  el.querySelectorAll('[data-ivedit]').forEach(b => b.onclick = () => openIvForm(ivl.upcoming.find(x => x.id === b.dataset.ivedit)));
+  el.querySelectorAll('[data-ivcancel]').forEach(b => b.onclick = () => cancelIv(ivl.upcoming.find(x => x.id === b.dataset.ivcancel), b));
   el.querySelectorAll('[data-who]').forEach(b => b.onclick = () => { ivWho = b.dataset.who; renderIv(); });
   if ($('ivFixCals')) $('ivFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s = $('ivCalSec'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
 }
@@ -2134,11 +2149,135 @@ function ivRowHtml(x, tz, now) {
       ${!past ? x.clashes.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, tz))} – ${esc(fmtT(c.end, tz))})</span></div>`).join('') : ''}
       ${!past ? x.busyOn.map(n => `<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`).join('') : ''}
       ${tags.length ? `<div class="ivlinks">${tags.join('')}</div>` : ''}
+      ${!past && !declined ? (x.editKind ? `<div class="ivacts">
+          <button class="btn sm ghost" type="button" data-ivedit="${esc(x.id)}">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
+          <button class="btn sm ghost" type="button" data-ivcancel="${esc(x.id)}">${icon('x')}Cancel</button></div>`
+        : `<div class="ag-sub" style="color:var(--faint)">Read-only${tip(x.why || "Trace can't change this one.")}</div>`) : ''}
     </div>
     ${x.join && !past && !declined ? `<a class="tpill join" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
   </div>`;
 }
 function tzOffsetDiffers(a, b, ms) { return fmtT(ms, a) !== fmtT(ms, b); }
+
+/* ───────── schedule / edit / move / cancel ───────── */
+let ivf = null, ivfRev = null;
+const ROUNDS = ['Intro', 'Phone', 'Screen', '1st round', '2nd round', '3rd round', 'Technical', 'Final'];
+/** x: an interview from the list (edit/move), or null (new). slot: { start, tz, mins } from Find a time. */
+function openIvForm(x, slot) {
+  const fqp = findPrefs();
+  const tz = slot ? slot.tz : x ? (x.tz || S.settings.homeTz) : fqp.tz;
+  const start = slot ? slot.start : x ? x.start : null;
+  ivf = { id: x ? x.editIds[0] : '', ids: x ? x.editIds : [], timeOnly: !!(x && x.editKind === 'own'), title: x ? x.title : '',
+    tz, date: start ? dayIn(start, tz) : dayIn(Date.now() + 864e5, tz), time: start ? localTime(start, tz) : '10:00',
+    mins: slot ? slot.mins : x ? Math.round((x.end - x.start) / 60000) : fqp.mins,
+    who: x ? x.who : '', company: x ? x.company : '', role: x ? x.role : '', round: x ? x.round : '', with: x ? x.with : '',
+    join: x ? x.join : '', job: x ? x.job : '', resume: x ? x.resume : '', notes: x ? x.notes || '' : '' };
+  ivfRev = null;
+  go('ivform'); renderIvForm();
+}
+function renderIvForm() {
+  const f = ivf, el = $('v-ivform'), home = S.settings.homeTz;
+  const people = (ivl ? ivl.people.map(p => p.who) : []).filter(w => /^[A-Z][a-z]+$/.test(w));
+  const lens = [30, 45, 60, 90, 120].concat([30, 45, 60, 90, 120].includes(+f.mins) ? [] : [+f.mins]).sort((a, b) => a - b);
+  const field = (k, label, ph, extra) => `<label class="f"><span>${label}</span><input class="in" data-f="${k}" value="${esc(f[k])}" placeholder="${esc(ph || '')}" autocomplete="off" ${extra || ''}></label>`;
+  el.innerHTML = `<div class="group"><div class="pad">
+    ${f.timeOnly ? `<div class="notice">${icon('info')}<span class="grow small"><b>${esc(f.title)}</b><br>You made this one yourself, so Trace only changes its time. The title and notes stay as you wrote them.</span></div>` : `
+    ${field('who', 'Who it’s for', 'e.g. Zaid, or the candidate’s name', 'list="ivWhoList"')}
+    <datalist id="ivWhoList">${people.map(w => `<option value="${esc(w)}">`).join('')}</datalist>
+    <div class="two">${field('company', 'Company', 'e.g. Geico')}${field('round', 'Round', 'e.g. 2nd round', 'list="ivRoundList"')}</div>
+    <datalist id="ivRoundList">${ROUNDS.map(r => `<option value="${esc(r)}">`).join('')}</datalist>
+    <div class="two">${field('role', 'Role', 'e.g. Senior Engineer')}${field('with', 'Interviewer', 'Name')}</div>`}
+    <div class="two">
+      <label class="f"><span>Day</span><input class="in" type="date" data-f="date" value="${esc(f.date)}"></label>
+      <label class="f"><span>Start</span><input class="in" type="time" data-f="time" value="${esc(f.time)}" step="300"></label>
+    </div>
+    <div class="two">
+      <label class="f"><span>Length</span><select class="in" data-f="mins">${lens.map(m => `<option value="${m}" ${+m === +f.mins ? 'selected' : ''}>${fmtDur(m)}</option>`).join('')}</select></label>
+      <label class="f"><span>Time zone${tip('The zone the day and start time are in, usually the company’s. The event shows at the right time for you.')}</span><select class="in" data-f="tz">${tzOptions(f.tz)}</select></label>
+    </div>
+    <div class="hint" id="ivfYour"></div>
+    ${f.timeOnly ? '' : `
+    ${field('join', 'Meeting link', 'https://zoom.us/j/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}
+    <div class="two">${field('job', 'Job post', 'https://…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}${field('resume', 'Resume', 'https://…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}</div>
+    <label class="f"><span>Notes</span><textarea class="in" data-f="notes" rows="3" placeholder="Anything to remember. Avoid SSNs and dates of birth.">${esc(f.notes)}</textarea></label>`}
+    <button class="btn ink block" id="ivfCheck" type="button">${icon('listcheck')}Check and review</button>
+    <div class="hint">Saved in your main calendar. Nobody is invited and no emails are sent.</div>
+  </div></div>
+  <div id="ivfRev"></div>`;
+  const yours = () => {
+    const el2 = $('ivfYour'); if (!el2) return;
+    if (!f.date || !f.time || f.tz === home) { el2.textContent = ''; return; }
+    const ms = zoned(f.date, f.time, f.tz);
+    el2.textContent = `That's ${fmtDay(ms, home)}, ${fmtT(ms, home)} your time.`;
+  };
+  el.querySelectorAll('[data-f]').forEach(inp => {
+    const upd = () => { f[inp.dataset.f] = inp.value; yours(); if (ivfRev) { ivfRev = null; $('ivfRev').innerHTML = ''; } };
+    inp.addEventListener('input', upd); inp.addEventListener('change', upd);
+  });
+  yours();
+  $('ivfCheck').onclick = checkIvForm;
+}
+function ivfReq(check) {
+  const f = ivf;
+  return { id: f.id || undefined, check, date: f.date, time: f.time, mins: +f.mins, tz: f.tz, who: f.who, company: f.company, role: f.role,
+    round: f.round, with: f.with, join: f.join.trim(), job: f.job.trim(), resume: f.resume.trim(), notes: f.notes };
+}
+async function checkIvForm() {
+  const f = ivf;
+  if (!f.timeOnly && !f.who.trim() && !f.company.trim() && !f.role.trim()) { toast('Add who it’s for, or the company.'); const i = document.querySelector('[data-f="who"]'); if (i) i.focus(); return; }
+  if (!f.date || !f.time) { toast('Pick the day and start time.'); return; }
+  const bad = ['join', 'job', 'resume'].find(k => f[k].trim() && !/^https?:\/\/\S+$/i.test(f[k].trim()));
+  if (bad) { toast('Links must start with https://'); document.querySelector(`[data-f="${bad}"]`).focus(); return; }
+  await withBusy($('ivfCheck'), 'Checking…', async () => {
+    try { ivfRev = await run('ivSave', ivfReq(true)); renderIvRev(); const r = $('ivfRev'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    catch (e) { showError(e, { retry: checkIvForm }); }
+  });
+}
+function renderIvRev() {
+  const r = ivfRev, home = r.homeTz, tz = r.tz;
+  const when = (a, b) => `${fmtDay(a, tz)}, ${fmtT(a, tz)} – ${fmtT(b, tz)} ${zoneWord(tz)}` + (tz !== home ? ` · ${fmtDay(a, home)}, ${fmtT(a, home)} your time` : '');
+  const warn = [];
+  if (r.past) warn.push(`<div class="ag-warn">${icon('info')}<span>This time has already passed.</span></div>`);
+  r.clashes.forEach(c => warn.push(`<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, home))} – ${esc(fmtT(c.end, home))} your time)</span></div>`));
+  r.busyOn.forEach(n => warn.push(`<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`));
+  r.calErrors.forEach(c => warn.push(`<div class="ag-sub">${esc(c.name)}'s busy times weren't checked: ${esc(c.error)}</div>`));
+  $('ivfRev').innerHTML = `<div class="section"><div class="eyebrow">Review</div><div class="group"><div class="pad ivrev">
+      <div class="big">${esc(r.title)}</div>
+      ${r.before ? `<div class="ag-sub">Now: ${esc(when(r.before.start, r.before.end))}</div><div><b>${r.timeOnly ? 'Moves to' : 'New time'}:</b> ${esc(when(r.start, r.end))}</div>` : `<div>${esc(when(r.start, r.end))}</div>`}
+      <div class="ag-sub">In ${esc(r.calendar)} · nobody is invited, no emails</div>
+      ${warn.length ? warn.join('') : `<div class="ag-sub" style="color:var(--new)">${icon('check')} No clashes${r.calErrors.length ? ' in the calendars Trace could read' : ''}</div>`}
+      <button class="btn ink block" id="ivfSave" type="button">${icon('check')}${r.mode === 'new' ? 'Save to calendar' : 'Save the change'}</button>
+    </div></div></div>`;
+  $('ivfSave').onclick = saveIvForm;
+}
+async function saveIvForm() {
+  await withBusy($('ivfSave'), 'Saving…', async () => {
+    try {
+      const res = await run('ivSave', ivfReq(false));
+      afterIvChange(res.added ? 'Interview saved to your calendar' : 'Interview moved');
+    } catch (e) { showError(e, { retry: saveIvForm }); }
+  });
+}
+async function cancelIv(x, btn) {
+  if (!x) return;
+  const tz = S.settings.homeTz;
+  const ok = await dialog({ title: 'Cancel this interview?', danger: true, primary: 'Cancel interview', secondary: 'Keep it',
+    body: `${[x.who, x.company].filter(Boolean).join(' · ') || x.title}, ${fmtDay(x.start, tz)} ${fmtT(x.start, tz)}. It's removed from your calendar${x.copies > x.editIds.length ? ' (the invite someone else sent stays)' : ''}. Nobody is emailed. You can undo it from Recents.` });
+  if (!ok) return;
+  await withBusy(btn, 'Cancelling…', async () => {
+    try { await run('ivCancel', { ids: x.editIds }); afterIvChange('Interview cancelled'); }
+    catch (e) { showError(e); }
+  });
+}
+async function afterIvChange(msg) {
+  ivf = null; ivfRev = null; ivTab = 'up';
+  try { S = await run('getState'); } catch (e) {}
+  go('iv'); ivl = null; renderIv(); loadIv(true);
+  toast(msg, { type: 'ok', action: { label: 'Undo', fn: async () => {
+    try { await run('undoLast'); toast('Undone', { type: 'ok' }); try { S = await run('getState'); } catch (e) {} ivl = null; if (view === 'iv') { renderIv(); loadIv(true); } }
+    catch (e) { showError(e); }
+  } } });
+}
 
 /* ───────── find a time (read-only) ───────── */
 const FIND_KEY = 'trace_iv_find';
@@ -2204,6 +2343,7 @@ function renderFind() {
     b.setAttribute('aria-pressed', !!fpick[k]); updateCopyBtn();
   });
   if ($('fqCopy')) $('fqCopy').onclick = copySlots;
+  updateCopyBtn();
   if ($('fqFixCals')) $('fqFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s2 = $('ivCalSec'); if (s2) s2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
 }
 async function runFind() {
@@ -2230,13 +2370,19 @@ function findResultHtml(r) {
   if (!r.days.length) return html + `<div class="group"><div class="empty">No free ${esc(fmtDur(r.mins))} slot in those hours. Try more days, a shorter length, a smaller gap or wider hours.</div></div></div>`;
   html += `<div class="group">${r.days.map(d => `<div class="agsec">${esc(dayLabel(d.day))}${same ? '' : ' · ' + esc(zoneWord(tz)) + ' day'}</div>
     <div class="slots">${d.slots.map(x => `<button type="button" class="slot tnum" data-slot="${x.start}" aria-pressed="${!!fpick[x.start]}">${esc(fmtT(x.start, tz))}${same ? '' : `<small>${esc(fmtT(x.start, home))}${fmtDay(x.start, home) !== dayLabel(d.day) ? ' ' + esc(fmtDay(x.start, home).split(',')[0]) : ''} you</small>`}</button>`).join('')}</div>`).join('')}</div>
-    <div class="stack" style="margin-top:12px"><button class="btn block" id="fqCopy" type="button">${icon('listcheck')}<span id="fqCopyTxt">Copy all as text</span></button></div>
-    <div class="hint">${same ? '' : `Big times are ${esc(zoneWord(tz))}, small ones are yours. `}Tap times to pick a few, then copy them to send to the recruiter. Scheduling from here comes next.</div></div>`;
+    <div class="stack" style="margin-top:12px"><button class="btn ink block" id="fqSched" type="button" hidden>${icon('plus')}<span id="fqSchedTxt">Schedule</span></button>
+      <button class="btn block" id="fqCopy" type="button">${icon('listcheck')}<span id="fqCopyTxt">Copy all as text</span></button></div>
+    <div class="hint">${same ? '' : `Big times are ${esc(zoneWord(tz))}, small ones are yours. `}Tap times to pick a few and copy them for the recruiter, or pick one and schedule it.</div></div>`;
   return html;
 }
 function updateCopyBtn() {
-  const n = Object.keys(fpick).length;
+  const keys = Object.keys(fpick), n = keys.length;
   if ($('fqCopyTxt')) $('fqCopyTxt').textContent = n ? `Copy ${n} picked time${n === 1 ? '' : 's'}` : 'Copy all as text';
+  if ($('fqSched')) {
+    $('fqSched').hidden = n !== 1;
+    if (n === 1) { const t = +keys[0]; $('fqSchedTxt').textContent = `Schedule at ${fmtDay(t, fres.tz)}, ${fmtT(t, fres.tz)}`;
+      $('fqSched').onclick = () => openIvForm(null, { start: t, tz: fres.tz, mins: fres.mins }); }
+  }
 }
 async function copySlots() {
   const r = fres, tz = r.tz, home = r.homeTz, same = tz === home;
