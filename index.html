@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '87d0cef73e';</script>
+<script>window.TRACE_VER = '8fa2b3c291';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2241,12 +2241,14 @@ function updateCopyBtn() {
 async function copySlots() {
   const r = fres, tz = r.tz, home = r.homeTz, same = tz === home;
   const picked = Object.keys(fpick).length;
-  const lines = [];
+  const span = (a, b, z) => `${fmtT(a, z)} – ${fmtT(b, z)}`;
+  const lines = [picked ? `Times for a ${fmtDur(r.mins)} interview:` : `Free for a ${fmtDur(r.mins)} interview (any start within these times):`];
   r.days.forEach(d => {
-    const ss = d.slots.filter(x => !picked || fpick[x.start]);
-    if (!ss.length) return;
-    const t = ss.map(x => `${fmtT(x.start, tz)} – ${fmtT(x.end, tz)}`).join(', ');
-    lines.push(`${dayLabel(d.day)}: ${t} ${tzAbbr(tz, ss[0].start)}` + (same ? '' : ` (${ss.map(x => fmtT(x.start, home)).join(', ')} ${zoneWord(home)} time)`));
+    let parts = d.slots.filter(x => !picked || fpick[x.start]).map(x => ({ start: x.start, end: x.end }));
+    if (!parts.length) return;
+    if (!picked) parts = parts.reduce((acc, x) => { const l = acc[acc.length - 1]; if (l && x.start <= l.end) l.end = Math.max(l.end, x.end); else acc.push(Object.assign({}, x)); return acc; }, []);
+    lines.push(`${dayLabel(d.day)}: ${parts.map(x => span(x.start, x.end, tz)).join(', ')} ${tzAbbr(tz, parts[0].start)}` +
+      (same ? '' : ` (${parts.map(x => span(x.start, x.end, home)).join(', ')} ${zoneWord(home)} time)`));
   });
   const text = lines.join('\n');
   try { await navigator.clipboard.writeText(text); }
@@ -2255,7 +2257,7 @@ async function copySlots() {
     document.body.appendChild(ta); ta.select(); let ok2 = false; try { ok2 = document.execCommand('copy'); } catch (x) {} ta.remove();
     if (!ok2) { dialog({ title: 'Copy these times', body: text, primary: 'Done' }); return; }
   }
-  toast(`Copied ${picked || r.count} time${(picked || r.count) === 1 ? '' : 's'}`, { type: 'ok' });
+  toast(picked ? `Copied ${picked} time${picked === 1 ? '' : 's'}` : 'Copied the free times', { type: 'ok' });
 }
 
 /* ───────── check interviews ───────── */
