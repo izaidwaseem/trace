@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '675b041852';</script>
+<script>window.TRACE_VER = 'dda20e7fb3';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -206,6 +206,19 @@
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .hs-people { display: grid; gap: 8px; }
+  .hs-p { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
+  .hs-p:hover { border-color: var(--line-strong); }
+  .hs-av { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--ink-fg); background: var(--ink); flex: none; }
+  .hs-p .t { flex: 1; min-width: 0; }
+  .hs-p .t b { display: block; }
+  .hs-p .t span { font-size: 13px; color: var(--muted); }
+  .hs-prev { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 3px; background: var(--surface-2); }
+  .hs-prev b { font-size: 16px; }
+  .hs-prev span { font-size: 13px; color: var(--muted); }
+  .hs-chk { display: grid; gap: 8px; font-size: 14px; }
+  .hs-chk div { display: flex; gap: 8px; align-items: flex-start; }
+  .hs-chk .i { width: 17px; height: 17px; flex: none; margin-top: 1px; }
   .ivrev { display: grid; gap: 8px; }
   .ivrev .big { font-size: 17px; font-weight: 600; }
   .wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
@@ -542,6 +555,7 @@
   <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4M11 8.5v5M8.5 11h5"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21.5 2.5 10.6 13.4M21.5 2.5l-7 19-3.9-8.1-8.1-3.9z"/></symbol>
   <symbol id="i-listcheck" viewBox="0 0 24 24"><path d="M3.5 6.5l1.5 1.5 3-3M3.5 13.5l1.5 1.5 3-3M11 7h9.5M11 14h9.5M11 20h9.5M5 20h.01"/></symbol>
   <symbol id="i-double" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="12" height="12" rx="2.5"/><path d="M8.5 20.5h9.5a2.5 2.5 0 0 0 2.5-2.5V8.5"/><path d="M6.5 9.5l2 2 4-4"/></symbol>
 </svg>
@@ -650,6 +664,10 @@
     <div class="hint" id="recHint">Say the project, the meeting, the day and the time. You can add, move or cancel several meetings in one go.</div>
     <div class="two"><button class="btn" id="recCancel" type="button">Cancel</button><button class="btn ink" id="recDone" type="button">Done</button></div>
   </div>
+</div>
+
+<div class="sheet-wrap" id="handSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hsTitle" id="hsBody" style="max-height:90vh;overflow-y:auto"></div>
 </div>
 
 <div class="sheet-wrap" id="typer" hidden>
@@ -2209,6 +2227,7 @@ function renderIv() {
   if ($('ivNew')) $('ivNew').onclick = () => openIvForm(null);
   el.querySelectorAll('[data-ivedit]').forEach(b => b.onclick = () => openIvForm(ivl.upcoming.find(x => x.id === b.dataset.ivedit)));
   el.querySelectorAll('[data-ivcancel]').forEach(b => b.onclick = () => cancelIv(ivl.upcoming.find(x => x.id === b.dataset.ivcancel), b));
+  el.querySelectorAll('[data-ivhand]').forEach(b => b.onclick = () => openHand(ivl.upcoming.find(x => x.id === b.dataset.ivhand)));
   el.querySelectorAll('[data-who]').forEach(b => b.onclick = () => { ivWho = b.dataset.who; renderIv(); });
   if ($('ivFixCals')) $('ivFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s = $('ivCalSec'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
 }
@@ -2224,6 +2243,7 @@ function ivRowHtml(x, tz, now) {
   else if (x.resp === 'tentative') tags.push(`<span class="tag">Maybe</span>`);
   if (x.copies > 1) tags.push(`<span class="tag">Listed ${x.copies === 2 ? 'twice' : x.copies + ' times'}</span>`);
   if ((x.alsoOn || []).length) tags.push(`<span class="tag">Also on ${esc(x.alsoOn.join(' and '))}'s calendar</span>`);
+  if (x.handed) tags.unshift(`<span class="tag ok">${icon('send')}Handed to ${esc(x.handed.name)}${x.handed.mode === 'invite' ? ' · ' + ({ accepted: 'accepted', declined: 'declined', tentative: 'maybe' }[x.handed.resp] || 'not answered yet') : ''}</span>`);
   if (x.sensitive.length) tags.push(`<span class="tag warn">${icon('shield')}Notes have ${esc(x.sensitive.join(' and '))}</span>`);
   if (!x.join && !past && !declined) tags.push(`<span class="tag">No meeting link</span>`);
   if (x.job) tags.push(`<a class="tag" href="${esc(x.job)}" target="_blank" rel="noopener">${icon('external')}Job post</a>`);
@@ -2237,10 +2257,12 @@ function ivRowHtml(x, tz, now) {
       ${!past ? x.clashes.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, tz))} – ${esc(fmtT(c.end, tz))})</span></div>`).join('') : ''}
       ${!past ? x.busyOn.map(n => `<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`).join('') : ''}
       ${tags.length ? `<div class="ivlinks">${tags.join('')}</div>` : ''}
-      ${!past && !declined ? (x.editKind ? `<div class="ivacts">
-          <button class="btn sm ghost" type="button" data-ivedit="${esc(x.id)}">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
-          <button class="btn sm ghost" type="button" data-ivcancel="${esc(x.id)}">${icon('x')}Cancel</button></div>`
-        : `<div class="ag-sub" style="color:var(--faint)">Read-only${tip(x.why || "Relay can't change this one.")}</div>`) : ''}
+      ${!past && !declined && x.handed ? `<div class="ag-sub" style="color:var(--faint)">To take it back, use Undo in Recents.</div>` : ''}
+      ${!past && !declined && !x.handed ? `<div class="ivacts">
+          <button class="btn sm ghost" type="button" data-ivhand="${esc(x.id)}">${icon('send')}Hand over</button>
+          ${x.editKind ? `<button class="btn sm ghost" type="button" data-ivedit="${esc(x.id)}">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
+          <button class="btn sm ghost" type="button" data-ivcancel="${esc(x.id)}">${icon('x')}Cancel</button>`
+          : `<span class="ag-sub" style="color:var(--faint);align-self:center">Can't move or cancel${tip(x.why || "Relay can't change this one.")}</span>`}</div>` : ''}
     </div>
     ${x.join && !past && !declined ? `<a class="tpill join" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
   </div>`;
@@ -2365,6 +2387,66 @@ async function afterIvChange(msg) {
     try { await run('undoLast'); toast('Undone', { type: 'ok' }); try { S = await run('getState'); } catch (e) {} ivl = null; if (view === 'iv') { renderIv(); loadIv(true); } }
     catch (e) { showError(e); }
   } } });
+}
+
+/* ───────── hand over an interview ───────── */
+let hsIv = null;
+function closeHand() { $('handSheet').hidden = true; hsIv = null; }
+$('handSheet').addEventListener('click', e => { if (e.target === $('handSheet')) closeHand(); });
+async function openHand(x) {
+  if (!x) return;
+  hsIv = x;
+  const tz = S.settings.homeTz;
+  const head = `<h2 id="hsTitle">Hand over</h2>
+    <div class="small"><b>${esc([x.who, x.company].filter(Boolean).join(' · ') || x.title)}</b><br><span class="muted">${esc(fmtDay(x.start, tz))}, ${esc(fmtT(x.start, tz))} your time · ${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</span></div>`;
+  $('hsBody').innerHTML = head + skelRows(3);
+  $('handSheet').hidden = false;
+  try { if (!ivCals) ivCals = await run('ivCalendars'); }
+  catch (e) { $('hsBody').innerHTML = head + `<div class="empty">Couldn't load the team's calendars. ${esc(errMsg(e))}</div><button class="btn block" type="button" id="hsClose">Close</button>`; $('hsClose').onclick = closeHand; return; }
+  if (hsIv !== x) return;
+  const people = ivCals.cals.filter(c => c.person && !c.main);
+  $('hsBody').innerHTML = head + `<div class="hs-people">${people.map(c => `<button type="button" class="hs-p" data-to="${esc(c.email)}">
+      <span class="hs-av">${esc(c.person[0])}</span>
+      <span class="t"><b>${esc(c.person)}</b><span>${c.level === 'edit' || c.level === 'owner' ? 'Goes straight onto their calendar' : 'Sent as an invite from you (no email)'}</span></span>${icon('chev', 'chev')}</button>`).join('')}</div>
+    <button class="btn block" type="button" id="hsClose">Cancel</button>`;
+  $('hsClose').onclick = closeHand;
+  $('hsBody').querySelectorAll('[data-to]').forEach(b => b.onclick = () => reviewHand(x, b.dataset.to, b));
+}
+async function reviewHand(x, to, btn) {
+  let r;
+  await withBusy(btn, 'Checking…', async () => {
+    try { r = await run('ivHand', { ids: x.ids, to, check: true }); } catch (e) { showError(e); }
+  });
+  if (!r || hsIv !== x) return;
+  const tz = r.homeTz, theirs = r.tz;
+  const when = `${fmtDay(r.start, tz)}, ${fmtT(r.start, tz)} – ${fmtT(r.end, tz)} your time` + (theirs && theirs !== tz ? ` · ${fmtT(r.start, theirs)} ${zoneWord(theirs)}` : '');
+  const how = r.mode === 'direct'
+    ? `${icon('check')}<span>Goes straight onto ${esc(r.name)}’s calendar as their own event${r.via ? ` (through ${esc(r.viaName)}’s account)` : ''}.</span>`
+    : `${icon('send')}<span>${esc(r.name)} hasn’t given edit access, so it goes as an invite from you. Google adds it to their calendar; no email is sent.</span>`;
+  const busy = r.busy === false ? `${icon('check')}<span>${esc(r.name)} is free then.</span>`
+    : r.busy && r.busy.unknown ? `${icon('info')}<span>Couldn’t check whether ${esc(r.name)} is free.</span>`
+    : `${icon('clash')}<span>${esc(r.name)} is busy ${esc(fmtT(r.busy.start, tz))} – ${esc(fmtT(r.busy.end, tz))}. You can still hand it over.</span>`;
+  $('hsBody').innerHTML = `<h2 id="hsTitle">Hand over to ${esc(r.name)}?</h2>
+    <div class="hs-chk">
+      <div style="color:var(--${r.busy && !r.busy.unknown ? 'moved' : 'fg'})">${busy}</div>
+      <div>${how}</div>
+      <div>${icon('shield')}<span>Clean copy: who sent it to you, the original guests and notes aren’t included.</span></div>
+      <div>${icon('undo')}<span>Yours stays, marked “Handed to ${esc(r.name)}”, and stops blocking your time. Undo takes it all back.</span></div>
+    </div>
+    <div class="eyebrow">What ${esc(r.name)} sees</div>
+    <div class="hs-prev"><b>${esc(r.title)}</b><span class="tnum">${esc(when)}</span>${r.lines.map(l => `<span>${esc(l.length > 70 ? l.slice(0, 68) + '…' : l)}</span>`).join('')}</div>
+    <div class="two"><button class="btn" type="button" id="hsBack">Back</button><button class="btn ink" type="button" id="hsGo">${icon('send')}Hand over</button></div>`;
+  $('hsBack').onclick = () => openHand(x);
+  $('hsGo').onclick = () => doHand(x, to);
+}
+async function doHand(x, to) {
+  await withBusy($('hsGo'), 'Handing over…', async () => {
+    try {
+      const res = await run('ivHand', { ids: x.ids, to });
+      closeHand();
+      afterIvChange(`Handed to ${res.name}${res.mode === 'invite' ? ' as an invite' : ''}`);
+    } catch (e) { showError(e); }
+  });
 }
 
 /* ───────── find a time (read-only) ───────── */
