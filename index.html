@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'a304fcf8ec';</script>
+<script>window.TRACE_VER = '2129a5234d';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -974,8 +974,8 @@ function histRow(h, H, timeFmt) {
   let title, kind;
   if (isUndo) {
     const w = range.slice(8);
-    const o = H.find(x => x.code === h.code && x.when === w && !/^Undo of /.test(x.range || ''));
-    title = 'Undid ' + (o ? (o.voice || /^Voice: /.test(o.range || '') ? 'voice note' : o.range) : 'sync from ' + w);
+    const o = h.of ? H.find(x => x.ts === h.of) : H.find(x => x.code === h.code && x.when === w && !/^Undo of /.test(x.range || ''));
+    title = 'Undid ' + (o ? (o.voice || /^Voice: /.test(o.range || '') ? 'voice note' : String(o.range || '').replace(/^Interview: /, '')) : 'sync from ' + w);
     kind = 'Undo';
   } else if (isVoice) {
     title = '“' + range.replace(/^Voice: /, '') + '”';
@@ -988,7 +988,7 @@ function histRow(h, H, timeFmt) {
     title = range || 'Sync';
     kind = 'Photo';
   }
-  const undone = h.undone || H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when);   // older entries
+  const undone = h.undone || (!h.batch && H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when));   // older entries without undo flags
   const canUndo = !undone && !isUndo && (h.batch || h.added > 0);
   const ico = isUndo ? 'undo' : isVoice ? 'mic' : isIv ? 'listcheck' : 'camera';
   return `<div class="act ${isUndo ? 'is-undo' : ''} ${undone ? 'is-undone' : ''}">
