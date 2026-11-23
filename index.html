@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '23a077e9f8';</script>
+<script>window.TRACE_VER = '84b7e26261';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -1425,6 +1425,15 @@ async function renderSettings() {
       <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
     </div></div></div>
 
+    <div class="section" id="ivCalSec"><div class="eyebrow">Interview calendars${tip('Interviews are saved in your main calendar. Ticked calendars also count when Trace looks for free times, so an interview never lands on a busy time in any of them. Trace only reads their busy times.')}</div>
+      <div class="group" id="ivCalRows">${skelRows(2)}</div>
+      <div class="group"><div class="pad">
+        <label class="f" id="fIvCal"><span>Add a calendar shared with you</span><input class="in" id="ivCalEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@gmail.com"><span class="ferr" id="err-ivCalEmail"></span></label>
+        <button class="btn block" id="ivCalAddBtn" type="button">${icon('plus')}Add calendar</button>
+        <div class="hint">They share it with your Google account first. "See only free/busy" is enough for finding times.</div>
+      </div></div>
+    </div>
+
     <div class="section" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Trace can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
       <div class="group" id="shareRows">${skelRows(3)}</div>
       <div class="group"><div class="pad">
@@ -1469,6 +1478,10 @@ async function renderSettings() {
   $('shEmail').onkeydown = e => { if (e.key === 'Enter') shareAdd(); };
   $('shEmail').oninput = () => { $('err-shEmail').textContent = ''; $('fShEmail').classList.remove('invalid'); };
   loadSharing();
+  loadIvCals();
+  $('ivCalAddBtn').onclick = ivCalAdd;
+  $('ivCalEmail').onkeydown = e => { if (e.key === 'Enter') ivCalAdd(); };
+  $('ivCalEmail').oninput = () => { $('err-ivCalEmail').textContent = ''; $('fIvCal').classList.remove('invalid'); };
 
   try {
     const [m, c] = await Promise.all([run('getModelStatus'), cals ? Promise.resolve(cals) : run('listCalendars')]);
@@ -1945,6 +1958,58 @@ async function shareAdd() {
       applySharing(res); $('shEmail').value = '';
       toast(res.done === 'already' ? `${v} already sees busy blocks only` : res.done === 'lowered' ? `${v} now sees busy blocks only` : `Shared busy blocks with ${v}`, { type: 'ok' });
     } catch (e) { showError(e); }
+  });
+}
+
+/* ───────── interview calendars (Settings) ───────── */
+let ivCals = null;
+const busyTxt = m => m == null ? '' : m < 60 ? `${m} min busy` : `${Math.round(m / 6) / 10} h busy`;
+async function loadIvCals() {
+  try { ivCals = await run('ivCalendars'); if (view === 'settings' && $('ivCalRows')) renderIvCals(); }
+  catch (e) {
+    if (!$('ivCalRows')) return;
+    $('ivCalRows').innerHTML = `<div class="empty">Couldn't load your calendars. ${esc(errMsg(e))} <button class="btn sm" id="ivCalRetry" type="button">Try again</button></div>`;
+    $('ivCalRetry').onclick = loadIvCals;
+  }
+}
+function renderIvCals() {
+  const r = ivCals, days = r.days;
+  const rows = r.cals.map(c => {
+    const val = c.main ? 'Interviews are saved here · always counts'
+      : c.error ? c.error
+      : [c.label, c.avail && c.busyMins != null ? busyTxt(c.busyMins) + ` in the next ${days} days` : ''].filter(Boolean).join(' · ');
+    return `<div class="srow">
+      <span class="dot" style="background:${c.error ? 'var(--remove)' : esc(c.color || 'var(--faint)')}"></span>
+      <span class="txt"><span class="lbl">${esc(c.name)}</span>
+        <span class="val" style="display:block${c.error ? ';color:var(--remove)' : ''}">${esc(val)}</span></span>
+      <label class="cb" title="${c.main ? 'Your main calendar always counts' : 'Count for free times'}"><input type="checkbox" data-ivc="${esc(c.id)}" ${c.avail ? 'checked' : ''} ${c.main ? 'disabled' : ''} aria-label="Count ${esc(c.name)} when finding free times"><span class="box">${icon('check')}</span></label>
+    </div>`;
+  }).join('');
+  const miss = r.missing.map(m => m.reachable
+    ? `<div class="srow"><span class="dot" style="background:var(--moved)"></span><span class="txt"><span class="lbl">${esc(m.who)} · ${esc(m.email)}</span>
+        <span class="val" style="display:block">Busy times readable (${esc(busyTxt(m.busyMins))} in the next ${days} days), but not in your calendar list yet</span></span>
+        <button class="btn sm" type="button" data-ivadd="${esc(m.email)}">${icon('plus')}Add</button></div>`
+    : `<div class="pad"><div class="notice warn">${icon('info')}<span class="grow small"><b>${esc(m.who)}'s calendar isn't shared with you yet.</b><br>
+        ${esc(m.who)} opens Google Calendar → Settings → <b>${esc(m.email)}</b> → Share with specific people → adds <b>${esc(r.account || 'your Google account')}</b> with <b>See only free/busy</b>. Then tap <b>Add</b> here.</span>
+        <button class="btn sm" type="button" data-ivadd="${esc(m.email)}">Add</button></div></div>`).join('');
+  $('ivCalRows').innerHTML = rows + miss;
+  $('ivCalRows').querySelectorAll('[data-ivc]').forEach(b => b.onchange = () => ivCalToggle(b));
+  $('ivCalRows').querySelectorAll('[data-ivadd]').forEach(b => b.onclick = () => ivCalAdd(b.dataset.ivadd, b));
+}
+async function ivCalToggle(box) {
+  box.disabled = true;
+  try { ivCals = await run('ivCalSet', box.dataset.ivc, box.checked); renderIvCals(); }
+  catch (e) { box.checked = !box.checked; box.disabled = false; showError(e); }
+}
+async function ivCalAdd(email, btn) {
+  const v = typeof email === 'string' ? email : $('ivCalEmail').value.trim();
+  if (!/^[^\s@<>(),;:"]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/.test(v)) {
+    $('err-ivCalEmail').textContent = v ? "That doesn't look like a calendar address." : 'Type the calendar address first.';
+    $('fIvCal').classList.add('invalid'); $('ivCalEmail').focus(); return;
+  }
+  await withBusy(btn || $('ivCalAddBtn'), 'Adding…', async () => {
+    try { ivCals = await run('ivCalAdd', v); if ($('ivCalEmail')) $('ivCalEmail').value = ''; renderIvCals(); toast(`Added ${v}. It now counts for free times.`, { type: 'ok' }); }
+    catch (e) { showError(e); }
   });
 }
 
