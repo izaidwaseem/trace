@@ -108,7 +108,7 @@
     padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
   .view { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
   .view > * { min-width: 0; }
-  #voiceCard { margin-bottom: 0; }
+  #ivCard { margin: 6px 0 0; }
   .section { display: grid; gap: 10px; }
   .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .muted { color: var(--muted); }
@@ -483,7 +483,7 @@
   @media (min-width: 900px) {
     :root { --maxw: 1040px; }
     #v-home { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
-    #v-home > #undoBox, #v-home > #setupBox, #v-home > #voiceCard, #v-home > #todayCard { grid-column: 1 / -1; }
+    #v-home > #undoBox, #v-home > #queueBox, #v-home > #setupBox, #v-home > #shareBox, #v-home > #voiceCard, #v-home > #todayCard { grid-column: 1 / -1; }
     #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
     .rv-side { position: sticky; top: 88px; }
     #v-settings, #v-project { display: block; columns: 2; column-gap: 32px; }
@@ -552,17 +552,17 @@
       </button>
       <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
     </div>
-    <div class="voicecard" id="ivCard">
-      <button class="vc-main" id="ivOpen" type="button" aria-label="Check interviews against your calendar">
-        <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
-        <span class="vc-txt"><b>Check interviews</b><span>Paste sheet rows, see if each is in your calendar</span></span>
-      </button>
-      <svg class="i chev" aria-hidden="true" style="flex-shrink:0;margin-right:10px;color:var(--faint)"><use href="#i-chev"/></svg>
-    </div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
       <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
+      <div class="voicecard" id="ivCard">
+        <button class="vc-main" id="ivOpen" type="button" aria-label="Check interviews against your calendar">
+          <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
+          <span class="vc-txt"><b>Check interviews</b><span>Paste sheet rows, see if each is in your calendar</span></span>
+        </button>
+        <svg class="i chev" aria-hidden="true" style="flex-shrink:0;margin-right:10px;color:var(--faint)"><use href="#i-chev"/></svg>
+      </div>
     </div>
     <div class="section">
       <div class="eyebrow">Recent <span class="cnt" id="histCnt"></span></div>
