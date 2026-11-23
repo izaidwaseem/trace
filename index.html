@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '6561ab2515';</script>
+<script>window.TRACE_VER = '979474bb4b';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Trace">
+<meta name="apple-mobile-web-app-title" content="Relay">
 <script>
 /* Top bar matches the chosen appearance: dark → content runs under the status bar (white clock),
    light → a light bar with a dark clock, so it stays readable. */
@@ -24,7 +24,7 @@
 <script>window.TRACE_API = 'https://script.google.com/macros/s/AKfycbwo94tGPvYWtSZ5lLfPP6W6AuoF75sUwdEzHuf3yibsyBs3Wu1t9k-nVeo9R9gFKuBc7A/exec';</script>
 <base target="_top">
 <meta charset="utf-8">
-<title>Trace</title>
+<title>Relay</title>
 <script>
   /* Appearance (System / Light / Dark) is saved on this device. Applied before the page draws, so there is no flash. */
   (function () {
@@ -549,8 +549,17 @@
 <header id="hdr">
   <div class="bar-in">
     <button class="iconbtn" id="backBtn" aria-label="Back" hidden><svg class="i"><use href="#i-back"/></svg></button>
-    <span class="logo" id="logo"><svg viewBox="0 0 1024 1024" aria-hidden="true"><rect width="1024" height="1024" rx="224" fill="#101722"/><rect x="176" y="168" width="520" height="600" rx="64" fill="none" stroke="#6b7a94" stroke-width="22" stroke-dasharray="40 30"/><rect x="328" y="288" width="520" height="600" rx="64" fill="#F5F6F8"/><path d="M392 288h392a64 64 0 0 1 64 64v58H328v-58a64 64 0 0 1 64-64z" fill="#3f51b5"/><rect x="388" y="452" width="176" height="128" rx="24" fill="#0b8043"/><rect x="612" y="600" width="176" height="200" rx="24" fill="#f4511e"/></svg></span>
-    <h1 id="title">Trace<span class="sub" id="subtitle"></span></h1>
+    <span class="logo" id="logo"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22" fill="#101722"/><rect x="22" y="13" width="66" height="62" rx="12" fill="#F5F6F8"/>
+<path d="M34 13h42a12 12 0 0 1 12 12v5H22v-5a12 12 0 0 1 12-12z" fill="#101722"/>
+<circle cx="39" cy="21.5" r="3.8" fill="#5d6b84"/><circle cx="55" cy="21.5" r="3.8" fill="#F5F6F8"/><circle cx="71" cy="21.5" r="3.8" fill="#ff7a45"/>
+<rect x="64" y="51" width="16" height="18" rx="4" fill="#ff7a45"/>
+<path d="M46 54Q55 31 71 45" fill="none" stroke="#101722" stroke-width="4" stroke-linecap="round"/>
+<path d="M69.9 38.1L71 45L64 44.8" fill="none" stroke="#101722" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="30" cy="70" r="19" fill="#ff7a45" stroke="#101722" stroke-width="5"/>
+<rect x="20" y="63" width="20" height="14.5" rx="3.6" fill="none" stroke="#101722" stroke-width="3"/>
+<path d="M25.2 63l2.1-3.2h5.4l2.1 3.2" fill="none" stroke="#101722" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="30" cy="70.2" r="3.7" fill="none" stroke="#101722" stroke-width="2.6"/></svg></span>
+    <h1 id="title">Relay<span class="sub" id="subtitle"></span></h1>
     <button class="iconbtn" id="setBtn" aria-label="Settings"><svg class="i"><use href="#i-sliders"/></svg></button>
   </div>
 </header>
@@ -558,7 +567,7 @@
 <main>
   <!-- HOME -->
   <div class="notice warn" id="offline" hidden style="margin-bottom:16px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
-    <span class="grow">You're offline. Trace needs a connection to read photos and update your calendar.</span></div>
+    <span class="grow">You're offline. Relay needs a connection to read photos and update your calendar.</span></div>
   <section class="view" id="v-home">
     <div id="undoBox"></div>
     <div id="queueBox"></div>
@@ -686,7 +695,7 @@ const GROUPS = [
   { kind: 'changed', label: 'End time changed', on: true },
   { kind: 'canceled', label: 'Cancelled', hint: 'Shown as cancelled in the photo. Ticked ones are removed.', on: true },
   { kind: 'missing', label: 'Not in the photo', hint: 'Tick only if the meeting was really cancelled; the photo may be cropped.', on: false },
-  { kind: 'mine', label: 'Your own meetings, not in the photo', hint: "You added these yourself for this project. Ticked ones are removed from your calendar. Trace ticks the ones the photo shows at a new time.", on: false }];
+  { kind: 'mine', label: 'Your own meetings, not in the photo', hint: "You added these yourself for this project. Ticked ones are removed from your calendar. Relay ticks the ones the photo shows at a new time.", on: false }];
 
 /* ───────── state ───────── */
 let S = { settings: {}, profiles: [], history: [], undo: null };
@@ -895,7 +904,7 @@ function go(v) {
   $('backBtn').hidden = v === 'home' || v === 'done';
   $('setBtn').hidden = v !== 'home';
   $('logo').hidden = v !== 'home';
-  const titles = { home: 'Trace', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Relay', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -1081,7 +1090,7 @@ async function analyzeNow() {
   try {
     const dc = prof(selId) && prof(selId).doubleCheck;
     progress(true, 1, dc ? 'Two AI models are reading it at the same time. Usually 15–30 seconds.' : 'Usually 15–30 seconds.');
-    slowT = setTimeout(() => progress(true, 2, 'Taking longer than usual. Busy AI models are skipped automatically; if they all are, Trace saves the photo and keeps trying.'), 35000);
+    slowT = setTimeout(() => progress(true, 2, 'Taking longer than usual. Busy AI models are skipped automatically; if they all are, Relay saves the photo and keeps trying.'), 35000);
     review = await run('analyze', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
     review.photos = images.map(i => i.src);
     prepReview();
@@ -1103,7 +1112,7 @@ async function queueForLater(e) {
     S.queue = await run('queueScan', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
   } catch (err) { return false; }
   renderQueue(); startQueuePoll();
-  dialog({ tone: 'warn', title: 'Saved to try again', body: `The AI models are busy right now, so Trace kept your ${p ? p.project : ''} photo and will keep trying every 5 minutes${S.queueBackground ? ', even with the app closed' : ' while Trace is open'}. It shows on the home screen when it's ready to review. Nothing changes in your calendar until you tap Apply.`, primary: 'OK' });
+  dialog({ tone: 'warn', title: 'Saved to try again', body: `The AI models are busy right now, so Relay kept your ${p ? p.project : ''} photo and will keep trying every 5 minutes${S.queueBackground ? ', even with the app closed' : ' while Relay is open'}. It shows on the home screen when it's ready to review. Nothing changes in your calendar until you tap Apply.`, primary: 'OK' });
   return true;
 }
 function prepReview() {
@@ -1250,7 +1259,7 @@ function rowHtml(it, g) {
   else if (it.maybe && !it.edited) tags.push(T('warn', 'clock', 'Maybe moved', "The photo puts this meeting at a different time than your calendar, but no time is printed on it, so the AI measured it from the grid and the two models didn't confirm it. Compare with the photo and tick it if it really moved."));
   if (it.weeklyFrom && it.weekly && !it.ignore) tags.push(T('ok', 'repeat', 'Weekly', 'Seen at the same time last week, so it will be added as a weekly series.'));
   if (it.clashes && it.clashes.length && !it.ignore) tags.push(T('warn', 'clash', 'Clashes with ' + it.clashes.length + ' meeting' + (it.clashes.length > 1 ? 's' : ''), 'You already have ' + it.clashes.map(c => '“' + c.title + '”').join(' and ') + ' at this time.'));
-  if (it.kind === 'mine') tags.push(T('', '', it.seriesId ? 'Yours · repeats' : 'Yours', "You added this meeting yourself. Trace removes it only if it's ticked, and Undo brings it back."));
+  if (it.kind === 'mine') tags.push(T('', '', it.seriesId ? 'Yours · repeats' : 'Yours', "You added this meeting yourself. Relay removes it only if it's ticked, and Undo brings it back."));
   if (it.kind === 'canceled' && it.own) tags.push(T('', '', it.seriesId ? 'Yours · this day only' : 'Yours', it.seriesId ? 'You added this repeating meeting yourself. Only this day is removed; the other weeks stay. Undo brings it back.' : "You added this meeting yourself. Undo brings it back."));
   if (it.ignore) tags.push(T('', '', "Won't be suggested again", 'You chose to ignore this meeting. Tap the row and choose "Suggest this meeting again" to undo.'));
   if (disagree) {
@@ -1264,7 +1273,7 @@ function rowHtml(it, g) {
   }
   if (it.kind === 'mine') {
     if (it.movedTo) lines += `<div class="was">The photo shows “${esc(it.movedTitle)}” at ${esc(fmtT(it.movedTo, r.homeTz))} instead</div>`;
-    else if (it.dupOf) lines += `<div class="was">Trace already has “${esc(it.dupOf)}” at this time, so this is a second copy</div>`;
+    else if (it.dupOf) lines += `<div class="was">Relay already has “${esc(it.dupOf)}” at this time, so this is a second copy</div>`;
     if (it.seriesId && review.items.find(x => x.kind === 'mine' && x.seriesId === it.seriesId) === it) {
       const n = review.items.filter(x => x.kind === 'mine' && x.seriesId === it.seriesId).length;
       lines += `<label class="wk" data-wk="${it.idx}"><span class="cb"><input type="checkbox" data-endser="${it.idx}" ${it.endSeries ? 'checked' : ''}><span class="box">${icon('check')}</span></span>
@@ -1462,15 +1471,15 @@ async function renderSettings() {
     </div></div>
 
     <div class="section"><div class="eyebrow">Your calendar</div><div class="group"><div class="pad">
-      <label class="f"><span>Add events to${tip('The Google Calendar Trace writes to. Only calendars you can edit are listed.')}</span><select class="in" id="sCal">${cals ? cals.map(c => `<option value="${esc(c.id)}" ${c.id === st.calendarId ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="${esc(st.calendarId)}">${esc(calName)}</option>`}</select></label>
+      <label class="f"><span>Add events to${tip('The Google Calendar Relay writes to. Only calendars you can edit are listed.')}</span><select class="in" id="sCal">${cals ? cals.map(c => `<option value="${esc(c.id)}" ${c.id === st.calendarId ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="${esc(st.calendarId)}">${esc(calName)}</option>`}</select></label>
       <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
     </div></div></div>
 
-    <div class="section" id="acctSec"><div class="eyebrow">Accounts${tip('Trace runs as your main Google account. Connect other people’s Google accounts (like Awais) so Trace can also use the calendars they can see, such as Husnain’s.')}</div>
+    <div class="section" id="acctSec"><div class="eyebrow">Accounts${tip('Relay runs as your main Google account. Connect other people’s Google accounts (like Awais) so Relay can also use the calendars they can see, such as Husnain’s.')}</div>
       <div class="group" id="acctRows">${skelRows(2)}</div>
     </div>
 
-    <div class="section" id="ivCalSec"><div class="eyebrow">Interview calendars${tip('Interviews are saved in your main calendar. Ticked calendars also count when Trace looks for free times, so an interview never lands on a busy time in any of them. Trace only reads their busy times.')}</div>
+    <div class="section" id="ivCalSec"><div class="eyebrow">Interview calendars${tip('Interviews are saved in your main calendar. Ticked calendars also count when Relay looks for free times, so an interview never lands on a busy time in any of them. Relay only reads their busy times.')}</div>
       <div class="group" id="ivCalRows">${skelRows(2)}</div>
       <div class="group"><div class="pad">
         <label class="f" id="fIvCal"><span>Add a calendar shared with you</span><input class="in" id="ivCalEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@gmail.com"><span class="ferr" id="err-ivCalEmail"></span></label>
@@ -1479,7 +1488,7 @@ async function renderSettings() {
       </div></div>
     </div>
 
-    <div class="section" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Trace can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
+    <div class="section" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Relay can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
       <div class="group" id="shareRows">${skelRows(3)}</div>
       <div class="group"><div class="pad">
         <label class="f" id="fShEmail"><span>Share busy blocks with</span><input class="in" id="shEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@example.com"><span class="ferr" id="err-shEmail"></span></label>
@@ -1504,8 +1513,8 @@ async function renderSettings() {
     </div>
     <button class="btn ink block" id="sSave">Save settings</button>
 
-    <div class="section"><div class="eyebrow">Test${tip('Checks that Trace can write to your calendar, without using any AI requests.')}</div><div class="group"><div class="pad">
-      <div class="small">Adds a "Trace test event" at the next full hour today, using the normal review and Apply steps. No photo or AI is used. Remove it afterwards with Undo.</div>
+    <div class="section"><div class="eyebrow">Test${tip('Checks that Relay can write to your calendar, without using any AI requests.')}</div><div class="group"><div class="pad">
+      <div class="small">Adds a "Relay test event" at the next full hour today, using the normal review and Apply steps. No photo or AI is used. Remove it afterwards with Undo.</div>
       <label class="f"><span>As project</span><select class="in" id="tProj">${S.profiles.map(p => `<option value="${esc(p.id)}">${esc(p.code)} · ${esc(p.name)}</option>`).join('')}</select></label>
       <button class="btn block" id="tSample" type="button">Add a sample event for today</button>
     </div></div></div>`;
@@ -1593,7 +1602,7 @@ function renderProject() {
     <div class="group"><div class="pad">
       <div class="two">
         <label class="f" id="f-pProject"><span>Project</span><input class="in" id="pProject" value="${esc(p.project)}" placeholder="Acme"><span class="ferr" id="err-pProject"></span></label>
-        <label class="f"><span>Your profile there${tip('The name you use on that project, e.g. Alex. Only shown in Trace.')}</span><input class="in" id="pPerson" value="${esc(p.person)}" placeholder="Alex"></label>
+        <label class="f"><span>Your profile there${tip('The name you use on that project, e.g. Alex. Only shown in Relay.')}</span><input class="in" id="pPerson" value="${esc(p.person)}" placeholder="Alex"></label>
       </div>
       <label class="f" id="f-pCode"><span>Code${tip('A short code, up to 8 letters or numbers. It appears on the project chip and in the default title label.')}</span><input class="in mono" id="pCode" value="${esc(p.code)}" placeholder="RA" maxlength="8" autocapitalize="characters"><span class="ferr" id="err-pCode"></span></label>
     </div></div>
@@ -1659,7 +1668,7 @@ function renderProject() {
   };
   if (p.id) {
     $('pDelete').onclick = async () => {
-      if (!(await dialog({ title: 'Delete ' + (p.project || 'project') + '?', body: 'The project is removed from Trace. Events it already added stay in your calendar.', primary: 'Delete project', secondary: 'Cancel', danger: true }))) return;
+      if (!(await dialog({ title: 'Delete ' + (p.project || 'project') + '?', body: 'The project is removed from Relay. Events it already added stay in your calendar.', primary: 'Delete project', secondary: 'Cancel', danger: true }))) return;
       const saved = S.profiles.find(x => x.id === p.id);
       await withBusy($('pDelete'), 'Deleting…', async () => {
         try {
@@ -1677,7 +1686,7 @@ function renderProject() {
       $('danger').innerHTML = `<div class="hint" style="display:flex;gap:8px;align-items:center"><span class="spin-sm"></span>Counting this project's events…</div>`;
       let n = '?';
       try { n = await run('countForProfile', p.id); } catch (e) {}
-      $('danger').innerHTML = `<div class="small">This removes <b>${n}</b> event${n === 1 ? '' : 's'} Trace added for ${esc(p.project)} in the last year and any older ones. Your own events are never touched.</div>
+      $('danger').innerHTML = `<div class="small">This removes <b>${n}</b> event${n === 1 ? '' : 's'} Relay added for ${esc(p.project)} in the last year and any older ones. Your own events are never touched.</div>
         <label class="f"><span>Type ${esc(p.code)} to confirm</span><input class="in mono" id="pConfirm" autocomplete="off" autocapitalize="characters"></label>
         <div class="two"><button class="btn" id="pRmCancel" type="button">Cancel</button><button class="btn danger" id="pRmGo" type="button" disabled>Remove events</button></div>`;
       $('pConfirm').oninput = () => $('pRmGo').disabled = $('pConfirm').value.trim().toUpperCase() !== p.code;
@@ -1894,7 +1903,7 @@ function renderQueue() {
         <span class="acts"><button class="btn sm ghost" type="button" data-qdrop="${esc(j.id)}" aria-label="Dismiss">${icon('x')}</button></span></div></div>`;
     const mins = Math.max(0, Math.round((j.nextTry - Date.now()) / 60000));
     return `<div class="notice warn">${icon('clock')}<div class="qrow grow"><span class="grow"><b>${esc(name)} photo: waiting for a free AI model</b><br>
-        <span class="small">Saved ${esc(ago(j.created))}${j.tries ? ' · tried ' + j.tries + ' time' + (j.tries > 1 ? 's' : '') : ''} · next try ${mins ? 'in ' + mins + ' min' : 'soon'}${S.queueBackground ? '' : ' (while Trace is open)'}</span></span>
+        <span class="small">Saved ${esc(ago(j.created))}${j.tries ? ' · tried ' + j.tries + ' time' + (j.tries > 1 ? 's' : '') : ''} · next try ${mins ? 'in ' + mins + ' min' : 'soon'}${S.queueBackground ? '' : ' (while Relay is open)'}</span></span>
         <span class="acts"><button class="btn sm" type="button" data-qnow="${esc(j.id)}">Try now</button><button class="btn sm ghost" type="button" data-qdrop="${esc(j.id)}" aria-label="Stop trying">${icon('x')}</button></span></div></div>`;
   }).join('');
   box.querySelectorAll('[data-qopen]').forEach(b => b.onclick = () => openQueued(b.dataset.qopen, b));
@@ -2020,7 +2029,7 @@ async function loadAccts() {
 function renderAccts() {
   const r = accts, when = ms => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(ms);
   let html = `<div class="srow"><span class="dot" style="background:var(--new)"></span><span class="txt"><span class="lbl">${esc(r.main || 'Main account')}</span>
-      <span class="val" style="display:block">Main account · Trace runs as it</span></span></div>`;
+      <span class="val" style="display:block">Main account · Relay runs as it</span></span></div>`;
   html += r.accounts.map(a => `<div class="srow shr"><span class="dot" style="background:var(${a.status === 'ok' ? '--new' : '--remove'})"></span>
       <span class="txt"><span class="lbl">${esc(a.name ? a.name + ' · ' : '')}${esc(a.email)}</span>
         <span class="val" style="display:block${a.status === 'ok' ? '' : ';color:var(--remove)'}">${esc(a.status === 'ok' ? [a.calendars != null ? a.calendars + ' calendars' : '', 'connected ' + when(a.added)].filter(Boolean).join(' · ') : a.error)}</span></span>
@@ -2028,15 +2037,15 @@ function renderAccts() {
         <button class="btn sm ghost" type="button" data-arm="${esc(a.email)}" aria-label="Disconnect ${esc(a.email)}">${icon('x')}Disconnect</button></span></div>`).join('');
   if (r.ready && !acctSetupOpen) {
     html += `<div class="pad"><button class="btn ink block" id="acctConnect" type="button">${icon('plus')}Connect a Google account</button>
-      <div class="hint">Google asks which account and for calendar access. Google may say the app isn't verified: tap Advanced, then Go to Trace. <button class="linkbtn" id="acctChange" type="button">Change sign-in client</button></div></div>`;
+      <div class="hint">Google asks which account and for calendar access. Google may say the app isn't verified: tap Advanced, then Go to Relay. <button class="linkbtn" id="acctChange" type="button">Change sign-in client</button></div></div>`;
   } else {
     html += `<div class="pad">
-      ${r.ready ? '' : `<div class="small">To connect other Google accounts, Trace needs a Google sign-in client (one-time setup in Google Cloud). In that client, add this as an authorised redirect URI:</div>`}
+      ${r.ready ? '' : `<div class="small">To connect other Google accounts, Relay needs a Google sign-in client (one-time setup in Google Cloud). In that client, add this as an authorised redirect URI:</div>`}
       <div class="notice" style="align-items:center"><span class="grow mono" style="font-size:13px;word-break:break-all">${esc(r.redirect)}</span><button class="btn sm" type="button" id="acctCopy">${icon('listcheck')}Copy</button></div>
       <label class="f"><span>Client ID</span><input class="in" id="acctId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="….apps.googleusercontent.com" value="${esc(r.clientId || '')}"></label>
       <label class="f"><span>Client secret</span><input class="in" id="acctSecret" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="GOCSPX-…"></label>
       <div class="two">${r.ready ? `<button class="btn" type="button" id="acctCancel">Cancel</button>` : '<span></span>'}<button class="btn ink" type="button" id="acctSave">Save</button></div>
-      <div class="hint">Stored only in your Trace script, like the Gemini key.</div></div>`;
+      <div class="hint">Stored only in your Relay script, like the Gemini key.</div></div>`;
   }
   $('acctRows').innerHTML = html;
   $('acctRows').querySelectorAll('[data-arm]').forEach(b => b.onclick = () => acctDisconnect(b.dataset.arm, b));
@@ -2056,14 +2065,14 @@ async function acctSaveClient() {
   });
 }
 async function acctConnect(btn) {
-  if (window.google && google.script && google.script.run) { dialog({ title: 'Open Trace from your link', body: 'Connecting an account works from your Trace link (the home-screen app), not from the Google Apps Script page.', primary: 'OK' }); return; }
+  if (window.google && google.script && google.script.run) { dialog({ title: 'Open Relay from your link', body: 'Connecting an account works from your Relay link (the home-screen app), not from the Google Apps Script page.', primary: 'OK' }); return; }
   await withBusy(btn, 'Opening Google…', async () => {
     try { const r = await run('acctStart'); location.href = r.url; }
     catch (e) { showError(e); }
   });
 }
 async function acctDisconnect(email, btn) {
-  const ok = await dialog({ title: `Disconnect ${email}?`, body: 'Trace stops using this account and Google cancels its access. Nothing in any calendar changes. You can connect it again any time.', primary: 'Disconnect', secondary: 'Cancel', danger: true });
+  const ok = await dialog({ title: `Disconnect ${email}?`, body: 'Relay stops using this account and Google cancels its access. Nothing in any calendar changes. You can connect it again any time.', primary: 'Disconnect', secondary: 'Cancel', danger: true });
   if (!ok) return;
   await withBusy(btn, 'Disconnecting…', async () => {
     try { accts = await run('acctRemove', email); renderAccts(); ivCals = null; loadIvCals(); toast('Disconnected', { type: 'ok' }); }
@@ -2231,7 +2240,7 @@ function ivRowHtml(x, tz, now) {
       ${!past && !declined ? (x.editKind ? `<div class="ivacts">
           <button class="btn sm ghost" type="button" data-ivedit="${esc(x.id)}">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
           <button class="btn sm ghost" type="button" data-ivcancel="${esc(x.id)}">${icon('x')}Cancel</button></div>`
-        : `<div class="ag-sub" style="color:var(--faint)">Read-only${tip(x.why || "Trace can't change this one.")}</div>`) : ''}
+        : `<div class="ag-sub" style="color:var(--faint)">Read-only${tip(x.why || "Relay can't change this one.")}</div>`) : ''}
     </div>
     ${x.join && !past && !declined ? `<a class="tpill join" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
   </div>`;
@@ -2260,7 +2269,7 @@ function renderIvForm() {
   const lens = [30, 45, 60, 90, 120].concat([30, 45, 60, 90, 120].includes(+f.mins) ? [] : [+f.mins]).sort((a, b) => a - b);
   const field = (k, label, ph, extra) => `<label class="f"><span>${label}</span><input class="in" data-f="${k}" value="${esc(f[k])}" placeholder="${esc(ph || '')}" autocomplete="off" ${extra || ''}></label>`;
   el.innerHTML = `<div class="group"><div class="pad">
-    ${f.timeOnly ? `<div class="notice">${icon('info')}<span class="grow small"><b>${esc(f.title)}</b><br>You made this one yourself, so Trace only changes its time. The title and notes stay as you wrote them.</span></div>` : `
+    ${f.timeOnly ? `<div class="notice">${icon('info')}<span class="grow small"><b>${esc(f.title)}</b><br>You made this one yourself, so Relay only changes its time. The title and notes stay as you wrote them.</span></div>` : `
     ${field('who', 'Who it’s for', 'e.g. Zaid, or the candidate’s name', 'list="ivWhoList"')}
     <datalist id="ivWhoList">${people.map(w => `<option value="${esc(w)}">`).join('')}</datalist>
     <div class="two">${field('company', 'Company', 'e.g. Geico')}${field('round', 'Round', 'e.g. 2nd round', 'list="ivRoundList"')}</div>
@@ -2324,7 +2333,7 @@ function renderIvRev() {
       <div class="big">${esc(r.title)}</div>
       ${r.before ? `<div class="ag-sub">Now: ${esc(when(r.before.start, r.before.end))}</div><div><b>${r.timeOnly ? 'Moves to' : 'New time'}:</b> ${esc(when(r.start, r.end))}</div>` : `<div>${esc(when(r.start, r.end))}</div>`}
       <div class="ag-sub">In ${esc(r.calendar)} · nobody is invited, no emails</div>
-      ${warn.length ? warn.join('') : `<div class="ag-sub" style="color:var(--new)">${icon('check')} No clashes${r.calErrors.length ? ' in the calendars Trace could read' : ''}</div>`}
+      ${warn.length ? warn.join('') : `<div class="ag-sub" style="color:var(--new)">${icon('check')} No clashes${r.calErrors.length ? ' in the calendars Relay could read' : ''}</div>`}
       <button class="btn ink block" id="ivfSave" type="button">${icon('check')}${r.mode === 'new' ? 'Save to calendar' : 'Save the change'}</button>
     </div></div></div>`;
   $('ivfSave').onclick = saveIvForm;
@@ -2496,7 +2505,7 @@ function renderCheck() {
         <textarea class="in" id="ivText" rows="${ivRes ? 3 : 6}" spellcheck="false" placeholder="11/20	2:00 PM	Candidate name	resume link	Company	Role	job link	Interviewer	meeting link">${esc(ivText)}</textarea></label>
       <label class="f"><span>Times in the sheet are in${tip('Used for rows whose time has no zone. A time like “2:00 PM EST” uses its own zone.')}</span><select class="in" id="ivTz">${tzOptions(tz)}</select></label>
       <button class="btn ink block" id="ivGo" type="button">${icon('listcheck')}${ivRes ? 'Check again' : 'Check my calendar'}</button>
-      <div class="hint">Read-only: Trace looks, it doesn't change anything.</div>
+      <div class="hint">Read-only: Relay looks, it doesn't change anything.</div>
     </div></div></div>`;
   if (ivRes) html += ivResultHtml(ivRes);
   el.innerHTML = html;
@@ -2588,7 +2597,7 @@ async function startRecording() {
   catch (e) {
     const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
     dialog({ tone: 'warn', title: denied ? 'Microphone is blocked' : "Couldn't start the microphone",
-      body: denied ? 'Allow microphone access for Trace (iPhone: Settings → Safari → Microphone, or tap "aA" in the address bar → Website Settings). Or type the meeting instead.'
+      body: denied ? 'Allow microphone access for Relay (iPhone: Settings → Safari → Microphone, or tap "aA" in the address bar → Website Settings). Or type the meeting instead.'
         : 'Another app may be using the microphone. You can type the meeting instead.',
       primary: 'Type instead', secondary: 'Close', onPrimary: () => openTyper() });
     return;
@@ -2797,14 +2806,14 @@ async function applyVoiceNow() {
 /* ───────── boot ───────── */
 function lockedScreen() {
   document.body.innerHTML = `<main style="max-width:420px;margin:0 auto;padding:max(64px,calc(env(safe-area-inset-top,0px) + 40px)) 20px 40px">
-    <h1 style="font-size:22px;margin:0 0 8px">Open your Trace link</h1>
-    <p style="color:var(--muted);margin:0 0 16px;line-height:1.5">This copy of Trace doesn't have your key yet. Paste the full Trace link you saved (the one ending in <span class="mono">#k=…</span>).</p>
-    <input class="in" id="kLink" placeholder="Paste your Trace link" autocomplete="off">
+    <h1 style="font-size:22px;margin:0 0 8px">Open your Relay link</h1>
+    <p style="color:var(--muted);margin:0 0 16px;line-height:1.5">This copy of Relay doesn't have your key yet. Paste the full Relay link you saved (the one ending in <span class="mono">#k=…</span>).</p>
+    <input class="in" id="kLink" placeholder="Paste your Relay link" autocomplete="off">
     <p id="kErr" style="color:var(--remove);min-height:1.4em;margin:8px 0"></p>
-    <button class="btn ink block" id="kGo">Open Trace</button></main>`;
+    <button class="btn ink block" id="kGo">Open Relay</button></main>`;
   document.getElementById('kGo').onclick = () => {
     const m = document.getElementById('kLink').value.match(/k=([A-Za-z0-9]{24,})/);
-    if (!m) { document.getElementById('kErr').textContent = "That doesn't look like a Trace link."; return; }
+    if (!m) { document.getElementById('kErr').textContent = "That doesn't look like a Relay link."; return; }
     location.hash = 'k=' + m[1]; location.reload();
   };
 }
@@ -2819,7 +2828,7 @@ async function init() {
   if (signIn && !(window.google && google.script && google.script.run) && !traceKey()) {
     lockedScreen();
     document.querySelector('main').insertAdjacentHTML('afterbegin', `<div class="notice ${signIn.ok ? '' : 'warn'}" style="margin-bottom:20px"><span class="grow">${signIn.ok
-      ? `<b>${esc(signIn.email)} is connected to Trace.</b> You can close this page, or paste your Trace link below to open the app.`
+      ? `<b>${esc(signIn.email)} is connected to Relay.</b> You can close this page, or paste your Relay link below to open the app.`
       : esc(signIn.msg)}</span></div>`);
     return;
   }
