@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '75cdb1c06f';</script>
+<script>window.TRACE_VER = '69b5c28b1e';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2112,7 +2112,7 @@ function ivRowHtml(x, tz, now) {
   if (!x.join && !past && !declined) tags.push(`<span class="tag">No meeting link</span>`);
   if (x.job) tags.push(`<a class="tag" href="${esc(x.job)}" target="_blank" rel="noopener">${icon('external')}Job post</a>`);
   if (x.resume) tags.push(`<a class="tag" href="${esc(x.resume)}" target="_blank" rel="noopener">${icon('external')}Resume</a>`);
-  return `<div class="ag ${declined ? 'dim' : ''} ${x.clashes.length || x.busyOn.length ? 'clash' : ''}">
+  return `<div class="ag ${declined ? 'dim' : ''} ${!past && (x.clashes.length || x.busyOn.length) ? 'clash' : ''}">
     <div class="ag-t tnum">${esc(fmtT(x.start, tz))}<small>${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</small></div>
     <div class="ag-b">
       <div class="ag-title"><a href="${esc(x.link || '#')}" target="_blank" rel="noopener" title="${esc(x.title)}">${esc(head)}</a></div>
