@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>window.TRACE_VER = '23a077e9f8';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -1803,6 +1804,20 @@ function clashesHtml() {
 }
 
 setInterval(() => { if (view === 'home' && ag && agOffset === 0) renderTodayCard(); }, 60000);
+
+/* ───────── newer version? reload once (GitHub Pages copies are cached up to 10 min) ───────── */
+function checkVersion() {
+  if (!window.TRACE_VER) return;   // the copy served by Google has no stamp
+  fetch('version.json?ts=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (!j || !j.v || j.v === window.TRACE_VER) return;
+    let tried = null; try { tried = sessionStorage.getItem('trace_reload'); } catch (e) {}
+    if (tried === j.v) return;   // already reloaded for this version once: don't loop
+    try { sessionStorage.setItem('trace_reload', j.v); } catch (e) {}
+    location.replace(location.pathname + '?v=' + j.v + location.hash);
+  }).catch(() => {});
+}
+checkVersion();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
 
 /* ───────── photos waiting for a free AI model ───────── */
 let qPollT = null, qSeenReady = {};
