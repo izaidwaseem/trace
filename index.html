@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'fab753985a';</script>
+<script>window.TRACE_VER = 'df85ae9be1';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -1615,7 +1615,7 @@ function renderDone() {
       ${r.ended ? `<div class="muted small">${r.ended} repeating meeting${r.ended > 1 ? 's' : ''} of yours stop${r.ended > 1 ? '' : 's'} after this week.</div>` : ''}</div>
     ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
     <div class="stack">
-      <a class="btn ink block" href="${esc(r.calendarUrl || 'https://calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
+      <a class="btn ink block" href="${esc(r.calendarUrl || 'https:\/\/calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
       ${S.undo ? `<button class="btn block" id="dUndo">${icon('undo')}Undo these changes</button>` : ''}
       <button class="btn ghost block" id="dHome">Back to projects</button>
     </div>`;
@@ -2639,8 +2639,8 @@ function renderIvForm() {
     </div>
     <div class="hint" id="ivfYour"></div>
     ${f.timeOnly ? '' : `
-    ${field('join', 'Meeting link', 'https://zoom.us/j/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}
-    <div class="two">${field('job', 'Job post', 'https://…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}${field('resume', 'Resume', 'https://…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}</div>
+    ${field('join', 'Meeting link', 'https:\/\/zoom.us/j/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}
+    <div class="two">${field('job', 'Job post', 'https:\/\/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}${field('resume', 'Resume', 'https:\/\/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}</div>
     <label class="f"><span>Notes</span><textarea class="in" data-f="notes" rows="3" placeholder="Anything to remember. Avoid SSNs and dates of birth.">${esc(f.notes)}</textarea></label>`}
     <button class="btn ink block" id="ivfCheck" type="button">${icon('listcheck')}Check and review</button>
     <div class="hint">Saved in your main calendar. Nobody is invited and no emails are sent.</div>
@@ -2669,7 +2669,7 @@ async function checkIvForm() {
   if (!f.timeOnly && !f.who.trim() && !f.company.trim() && !f.role.trim()) { toast('Add who it’s for, or the company.'); const i = document.querySelector('[data-f="who"]'); if (i) i.focus(); return; }
   if (!f.date || !f.time) { toast('Pick the day and start time.'); return; }
   const bad = ['join', 'job', 'resume'].find(k => f[k].trim() && !/^https?:\/\/\S+$/i.test(f[k].trim()));
-  if (bad) { toast('Links must start with https://'); document.querySelector(`[data-f="${bad}"]`).focus(); return; }
+  if (bad) { toast('Links must start with https:\/\/'); document.querySelector(`[data-f="${bad}"]`).focus(); return; }
   await withBusy($('ivfCheck'), 'Checking…', async () => {
     try { ivfRev = await run('ivSave', ivfReq(true)); renderIvRev(); const r = $('ivfRev'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     catch (e) { showError(e, { retry: checkIvForm }); }
@@ -2768,8 +2768,8 @@ function sfStep1(b) {
       <button class="linkbtn sf-more" type="button" id="sfMore">${icon(f.more ? 'chevdown' : 'chev')}More details${f.role || f.with || f.join || f.job || f.resume || f.notes ? ' (filled in)' : ''}</button>
       <div class="sf-moreb" ${f.more ? '' : 'hidden'}>
         <div class="two">${fld('role', 'Role', 'e.g. Senior Engineer')}${fld('with', 'Interviewer', 'Name')}</div>
-        ${fld('join', 'Meeting link', 'https://zoom.us/j/…', url)}
-        <div class="two">${fld('job', 'Job post', 'https://…', url)}${fld('resume', 'Resume', 'https://…', url)}</div>
+        ${fld('join', 'Meeting link', 'https:\/\/zoom.us/j/…', url)}
+        <div class="two">${fld('job', 'Job post', 'https:\/\/…', url)}${fld('resume', 'Resume', 'https:\/\/…', url)}</div>
         <label class="f"><span>Notes</span><textarea class="in" data-sf="notes" rows="3" placeholder="Anything to remember. Avoid SSNs and dates of birth.">${esc(f.notes)}</textarea></label>
       </div>
     </div>
@@ -2781,7 +2781,7 @@ function sfStep1(b) {
   $('sfNext1').onclick = () => {
     if (!f.who.trim() && !f.company.trim() && !f.role.trim()) { toast('Add who it’s for, or the company.'); b.querySelector('[data-sf="who"]').focus(); return; }
     const bad = ['join', 'job', 'resume'].find(k => f[k].trim() && !/^https?:\/\/\S+$/i.test(f[k].trim()));
-    if (bad) { f.more = true; sfRender(); toast('Links must start with https://'); return; }
+    if (bad) { f.more = true; sfRender(); toast('Links must start with https:\/\/'); return; }
     f.step = 2; sfRender();
   };
 }
