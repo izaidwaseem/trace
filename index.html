@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '249ac46e81';</script>
+<script>window.TRACE_VER = 'fab753985a';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -827,6 +827,19 @@
 <div class="pop" id="pop" role="tooltip" hidden></div>
 
 <script>
+/* If something breaks while Relay starts, say so on screen instead of showing a blank page. */
+function showFatal(m) {
+  try {
+    let d = document.getElementById('fatal');
+    if (!d) { d = document.createElement('div'); d.id = 'fatal'; d.setAttribute('role', 'alert');
+      d.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 76px);z-index:9999;background:#b42330;color:#fff;padding:12px 14px;border-radius:12px;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word';
+      document.body.appendChild(d); }
+    d.textContent = 'Relay hit an error. Send a screenshot of this to Claude:\n' + m;
+  } catch (x) {}
+}
+window.addEventListener('error', e => showFatal((e.message || 'error') + (e.lineno ? ' (line ' + e.lineno + ':' + e.colno + ')' : '') + (e.error && e.error.stack ? '\n' + String(e.error.stack).split('\n').slice(0, 4).join('\n') : '')));
+window.addEventListener('unhandledrejection', e => showFatal('Unhandled: ' + String(e.reason && (e.reason.stack || e.reason.message) || e.reason).split('\n').slice(0, 4).join('\n')));
+
 /* ───────── constants ───────── */
 const GCOLORS = { '': ['None', ''], '1': ['Lavender', '#7986cb'], '2': ['Sage', '#33b679'], '3': ['Grape', '#8e24aa'],
   '4': ['Flamingo', '#e67c73'], '5': ['Banana', '#f6bf26'], '6': ['Tangerine', '#f4511e'], '7': ['Peacock', '#039be5'],
