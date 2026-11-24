@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '5ad6501882';</script>
+<script>window.TRACE_VER = '8bcb416d08';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -294,6 +294,12 @@
   .ivh-acts { display: flex; gap: 8px; flex-wrap: wrap; }
   .ivh-acts a.btn { text-decoration: none; }
   .ivbar { display: flex; gap: 8px; align-items: center; }
+  .ivseg { margin: 0; }
+  .tdstats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ivfilt { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 13px; margin-bottom: -4px; }
+  .ivfilt .ivwho { border: 0; background: none; color: var(--fg); font: 600 14px var(--font); padding: 4px 18px 4px 4px; -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 8px) 55%, calc(100% - 3px) 55%; background-size: 5px 5px; background-repeat: no-repeat; max-width: none; min-height: 0; width: auto; flex: none; }
   .ivbar .seg2 { flex: 1; margin: 0; }
   .ivwho { width: auto; min-width: 0; max-width: 42%; min-height: 44px; flex: none; }
   .ivr { display: flex; align-items: center; gap: 12px; padding: 12px 14px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; color: var(--fg); font: inherit; }
@@ -2484,11 +2490,14 @@ function ivHeroHtml(x, tz) {
 }
 function ivSegHtml() {
   const people = ivl ? [...new Set(ivl.upcoming.concat(ivl.done).map(x => x.who).filter(Boolean))].sort() : [];
-  return `<div class="ivbar"><div class="seg2 three" role="tablist">
+  return `<div class="seg2 three ivseg" role="tablist">
       <button type="button" data-ivtab="up" aria-pressed="${ivTab === 'up'}">Upcoming</button>
       <button type="button" data-ivtab="board" aria-pressed="${ivTab === 'board'}">Board</button>
-      <button type="button" data-ivtab="past" aria-pressed="${ivTab === 'past'}">Past</button></div>
-    ${ivTab === 'board' ? '' : `<select class="in ivwho" id="ivWhoSel" aria-label="Show interviews for"><option value="">Everyone</option>${people.map(p => `<option ${p === ivWho ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>`}</div>`;
+      <button type="button" data-ivtab="past" aria-pressed="${ivTab === 'past'}">Past</button></div>`;
+}
+function ivWhoHtml() {
+  const people = ivl ? [...new Set(ivl.upcoming.concat(ivl.done).map(x => x.who).filter(Boolean))].sort() : [];
+  return `<div class="ivfilt"><span class="muted">Showing</span><select class="ivwho" id="ivWhoSel" aria-label="Show interviews for"><option value="">Everyone</option>${people.map(p => `<option ${p === ivWho ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>`;
 }
 function bindIvSeg() {
   $('v-iv').querySelectorAll('[data-ivtab]').forEach(b => b.onclick = () => { ivTab = b.dataset.ivtab; renderIv(); window.scrollTo(0, 0); });
@@ -2514,9 +2523,19 @@ function renderIv() {
   let html = '';
   if (ivTab === 'up') {
     const list = ivl.upcoming.filter(x => !ivWho || x.who === ivWho);
-    const next = list.find(x => x.resp !== 'declined' && !x.handed);
-    if (next) html += ivHeroHtml(next, tz);
+    const mineUp = list.filter(x => x.resp !== 'declined' && !x.handed && !x.forOther);
+    const next = mineUp[0];
     html += ivSegHtml();
+    html += next ? ivHeroHtml(next, tz) : `<div class="ivhero"><span class="eyebrow">Next interview</span><div class="ivh-name">Nothing of yours coming up</div><div class="ivh-when">In the next ${ivl.days} days${ivWho ? ' for ' + esc(ivWho) : ''}.</div></div>`;
+    const week = now + 7 * 864e5;
+    const nWeek = mineUp.filter(x => x.start < week).length, nReply = mineUp.filter(x => x.resp === 'needsAction').length;
+    const nHanded = list.filter(x => x.handed).length, nClash = mineUp.filter(x => x.clashes.length || x.busyOn.length).length;
+    html += `<div class="tdstats">
+        <div class="tdst"><b>${nWeek}</b><span>this week</span></div>
+        <div class="tdst"><b>${nReply}</b><span>need${nReply === 1 ? 's' : ''} a reply</span></div>
+        <div class="tdst"><b>${nHanded}</b><span>handed over</span></div>
+        <div class="tdst ${nClash ? 'bad' : ''}"><b>${nClash}</b><span>clash${nClash === 1 ? '' : 'es'}</span></div></div>`;
+    html += ivWhoHtml();
     const rest = list.filter(x => x !== next);
     html += rest.length ? `<div class="group">${ivGroupRows(rest, tz, now)}</div>`
       : `<div class="group"><div class="empty">${next ? 'Nothing else' : 'No interviews'}${ivWho ? ' for ' + esc(ivWho) : ''} in the next ${ivl.days} days.</div></div>`;
@@ -2526,6 +2545,12 @@ function renderIv() {
   } else {
     html += ivSegHtml();
     const list = ivl.done.filter(x => !ivWho || x.who === ivWho);
+    const weekAgo = now - 7 * 864e5, attended = list.filter(x => x.resp !== 'declined' && !x.handed && !x.forOther);
+    html += `<div class="tdstats three">
+        <div class="tdst"><b>${attended.length}</b><span>last ${ivl.days} days</span></div>
+        <div class="tdst"><b>${attended.filter(x => x.start >= weekAgo).length}</b><span>this week</span></div>
+        <div class="tdst"><b>${list.filter(x => x.handed || x.forOther).length}</b><span>handed / teammates’</span></div></div>`;
+    html += ivWhoHtml();
     html += list.length ? `<div class="group">${ivGroupRows(list, tz, now)}</div>` : `<div class="group"><div class="empty">No interviews in the last ${ivl.days} days${ivWho ? ' for ' + esc(ivWho) : ''}.</div></div>`;
   }
   html += `<div class="voicecard"><button class="vc-main" id="ivCheckOpen" type="button">
@@ -2606,13 +2631,14 @@ function renderBoard() {
   const ivIds = new Set(ivs.flatMap(x => x.ids));
   const mine = bd.mine.filter(e => !ivIds.has(e.id));
   const cols = [{ key: 'me', name: 'You', sub: 'You', level: 'me' }].concat(bd.people.map(p => ({ key: p.email, name: p.name, sub: p.level === 'edit' ? 'Can edit' : p.level === 'see' ? 'Invite' : 'Not shared', level: p.level, p })));
-  const spans = [].concat(mine, ivs, ...bd.people.map(p => p.busy)).filter(b => b.end > bd.from && b.start < bd.to);
+  const isTodayB = bdDay === dayIn(now, tz);
+  const spans = [].concat(mine, ivs, ...bd.people.map(p => p.busy)).filter(b => b.end > bd.from && b.start < bd.to && (!isTodayB || b.end > now));
   const hr = ms => Math.floor((ms - bd.from) / 3600000);
   let h0 = spans.length ? Math.max(0, Math.min(...spans.map(b => hr(b.start))) - 1) : 11, h1 = spans.length ? Math.min(24, Math.max(...spans.map(b => hr(b.end - 1) + 1)) + 1) : 22;
   if (h1 - h0 < 6) h1 = Math.min(24, h0 + 6);
   const top = ms => (Math.max(ms, bd.from + h0 * 3600000) - (bd.from + h0 * 3600000)) / 3600000 * BD_PX;
   const hgt = (a, b) => Math.max(20, (Math.min(b, bd.from + h1 * 3600000) - Math.max(a, bd.from + h0 * 3600000)) / 3600000 * BD_PX - 2);
-  const blk = (cls, a, b, inner, attrs) => `<div class="blk ${cls}" style="top:${top(a)}px;height:${hgt(a, b)}px" ${attrs || ''}>${inner}</div>`;
+  const blk = (cls, a, b, inner, attrs) => (b <= bd.from + h0 * 3600000 || a >= bd.from + h1 * 3600000) ? '' : `<div class="blk ${cls}" style="top:${top(a)}px;height:${hgt(a, b)}px" ${attrs || ''}>${inner}</div>`;
   const colHtml = c => {
     let inner = '';
     if (c.key === 'me') {
