@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'f2dfa15718';</script>
+<script>window.TRACE_VER = '689499b8d3';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -677,6 +677,7 @@
   <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 3l3 3-3 3"/><path d="M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3"/><path d="M20 13v2a3 3 0 0 1-3 3H4"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
@@ -1863,6 +1864,10 @@ async function renderSettings() {
       </div></div>
     </div>
 
+    <div class="section" data-sec="notify"><div class="eyebrow">Notifications</div>
+      <div class="group" id="pushBox">${skelRows(2)}</div>
+      <div class="hint">Only what your calendar can’t tell you. Google already reminds you before meetings, so Relay doesn’t.</div></div>
+
     <div class="section" data-sec="appearance"><div class="eyebrow">Appearance</div><div class="group"><div class="pad">
       <div class="seg" role="radiogroup" aria-label="Appearance">${['system', 'light', 'dark'].map(t => `<button type="button" data-theme-pick="${t}" role="radio" aria-pressed="${getTheme() === t}" aria-checked="${getTheme() === t}">${icon(t === 'system' ? 'auto' : t === 'light' ? 'sun' : 'moon')}${t === 'system' ? 'System' : t === 'light' ? 'Light' : 'Dark'}</button>`).join('')}</div>
       <div class="hint">System follows your phone's light or dark mode. Saved on this device and applied straight away.</div>
@@ -1900,6 +1905,7 @@ async function renderSettings() {
   loadSharing();
   loadIvCals();
   loadAccts();
+  loadPush();
   $('ivCalAddBtn').onclick = ivCalAdd;
   $('ivCalEmail').onkeydown = e => { if (e.key === 'Enter') ivCalAdd(); };
   $('ivCalEmail').oninput = () => { $('err-ivCalEmail').textContent = ''; $('fIvCal').classList.remove('invalid'); };
@@ -1925,6 +1931,7 @@ async function renderSettings() {
 let setSec = '';
 const SET_SECS = [
   ['calendars', 'listcheck', 'Calendars', () => 'Main calendar, connected accounts, interview calendars, sharing'],
+  ['notify', 'bell', 'Notifications', () => pushMenuLine()],
   ['projects', 'repeat', 'Projects', () => (S.profiles || []).map(p => p.project).join(', ') || 'None yet'],
   ['ai', 'double', 'AI model', () => 'Photo reading and voice notes'],
   ['appearance', 'moon', 'Appearance', () => ({ system: 'System', light: 'Light', dark: 'Dark' })[getTheme()] || 'System'],
@@ -2552,6 +2559,141 @@ async function acctDisconnect(email, btn) {
     try { accts = await run('acctRemove', email); renderAccts(); ivCals = null; loadIvCals(); toast('Disconnected', { type: 'ok' }); }
     catch (e) { showError(e); }
   });
+}
+
+/* ───────── notifications (Settings → Notifications) ───────── */
+const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const PUSH_TYPES = [
+  ['newIv', 'New interview that clashes', 'An interview lands on your calendar and overlaps something'],
+  ['clash', 'New clash', 'A change made elsewhere makes two of your meetings overlap'],
+  ['hand', 'Hand-over not accepted', 'An interview you handed over as an invite isn’t accepted 3 h before, or is declined'],
+  ['summary', 'Evening summary', 'At 6:00 PM Pakistan time: what’s left tonight'],
+  ['hide', 'Hide names on the lock screen', 'Alerts say what happened, without names or meeting titles']];
+let pushCfg = null, pushSub = null;
+function pushMenuLine() {
+  if (!PUSH_OK) return 'Works in the home-screen app';
+  return pushCfg && pushSub && pushOnHere() ? 'On' : 'Off';
+}
+const pushOnHere = () => !!(pushSub && pushCfg && pushCfg.devices.some(d => pushSub.endpoint.slice(-12) === d.id));
+async function pushCurrent() {
+  try { const r = await navigator.serviceWorker.getRegistration(); return r ? await r.pushManager.getSubscription() : null; } catch (e) { return null; }
+}
+/** The service worker needs to know where to fetch alerts, with which key. Only this site can read it. */
+async function pushSaveCfg(seenNow) {
+  try {
+    const c = await caches.open('relay-cfg');
+    await c.put('cfg', new Response(JSON.stringify({ k: traceKey(), api: API_URL })));
+    if (seenNow) await c.put('seen', new Response(String(Date.now())));
+  } catch (e) {}
+}
+const b64uBytes = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+async function loadPush() {
+  if (!$('pushBox')) return;
+  if (!PUSH_OK || !API_URL) { renderPush(); return; }
+  try { [pushCfg, pushSub] = await Promise.all([run('pushConfig'), pushCurrent()]); renderPush(); }
+  catch (e) {
+    if (!$('pushBox')) return;
+    $('pushBox').innerHTML = `<div class="empty">Couldn't load notification settings. ${esc(errMsg(e))} <button class="btn sm" id="pushRetry" type="button">Try again</button></div>`;
+    $('pushRetry').onclick = loadPush;
+  }
+}
+function renderPush() {
+  const el = $('pushBox');
+  if (!el) return;
+  if (!PUSH_OK || !API_URL) {
+    el.innerHTML = `<div class="pad"><div class="notice">${icon('info')}<span class="grow small">Notifications work in the home-screen app. In Safari, open your Relay link, tap Share → <b>Add to Home Screen</b>, open Relay from there, then turn them on here.</span></div></div>`;
+    return;
+  }
+  const on = pushOnHere(), denied = Notification.permission === 'denied', n = pushCfg.devices.length;
+  const last = pushCfg.last && pushCfg.last.failed && !pushCfg.last.sent ? `<div class="hint" style="color:var(--remove)">The last alert couldn't be delivered (${esc(pushCfg.last.error)}). Turn notifications off and on again.</div>` : '';
+  let html = `<div class="srow"><span class="setico">${icon('bell')}</span>
+      <span class="txt"><span class="lbl">${on ? 'On for this device' : 'Off on this device'}</span>
+        <span class="val" style="display:block">${denied ? 'Blocked. Allow them in iPhone Settings → Notifications → Relay.' : on ? (n > 1 ? n + ' devices get alerts' : 'Alerts arrive within about 5 minutes') : 'Turn on to get alerts here'}</span></span>
+      <button class="btn sm ${on ? '' : 'ink'}" type="button" id="pushToggle" ${denied && !on ? 'disabled' : ''}>${on ? 'Turn off' : 'Turn on'}</button></div>`;
+  if (on) html += PUSH_TYPES.map(([k, l, d]) => `<div class="srow"><span class="txt"><span class="lbl">${esc(l)}</span><span class="val" style="display:block">${esc(d)}</span></span>
+      <label class="cb"><input type="checkbox" data-pushpref="${k}" ${pushCfg.prefs[k] ? 'checked' : ''} aria-label="${esc(l)}"><span class="box">${icon('check')}</span></label></div>`).join('')
+    + `<div class="pad"><button class="btn block" type="button" id="pushTest">${icon('send')}Send a test notification</button>${last}</div>`;
+  el.innerHTML = html;
+  $('pushToggle').onclick = e => on ? pushOff(e.currentTarget) : pushOn(e.currentTarget);
+  if ($('pushTest')) $('pushTest').onclick = e => pushTestNow(e.currentTarget);
+  el.querySelectorAll('[data-pushpref]').forEach(b => b.onchange = () => pushPref(b));
+}
+async function pushOn(btn) {
+  await withBusy(btn, 'Turning on…', async () => {
+    try {
+      const perm = await Notification.requestPermission();   // asked straight from the tap, as iPhone requires
+      if (perm !== 'granted') {
+        toast(perm === 'denied' ? 'Allow them in iPhone Settings → Notifications → Relay, then try again.' : 'Notifications weren’t allowed, so nothing changed.', { type: 'warn', title: 'Notifications are off' });
+        renderPush(); return;
+      }
+      const reg = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(pushCfg.publicKey) });
+      await pushSaveCfg(true);
+      pushCfg = await run('pushSubscribe', sub.toJSON(), navigator.userAgent);
+      pushSub = sub;
+      renderPush(); applySetSec();
+      toast('Notifications are on. Try “Send a test notification”.', { type: 'ok' });
+    } catch (e) { showError(e, { retry: () => pushOn($('pushToggle')) }); }
+  });
+}
+async function pushOff(btn) {
+  await withBusy(btn, 'Turning off…', async () => {
+    try {
+      const endpoint = pushSub && pushSub.endpoint;
+      if (pushSub) { try { await pushSub.unsubscribe(); } catch (e) {} }
+      pushCfg = await run('pushUnsubscribe', endpoint || '');
+      pushSub = null;
+      renderPush(); applySetSec();
+      toast('Notifications are off on this device', { type: 'ok' });
+    } catch (e) { showError(e, { retry: () => pushOff($('pushToggle')) }); }
+  });
+}
+async function pushPref(box) {
+  box.disabled = true;
+  const val = box.closest('.srow') && box.closest('.srow').querySelector('.val'), was = val ? val.innerHTML : '';
+  if (val) val.innerHTML = `<span class="spin-sm" aria-hidden="true" style="width:12px;height:12px;vertical-align:-1px;margin-right:6px"></span>Saving…`;
+  try { pushCfg = await run('pushPrefs', { [box.dataset.pushpref]: box.checked }); renderPush(); }
+  catch (e) { box.checked = !box.checked; box.disabled = false; if (val) val.innerHTML = was; showError(e); }
+}
+async function pushTestNow(btn) {
+  await withBusy(btn, 'Sending…', async () => {
+    try {
+      const r = await run('pushTest');
+      pushCfg = r.config;
+      if (r.sent) toast('Sent. It should arrive in a few seconds.', { type: 'ok' });
+      else toast(r.errors[0] || 'No device is set up for notifications.', { type: 'warn', title: 'Couldn’t deliver the test' });
+      renderPush();
+    } catch (e) { showError(e, { retry: () => pushTestNow($('pushTest')) }); }
+  });
+}
+/** A tapped notification opens the screen it is about: 'today', 'clash' or 'iv:<id>'. */
+async function openFromAlert(where) {
+  if (!where) return;
+  const until = async (cond, ms) => { const t = Date.now(); while (!cond() && Date.now() - t < ms) await new Promise(r => setTimeout(r, 150)); return cond(); };
+  if (where === 'today' || where === 'clash') {
+    openTab('today');
+    if (where === 'clash' && await until(() => ag && ag.clashList, 15000)) openClashSheet();
+    return;
+  }
+  if (where.startsWith('iv:')) {
+    const id = where.slice(3);
+    openTab('iv');
+    if (!(await until(() => ivl, 15000))) return;
+    if (ivFind(id)) openIvDetail(ivFind(id).id);
+    else toast('That interview is no longer on your calendar.', { type: 'warn', title: 'Couldn’t open it' });
+  }
+}
+function pushStart() {
+  const m = location.hash.match(/[#&]go=([^&]+)/);
+  if (m) {
+    const where = decodeURIComponent(m[1]);
+    try { history.replaceState(null, '', location.pathname + location.search + location.hash.replace(/&go=[^&]+/, '')); } catch (e) {}
+    setTimeout(() => openFromAlert(where), 300);
+  }
+  if (!PUSH_OK || !API_URL) return;
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.relayGo) openFromAlert(e.data.relayGo); });
+  pushCurrent().then(sub => { pushSub = sub; if (sub) pushSaveCfg(); });   // keep the worker's key current
 }
 
 /* ───────── interview calendars (Settings) ───────── */
@@ -3589,6 +3731,7 @@ async function init() {
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
   preRestore();
+  pushStart();
   const saved = bootLoad();
   if (saved) applyBoot(saved.r);   // last known data, on screen at once
   try {
