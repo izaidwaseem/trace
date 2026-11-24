@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'a97f903fc8';</script>
+<script>window.TRACE_VER = '5ad6501882';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -226,6 +226,11 @@
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   #v-today > div:empty { display: none; }
+  #v-today { margin-top: -8px; }
+  #todayBody { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  #todayBody > * { min-width: 0; }
+  #todayBody > .hint { margin-top: -2px; }
+  .tdsw .grow .linkbtn { justify-self: center; margin-top: 2px; }
   .tdsw { display: flex; align-items: center; gap: 10px; }
   .tdsw .grow { flex: 1; text-align: center; display: grid; } .tdsw .grow b { font-size: 16px; } .tdsw .grow span { font-size: 13px; color: var(--muted); }
   .tdstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
@@ -237,7 +242,7 @@
   .tdst.bad b { color: var(--remove); }
   .tdtl { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
   .tdtl > * + * { border-top: 1px solid var(--line); }
-  .tdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--fg); }
+  .tdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--fg); }
   .tdr.dim { opacity: .5; }
   .tdr-t { width: 72px; flex: none; font-weight: 600; font-size: 14px; white-space: nowrap; } .tdr-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
   .tdr-b { flex: 1; min-width: 0; display: grid; gap: 1px; }
