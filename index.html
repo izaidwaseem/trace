@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '9689fae78e';</script>
+<script>window.TRACE_VER = '8a337491af';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -225,6 +225,25 @@
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .sheet.sf { height: min(92vh, 860px); max-height: 92vh; grid-template-rows: auto 1fr auto auto; padding-block: 14px calc(14px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+  .sf-h { display: flex; align-items: center; gap: 10px; } .sf-h h2 { flex: 1; min-width: 0; }
+  .sf-steps { display: flex; gap: 4px; } .sf-steps i { width: 20px; height: 4px; border-radius: 2px; background: var(--line-strong); } .sf-steps i.on { background: var(--ink); }
+  .sf-b { overflow-y: auto; display: grid; gap: 14px; align-content: start; min-height: 0; padding-bottom: 4px; }
+  .sf-b > * { min-width: 0; }
+  .sf-f { display: grid; gap: 8px; } .sf-f.two { grid-template-columns: 1fr 1fr; }
+  .sf-more { justify-self: start; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 500; }
+  .sf-more .i { width: 16px; height: 16px; }
+  .sf-moreb { display: grid; gap: 12px; }
+  .sf-prefs { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 14px; }
+  .sf-prefs .grow { flex: 1; min-width: 0; } .sf-prefs .i { width: 18px; height: 18px; color: var(--muted); flex: none; }
+  .sf-slot { display: flex; align-items: center; gap: 12px; padding: 13px 14px; width: 100%; border: 0; background: none; cursor: pointer; text-align: left; color: var(--fg); font: inherit; }
+  .sf-slot + .sf-slot { border-top: 1px solid var(--line); }
+  .sf-slot.cur { border: 1px solid var(--line); border-radius: 14px; }
+  .sf-slot .a { font-weight: 600; width: 96px; flex: none; } .sf-slot .z { color: var(--muted); font-size: 14px; flex: 1; min-width: 0; }
+  .sf-slot .r { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line-strong); flex: none; }
+  .sf-slot[aria-pressed="true"] { background: var(--note-soft); } .sf-slot[aria-pressed="true"] .r { border: 7px solid var(--ink); }
+  .sf-send { justify-self: center; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; text-decoration: none; color: var(--muted); }
+  .sf-send .i { width: 15px; height: 15px; }
   .ivhero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; gap: 8px; }
   .ivh-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .ivh-count { font: 600 13px var(--mono); background: var(--surface-2); padding: 3px 8px; border-radius: 8px; }
@@ -766,6 +785,10 @@
     <div class="hint" id="recHint">Say the project, the meeting, the day and the time. You can add, move or cancel several meetings in one go.</div>
     <div class="two"><button class="btn" id="recCancel" type="button">Cancel</button><button class="btn ink" id="recDone" type="button">Done</button></div>
   </div>
+</div>
+
+<div class="sheet-wrap" id="sfSheet" hidden>
+  <div class="sheet sf" role="dialog" aria-modal="true" aria-labelledby="sfTitle" id="sfBody"></div>
 </div>
 
 <div class="sheet-wrap" id="ivSheet" hidden>
@@ -2538,7 +2561,7 @@ function bindBoardDrag(ivs) {
 let ivf = null, ivfRev = null;
 const ROUNDS = ['Intro', 'Phone', 'Screen', '1st round', '2nd round', '3rd round', 'Technical', 'Final'];
 /** x: an interview from the list (edit/move), or null (new). slot: { start, tz, mins } from Find a time. */
-function openIvForm(x, slot) {
+function openIvFormPage(x, slot) {
   const fqp = findPrefs();
   const tz = slot ? slot.tz : x ? (x.tz || S.settings.homeTz) : fqp.tz;
   const start = slot ? slot.start : x ? x.start : null;
@@ -2652,6 +2675,214 @@ async function afterIvChange(msg) {
     try { await run('undoLast'); toast('Undone', { type: 'ok' }); try { S = await run('getState'); } catch (e) {} ivl = null; if (view === 'iv') { renderIv(); loadIv(true); } }
     catch (e) { showError(e); }
   } } });
+}
+
+/* ───────── schedule an interview: who & what → pick a time → review & save ───────── */
+let sf = null;
+const SF_ROUNDS = ['Intro', 'Phone', '1st round', '2nd round', 'Technical', 'Final'];
+function sfPeople() {
+  const seen = ivl ? ivl.upcoming.concat(ivl.done).map(x => x.who).filter(w => /^[A-Z][a-z]{1,14}$/.test(w || '')) : [];
+  const n = {}; seen.forEach(w => n[w] = (n[w] || 0) + 1);
+  return Object.keys(n).sort((a, b) => n[b] - n[a]).slice(0, 5);
+}
+/** x: an interview to edit or move; slot: { start, tz, mins } picked elsewhere. */
+function openIvForm(x, slot) {
+  const q = findPrefs();
+  const timeOnly = !!(x && x.editKind === 'own');
+  sf = { step: timeOnly ? 2 : 1, id: x ? x.editIds[0] : '', timeOnly, title: x ? x.title : '', more: false,
+    who: x ? x.who : '', company: x ? x.company : '', round: x ? x.round : '', role: x ? x.role : '', with: x ? x.with : '',
+    join: x ? x.join || '' : '', job: x ? x.job || '' : '', resume: x ? x.resume || '' : '', notes: x ? x.notes || '' : '',
+    mins: slot ? slot.mins : x ? Math.round((x.end - x.start) / 60000) : q.mins, tz: slot ? slot.tz : (x && x.tz) || q.tz,
+    cur: x ? { start: x.start, end: x.end } : null, pick: slot ? { start: slot.start, end: slot.start + slot.mins * 60000 } : x ? { start: x.start, end: x.end, current: true } : null,
+    slots: null, day: null, theirBig: true, prefsOpen: false, custom: false, rev: null };
+  $('sfSheet').hidden = false;
+  sfRender();
+}
+function sfClose() { $('sfSheet').hidden = true; sf = null; }
+$('sfSheet').addEventListener('click', e => { if (e.target === $('sfSheet')) sfClose(); });
+function sfHead(n, title) {
+  return `<div class="sf-h"><button class="iconbtn" type="button" id="sfX" aria-label="Close">${icon('x')}</button><h2 id="sfTitle">${esc(title)}</h2>
+    <div class="sf-steps" aria-label="Step ${n} of 3">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+}
+function sfRender() {
+  if (!sf) return;
+  const b = $('sfBody');
+  if (sf.step === 1) sfStep1(b); else if (sf.step === 2) sfStep2(b); else sfStep3(b);
+  $('sfX').onclick = sfClose;
+  b.scrollTop = 0;
+}
+function sfStep1(b) {
+  const f = sf;
+  const fld = (k, label, ph, extra) => `<label class="f"><span>${label}</span><input class="in" data-sf="${k}" value="${esc(f[k])}" placeholder="${esc(ph)}" autocomplete="off" ${extra || ''}></label>`;
+  const url = 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"';
+  b.innerHTML = sfHead(1, f.id ? 'Edit interview' : 'New interview') + `
+    <div class="sf-b">
+      ${fld('who', 'Who it’s for', 'Name')}
+      <div class="picks">${sfPeople().map(p => `<button type="button" class="pick" data-sfwho="${esc(p)}" aria-pressed="${f.who === p}">${esc(p)}</button>`).join('')}</div>
+      ${fld('company', 'Company', 'e.g. Contoso')}
+      <div class="f"><span>Round</span><div class="picks">${SF_ROUNDS.map(r => `<button type="button" class="pick" data-sfround="${esc(r)}" aria-pressed="${f.round === r}">${esc(r)}</button>`).join('')}</div></div>
+      <button class="linkbtn sf-more" type="button" id="sfMore">${icon(f.more ? 'chevdown' : 'chev')}More details${f.role || f.with || f.join || f.job || f.resume || f.notes ? ' (filled in)' : ''}</button>
+      <div class="sf-moreb" ${f.more ? '' : 'hidden'}>
+        <div class="two">${fld('role', 'Role', 'e.g. Senior Engineer')}${fld('with', 'Interviewer', 'Name')}</div>
+        ${fld('join', 'Meeting link', 'https://zoom.us/j/…', url)}
+        <div class="two">${fld('job', 'Job post', 'https://…', url)}${fld('resume', 'Resume', 'https://…', url)}</div>
+        <label class="f"><span>Notes</span><textarea class="in" data-sf="notes" rows="3" placeholder="Anything to remember. Avoid SSNs and dates of birth.">${esc(f.notes)}</textarea></label>
+      </div>
+    </div>
+    <div class="sf-f"><button class="btn ink block" type="button" id="sfNext1">Pick a time${icon('chev')}</button></div>`;
+  b.querySelectorAll('[data-sf]').forEach(i => i.oninput = () => { f[i.dataset.sf] = i.value; if (i.dataset.sf === 'who') b.querySelectorAll('[data-sfwho]').forEach(x => x.setAttribute('aria-pressed', x.dataset.sfwho === f.who)); });
+  b.querySelectorAll('[data-sfwho]').forEach(x => x.onclick = () => { f.who = x.dataset.sfwho; b.querySelector('[data-sf="who"]').value = f.who; b.querySelectorAll('[data-sfwho]').forEach(y => y.setAttribute('aria-pressed', y === x)); });
+  b.querySelectorAll('[data-sfround]').forEach(x => x.onclick = () => { f.round = f.round === x.dataset.sfround ? '' : x.dataset.sfround; b.querySelectorAll('[data-sfround]').forEach(y => y.setAttribute('aria-pressed', y.dataset.sfround === f.round)); });
+  $('sfMore').onclick = () => { f.more = !f.more; sfRender(); };
+  $('sfNext1').onclick = () => {
+    if (!f.who.trim() && !f.company.trim() && !f.role.trim()) { toast('Add who it’s for, or the company.'); b.querySelector('[data-sf="who"]').focus(); return; }
+    const bad = ['join', 'job', 'resume'].find(k => f[k].trim() && !/^https?:\/\/\S+$/i.test(f[k].trim()));
+    if (bad) { f.more = true; sfRender(); toast('Links must start with https://'); return; }
+    f.step = 2; sfRender();
+  };
+}
+const sfWd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function sfPrefsLine(q) {
+  const wd = q.weekdays.join() === '1,2,3,4,5' ? 'Mon–Fri' : q.weekdays.map(i => sfWd[i]).join(', ');
+  const t = hm => { const [h, m] = hm.split(':').map(Number); return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''} ${h < 12 ? 'AM' : 'PM'}`; };
+  return `<b>${esc(fmtDur(sf.mins))}</b> · ${esc(zoneWord(sf.tz))} ${esc(t(q.from))}–${esc(t(q.to))} · ${esc(wd)}${q.buffer ? ' · ' + q.buffer + ' min gap' : ''}${q.mineOn ? ' · your ' + esc(t(q.mineFrom)) + '–' + esc(t(q.mineTo)) : ''}`;
+}
+async function sfLoadSlots() {
+  const q = findPrefs();
+  const from = dayIn(Date.now(), sf.tz);
+  sf.slots = 'loading';
+  try {
+    const r = await run('ivSlots', { mins: sf.mins, buffer: q.buffer, tz: sf.tz, from: q.from, to: q.to, weekdays: q.weekdays, fromDay: from, toDay: addDay(from, 13),
+      mine: q.mineOn ? { from: q.mineFrom, to: q.mineTo } : null, step: 30, lead: 60 });
+    if (!sf) return;
+    sf.slots = r;
+    if (!sf.day || !r.days.some(d => d.day === sf.day)) sf.day = r.days.length ? r.days[0].day : null;
+  } catch (e) { if (sf) { sf.slots = { error: errMsg(e) }; } }
+  if (sf && sf.step === 2) sfRender();
+}
+function sfStep2(b) {
+  const f = sf, q = findPrefs(), home = S.settings.homeTz, r = f.slots;
+  if (!r) { sfLoadSlots(); }
+  const days = r && r.days ? r.days : [];
+  const d = days.find(x => x.day === f.day);
+  const mineT = ms => `${fmtT(ms, home)}${dayIn(ms, home) !== dayIn(ms, f.tz) ? ' ' + fmtDay(ms, home).split(',')[0] : ''}`;
+  const picked = s => f.pick && f.pick.start === s.start;
+  const slotBtn = s => `<button type="button" class="sf-slot" data-sfslot="${s.start}" aria-pressed="${picked(s)}">
+      <span class="a tnum">${esc(f.theirBig ? fmtT(s.start, f.tz) : mineT(s.start))}</span><span class="z tnum">${esc(f.theirBig ? mineT(s.start) + ' your time' : fmtT(s.start, f.tz) + ' ' + zoneWord(f.tz))}</span><span class="r"></span></button>`;
+  let list;
+  if (!r || r === 'loading') list = `<div class="group">${skelRows(3)}</div>`;
+  else if (r.error) list = `<div class="group"><div class="empty">Couldn't check free times. ${esc(r.error)} <button class="btn sm" type="button" id="sfRetry">Try again</button></div></div>`;
+  else if (!days.length) list = `<div class="group"><div class="empty">No free ${esc(fmtDur(f.mins))} in those hours over the next 2 weeks. Change the hours, the length or the gap, or pick another time below.</div></div>`;
+  else list = `<div class="group">${d.slots.map(slotBtn).join('')}</div>`;
+  const bad = r && r.cals ? r.cals.filter(c => c.error) : [];
+  b.innerHTML = sfHead(2, 'Pick a time') + `
+    <div class="sf-b">
+      ${f.timeOnly ? `<div class="ivs-lock">${icon('clock')}<span><b>${esc(f.title)}</b><br>You made this one, so only its time changes.</span></div>` : ''}
+      ${f.cur ? `<button type="button" class="sf-slot cur" id="sfKeep" aria-pressed="${!!(f.pick && f.pick.current)}"><span class="a">Keep</span><span class="z tnum">${esc(fmtDay(f.cur.start, home))}, ${esc(fmtT(f.cur.start, home))} your time</span><span class="r"></span></button>` : ''}
+      <div class="sf-prefs">${icon('clock')}<span class="grow">${sfPrefsLine(q)}</span><button class="linkbtn" type="button" id="sfPrefs">${f.prefsOpen ? 'Done' : 'Change'}</button></div>
+      ${f.prefsOpen ? `<div class="group"><div class="pad">
+        <div class="two">
+          <label class="f"><span>Length</span><select class="in" id="sfMins">${[30, 45, 60, 90, 120].concat([30, 45, 60, 90, 120].includes(f.mins) ? [] : [f.mins]).sort((a, c) => a - c).map(m => `<option value="${m}" ${m === f.mins ? 'selected' : ''}>${fmtDur(m)}</option>`).join('')}</select></label>
+          <label class="f"><span>Gap around meetings</span><select class="in" id="sfBuf">${[0, 10, 15, 30].map(v => `<option value="${v}" ${v === q.buffer ? 'selected' : ''}>${v ? v + ' min' : 'None'}</option>`).join('')}</select></label>
+        </div>
+        <label class="f"><span>Their time zone</span><select class="in" id="sfTz">${tzOptions(f.tz)}</select></label>
+        <div class="two"><label class="f"><span>Their hours from</span><input class="in" type="time" id="sfFrom" value="${esc(q.from)}" step="900"></label><label class="f"><span>To</span><input class="in" type="time" id="sfTo" value="${esc(q.to)}" step="900"></label></div>
+        <div class="wdays" role="group" aria-label="Their weekdays">${WD.map((w, i) => `<button type="button" class="tpill" data-sfwd="${i}" aria-pressed="${q.weekdays.includes(i)}" aria-label="${WD_LONG[i]}">${w}</button>`).join('')}</div>
+        <label class="toggle"><span class="cb"><input type="checkbox" id="sfMine" ${q.mineOn ? 'checked' : ''}><span class="box">${icon('check')}</span></span><span class="small">Only when I’m free (${esc(zoneWord(home))} time)</span></label>
+        <div class="two" ${q.mineOn ? '' : 'hidden'} id="sfMineRow"><label class="f"><span>My hours from</span><input class="in" type="time" id="sfMineFrom" value="${esc(q.mineFrom)}" step="900"></label><label class="f"><span>To</span><input class="in" type="time" id="sfMineTo" value="${esc(q.mineTo)}" step="900"></label></div>
+        <button class="btn block" type="button" id="sfApply">${icon('clock')}Show free times</button>
+      </div></div>` : ''}
+      ${days.length ? `<div class="days7" role="group" aria-label="Day">${days.map(x => `<button type="button" class="day7" data-sfday="${x.day}" aria-pressed="${x.day === f.day}"><span class="w">${esc(dayLabel(x.day).split(',')[0])}</span><span class="n tnum">${+x.day.slice(8)}</span><span class="c">${x.slots.length} free</span></button>`).join('')}</div>` : ''}
+      ${days.length ? `<div class="ivbar"><span class="eyebrow" style="flex:1">Free times${f.tz !== home ? '' : ''}</span>${f.tz !== home ? `<div class="seg2" style="flex:none;width:200px;margin:0"><button type="button" data-sfz="their" aria-pressed="${f.theirBig}">${esc(zoneWord(f.tz))}</button><button type="button" data-sfz="mine" aria-pressed="${!f.theirBig}">My time</button></div>` : ''}</div>` : ''}
+      ${list}
+      ${bad.length ? `<div class="hint">${bad.map(c => `${esc(c.name)}’s busy times weren’t checked: ${esc(c.error)}`).join('<br>')}</div>` : r && r.cals ? `<div class="hint">Checked against ${esc(r.cals.map(c => c.name === 'Your calendar' ? 'your calendar' : c.name).join(', '))}.</div>` : ''}
+      <button class="linkbtn" type="button" id="sfCustom">${f.custom ? 'Hide' : 'Another day or time…'}</button>
+      ${f.custom ? `<div class="two"><label class="f"><span>Day (${esc(zoneWord(f.tz))})</span><input class="in" type="date" id="sfCD" value="${esc(f.pick ? dayIn(f.pick.start, f.tz) : dayIn(Date.now() + 864e5, f.tz))}"></label>
+        <label class="f"><span>Start</span><input class="in" type="time" id="sfCT" value="${esc(f.pick ? localTime(f.pick.start, f.tz) : '10:00')}" step="300"></label></div>
+        <button class="btn block" type="button" id="sfCUse">Use this time</button>` : ''}
+    </div>
+    <div class="sf-f two">${f.timeOnly ? '<button class="btn" type="button" id="sfSend">' + icon('send') + 'Send times</button>' : `<button class="btn" type="button" id="sfBack1">${icon('back')}Back</button>`}
+      <button class="btn ink" type="button" id="sfNext2" ${f.pick ? '' : 'disabled'}>Review${icon('chev')}</button></div>
+    ${!f.timeOnly ? `<button class="linkbtn sf-send" type="button" id="sfSend">${icon('send')}Send free times instead (copy for the recruiter)</button>` : ''}`;
+  if ($('sfRetry')) $('sfRetry').onclick = () => { f.slots = null; sfRender(); };
+  if ($('sfKeep')) $('sfKeep').onclick = () => { f.pick = { start: f.cur.start, end: f.cur.end, current: true }; sfRender(); };
+  $('sfPrefs').onclick = () => { f.prefsOpen = !f.prefsOpen; sfRender(); };
+  if ($('sfApply')) {
+    b.querySelectorAll('[data-sfwd]').forEach(x => x.onclick = () => { const i = +x.dataset.sfwd; q.weekdays = q.weekdays.includes(i) ? q.weekdays.filter(y => y !== i) : q.weekdays.concat(i).sort(); x.setAttribute('aria-pressed', q.weekdays.includes(i)); });
+    $('sfMine').onchange = () => { $('sfMineRow').hidden = !$('sfMine').checked; };
+    $('sfApply').onclick = () => {
+      if (!q.weekdays.length) { toast('Pick at least one weekday.'); return; }
+      f.mins = +$('sfMins').value; q.mins = f.mins; q.buffer = +$('sfBuf').value; f.tz = $('sfTz').value; q.tz = f.tz;
+      q.from = $('sfFrom').value || q.from; q.to = $('sfTo').value || q.to; q.mineOn = $('sfMine').checked; q.mineFrom = $('sfMineFrom').value || q.mineFrom; q.mineTo = $('sfMineTo').value || q.mineTo;
+      const keep = Object.assign({}, q); delete keep.start; store.set(FIND_KEY, JSON.stringify(keep));
+      f.prefsOpen = false; f.slots = null; if (f.pick && !f.pick.current) f.pick = null; sfRender();
+    };
+  }
+  b.querySelectorAll('[data-sfday]').forEach(x => x.onclick = () => { f.day = x.dataset.sfday; sfRender(); });
+  b.querySelectorAll('[data-sfz]').forEach(x => x.onclick = () => { f.theirBig = x.dataset.sfz === 'their'; sfRender(); });
+  b.querySelectorAll('[data-sfslot]').forEach(x => x.onclick = () => { const st = +x.dataset.sfslot; f.pick = { start: st, end: st + f.mins * 60000 }; sfRender(); });
+  $('sfCustom').onclick = () => { f.custom = !f.custom; sfRender(); };
+  if ($('sfCUse')) $('sfCUse').onclick = () => {
+    const dd = $('sfCD').value, tt = $('sfCT').value;
+    if (!dd || !tt) { toast('Pick a day and a start time.'); return; }
+    const st = zoned(dd, tt, f.tz); f.pick = { start: st, end: st + f.mins * 60000, custom: true }; f.custom = false; sfRender();
+  };
+  if ($('sfBack1')) $('sfBack1').onclick = () => { f.step = 1; sfRender(); };
+  $('sfNext2').onclick = () => { if (f.pick) { f.step = 3; f.rev = null; sfRender(); } };
+  b.querySelectorAll('#sfSend').forEach(x => x.onclick = () => sfCopy());
+}
+async function sfCopy() {
+  const r = sf && sf.slots;
+  if (!r || !r.days || !r.days.length) { toast('No free times to send yet.'); return; }
+  const home = r.homeTz, tz = r.tz, span = (a, c, z) => `${fmtT(a, z)} – ${fmtT(c, z)}`;
+  const lines = [`Free for a ${fmtDur(r.mins)} interview (any start within these times):`];
+  r.days.slice(0, 7).forEach(d => {
+    const parts = d.slots.reduce((acc, x) => { const l = acc[acc.length - 1]; if (l && x.start <= l.end) l.end = Math.max(l.end, x.end); else acc.push({ start: x.start, end: x.end }); return acc; }, []);
+    lines.push(`${dayLabel(d.day)}: ${parts.map(x => span(x.start, x.end, tz)).join(', ')} ${tzAbbr(tz, parts[0].start)}` + (tz === home ? '' : ` (${parts.map(x => span(x.start, x.end, home)).join(', ')} ${zoneWord(home)} time)`));
+  });
+  const text = lines.join('\n');
+  try { await navigator.clipboard.writeText(text); toast('Free times copied', { type: 'ok' }); }
+  catch (e) { dialog({ title: 'Copy these times', body: text, primary: 'Done' }); }
+}
+function sfReq(check) {
+  const f = sf;
+  return { id: f.id || undefined, check, date: dayIn(f.pick.start, f.tz), time: localTime(f.pick.start, f.tz), mins: Math.round((f.pick.end - f.pick.start) / 60000) || f.mins, tz: f.tz,
+    who: f.who, company: f.company, role: f.role, round: f.round, with: f.with, join: f.join.trim(), job: f.job.trim(), resume: f.resume.trim(), notes: f.notes };
+}
+async function sfStep3(b) {
+  const f = sf;
+  b.innerHTML = sfHead(3, 'Review') + `<div class="sf-b">${skelRows(3)}</div>`;
+  if (!f.rev) {
+    try { f.rev = await run('ivSave', sfReq(true)); }
+    catch (e) { if (sf !== f) return; b.innerHTML = sfHead(3, 'Review') + `<div class="sf-b"><div class="notice warn">${icon('info')}<span class="grow">${esc(errMsg(e))}</span></div></div><div class="sf-f"><button class="btn block" type="button" id="sfBack2">${icon('back')}Back</button></div>`; $('sfX').onclick = sfClose; $('sfBack2').onclick = () => { f.step = 2; sfRender(); }; return; }
+    if (sf !== f || f.step !== 3) return;
+  }
+  const r = f.rev, home = r.homeTz, tz = r.tz;
+  const when = (a, c) => `${fmtDay(a, tz)}, ${fmtT(a, tz)} – ${fmtT(c, tz)} ${zoneWord(tz)}`;
+  const chk = [];
+  if (r.past) chk.push(['warn', 'info', 'This time has already passed.']);
+  r.clashes.forEach(c => chk.push(['bad', 'clash', `Clashes with ${c.title} (${fmtT(c.start, home)} – ${fmtT(c.end, home)} your time).`]));
+  if (!r.clashes.length) chk.push(['ok', 'check', 'Free in your calendar' + (findPrefs().buffer ? `, with ${findPrefs().buffer} min either side` : '') + '.']);
+  r.busyOn.forEach(n => chk.push(['warn', 'clash', `${n} is busy then.`]));
+  r.calErrors.forEach(c => chk.push(['info', 'info', `${c.name}’s busy times weren’t checked: ${c.error}`]));
+  chk.push(['info', 'shield', 'Nobody is invited and no emails are sent.']);
+  b.innerHTML = sfHead(3, 'Review') + `
+    <div class="sf-b">
+      <div class="ivs-sum"><span class="eyebrow">${r.mode === 'new' ? 'New interview' : r.timeOnly ? 'Moves to' : 'Saves as'}</span>
+        <b>${esc(r.title)}</b>
+        <span class="tnum">${esc(when(r.start, r.end))}</span>
+        ${tz !== home ? `<span class="muted tnum">${esc(fmtDay(r.start, home))}, ${esc(fmtT(r.start, home))} your time</span>` : ''}
+        ${r.before ? `<span class="muted tnum">Now: ${esc(fmtDay(r.before.start, home))}, ${esc(fmtT(r.before.start, home))} your time</span>` : ''}</div>
+      <div class="hs-chk">${chk.map(k => `<div class="k-${k[0]}">${icon(k[1])}<span>${esc(k[2])}</span></div>`).join('')}</div>
+      <div class="hint">Saved in ${esc(r.calendar)}.</div>
+    </div>
+    <div class="sf-f two"><button class="btn" type="button" id="sfBack2">${icon('back')}Change time</button><button class="btn ink" type="button" id="sfSave">${icon('check')}${r.mode === 'new' ? 'Save' : 'Save the change'}</button></div>`;
+  $('sfX').onclick = sfClose;
+  $('sfBack2').onclick = () => { f.step = 2; sfRender(); };
+  $('sfSave').onclick = () => withBusy($('sfSave'), 'Saving…', async () => {
+    try { const res = await run('ivSave', sfReq(false)); sfClose(); afterIvChange(res.added ? 'Saved to your calendar' : 'Interview updated'); }
+    catch (e) { showError(e); }
+  });
 }
 
 /* ───────── + : every way to add something ───────── */
