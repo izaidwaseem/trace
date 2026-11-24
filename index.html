@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'a55a227b26';</script>
+<script>window.TRACE_VER = 'f2dfa15718';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -615,9 +615,16 @@
   .toast { display: flex; gap: 10px; align-items: center; }
   .toast .i { width: 18px; height: 18px; flex: none; }
   .toast.ok .i { color: var(--new); }
-  .toast.err { background: var(--remove); color: #fff; }
-  .toast.err .i { color: #fff; }
-  .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 0 0 0 6px; }
+  .toast.err .i { color: var(--remove); }
+  .toast.warn .i { color: var(--moved); }
+  .toast .tmsg { display: grid; gap: 2px; min-width: 0; }
+  .toast .tmsg b { font-weight: 700; }
+  .toast.two { align-items: flex-start; width: auto; }
+  .toast.two .i { margin-top: 2px; }
+  .toast button { border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+  .toast .tact { font-weight: 700; padding: 6px 10px; border-radius: 8px; background: rgba(127,127,127,.2); white-space: nowrap; flex: none; }
+  .toast .tx { padding: 2px; opacity: .6; flex: none; display: grid; }
+  .toast .tx .i { color: inherit; width: 16px; height: 16px; margin: 0; }
   .empty { padding: 18px 14px; color: var(--muted); font-size: 14px; }
   .rv-side, .rv-main { display: grid; gap: 20px; align-content: start; min-width: 0; }
   #undoBox:empty, #setupBox:empty { display: none; }
@@ -854,18 +861,50 @@
 <div class="pop" id="pop" role="tooltip" hidden></div>
 
 <script>
-/* If something breaks while Relay starts, say so on screen instead of showing a blank page. */
-function showFatal(m) {
+/*
+ * Errors in Relay's own code are sent quietly to the server's error log (no screenshots needed).
+ * Errors from other scripts (Safari extensions, translators, content blockers) arrive as a bare
+ * "Script error." with no file or line; they aren't Relay's and are ignored.
+ * On screen: if Relay never got going, a calm "couldn't start" card with Reload; otherwise one gentle
+ * toast per session, and only for errors in Relay's own code.
+ */
+let errSent = 0, errToasted = false;
+const errSafe = f => { try { return f(); } catch (x) { return undefined; } };   // app state may not exist yet
+function reportError(msg, where, stack, quiet) {
+  if (errSent < 5) {
+    errSent++;
+    try {
+      const body = { msg, where, stack, view: String(errSafe(() => view) || ''), ua: navigator.userAgent };
+      if (typeof run === 'function' && typeof traceKey === 'function' && traceKey()) run('logError', body).catch(() => {});
+    } catch (x) {}
+  }
   try {
-    let d = document.getElementById('fatal');
-    if (!d) { d = document.createElement('div'); d.id = 'fatal'; d.setAttribute('role', 'alert');
-      d.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 76px);z-index:9999;background:#b42330;color:#fff;padding:12px 14px;border-radius:12px;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word';
-      document.body.appendChild(d); }
-    d.textContent = 'Relay hit an error. Send a screenshot of this to Claude:\n' + m;
+    const started = !!errSafe(() => S);
+    if (!started) {
+      if (document.getElementById('startFail')) return;
+      const d = document.createElement('div');
+      d.id = 'startFail'; d.setAttribute('role', 'alert');
+      d.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:var(--bg,#0b0e13);color:var(--fg,#e9edf3);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;text-align:center';
+      d.innerHTML = '<div style="max-width:320px"><div style="font-size:20px;font-weight:600;margin-bottom:6px">Relay couldn’t start</div>'
+        + '<div style="opacity:.7;margin-bottom:18px">Something went wrong while loading. It has been noted. Reloading usually fixes it.</div>'
+        + '<button type="button" style="font:inherit;font-weight:600;padding:12px 22px;border-radius:12px;border:0;background:#e9edf3;color:#101722" onclick="location.reload()">Reload</button></div>';
+      document.body.appendChild(d);
+    } else if (!quiet && !errToasted && typeof toast === 'function') {
+      errToasted = true;
+      toast('If this screen stops responding, reload Relay. The problem has been noted.', { type: 'err', title: 'Something went wrong', action: { label: 'Reload', fn: () => location.reload() } });
+    }
   } catch (x) {}
 }
-window.addEventListener('error', e => showFatal((e.message || 'error') + (e.lineno ? ' (line ' + e.lineno + ':' + e.colno + ')' : '') + (e.error && e.error.stack ? '\n' + String(e.error.stack).split('\n').slice(0, 4).join('\n') : '')));
-window.addEventListener('unhandledrejection', e => showFatal('Unhandled: ' + String(e.reason && (e.reason.stack || e.reason.message) || e.reason).split('\n').slice(0, 4).join('\n')));
+window.addEventListener('error', e => {
+  if (!e.filename && !e.lineno && /^Script error\.?$/i.test(e.message || '')) return;   // another site's script
+  if (e.filename && errSafe(() => new URL(e.filename).origin) !== location.origin) return;   // an extension's or another site's code
+  reportError(e.message || 'error', (e.lineno ? 'line ' + e.lineno + ':' + e.colno : ''), e.error && e.error.stack ? String(e.error.stack) : '');
+});
+window.addEventListener('unhandledrejection', e => {
+  const r = e.reason || {};
+  if (r && (r.code === 'offline' || r.code === 'timeout' || r.name === 'AbortError')) return;   // network; the screen already says so
+  reportError('Unhandled: ' + String(r.message || r), '', String(r.stack || ''));
+});
 
 /* ───────── constants ───────── */
 const GCOLORS = { '': ['None', ''], '1': ['Lavender', '#7986cb'], '2': ['Sage', '#33b679'], '3': ['Grape', '#8e24aa'],
@@ -1007,15 +1046,22 @@ const ERR_UI = {
   project: ['Project not found', 'Reload app', 'err'], locked: ['Link is missing its key', null, 'err'], photo: ['No photo', null, 'warn'], undo: ['Nothing to undo', null, 'warn'],
   form: ['Check the form', null, 'warn'], other: ['Something went wrong', 'Try again', 'err'] };
 /** Error dialog with a fix button that matches the problem. */
+/** Error toast with a fix button that matches the problem. */
 function showError(e, opts) {
-  const { code, msg } = parseErr(e);
+  let { code, msg } = parseErr(e);
   const [title, act, tone] = ERR_UI[code] || ERR_UI.other;
+  if (code === 'other' && techy(msg)) {   // a bug, not something the person can act on: log it, say it plainly
+    reportError(msg, 'server/' + (opts && opts.where || ''), e && e.stack ? String(e.stack) : '', true);
+    msg = 'Relay hit a problem. It has been noted. Try again, and reload if it keeps happening.';
+  }
   let fix = null;
   if (act === 'Reload app') fix = () => location.reload();
   else if (act === 'Open settings' || act === 'See model status') fix = () => { go('settings'); renderSettings(); };
   else if (act === 'Try again' && opts && opts.retry) fix = opts.retry;
-  return dialog({ tone, title, body: msg, primary: fix ? act : 'OK', secondary: fix ? 'Close' : null, onPrimary: fix });
+  toast(msg, { type: tone === 'warn' ? 'warn' : 'err', title, action: fix ? { label: act === 'Reload app' ? 'Reload' : act === 'See model status' ? 'Status' : act === 'Open settings' ? 'Settings' : act, fn: fix } : null });
+  return Promise.resolve(false);
 }
+const techy = m => /TypeError|ReferenceError|SyntaxError|RangeError|is not a function|is not defined|undefined|null\b|Cannot read|Exception:|stack/i.test(String(m || ''));
 function dialog({ tone, title, body, primary, secondary, danger, onPrimary }) {
   return new Promise(resolve => {
     hideTip();
@@ -1034,17 +1080,24 @@ function dialog({ tone, title, body, primary, secondary, danger, onPrimary }) {
   });
 }
 let toastT;
-/** toast(msg) · toast(msg, ms) · toast(msg, { type: 'ok'|'err', action: { label, fn }, ms }) */
+/**
+ * toast(msg) · toast(msg, ms) · toast(msg, { type: 'ok'|'warn'|'err', title, action: { label, fn }, ms })
+ * Problems (warn/err) get a dismiss button, are announced to screen readers, and stay 10 s.
+ */
 function toast(msg, o) {
   o = typeof o === 'number' ? { ms: o } : (o || {});
-  const t = $('toast');
-  t.className = 'toast ' + (o.type || '');
-  t.innerHTML = (o.type === 'ok' ? icon('check') : o.type === 'err' ? icon('info') : '') + `<span>${esc(msg)}</span>` +
-    (o.action ? `<button type="button" id="tAct">${esc(o.action.label)}</button>` : '');
+  const t = $('toast'), problem = o.type === 'err' || o.type === 'warn';
+  t.className = 'toast ' + (o.type || '') + (o.title ? ' two' : '');
+  t.setAttribute('role', problem ? 'alert' : 'status');
+  t.innerHTML = (o.type === 'ok' ? icon('check') : problem ? icon('info') : '')
+    + `<span class="tmsg">${o.title ? `<b>${esc(o.title)}</b>` : ''}<span>${esc(msg)}</span></span>`
+    + (o.action ? `<button type="button" class="tact" id="tAct">${esc(o.action.label)}</button>` : '')
+    + (problem ? `<button type="button" class="tx" id="tX" aria-label="Dismiss">${icon('x')}</button>` : '');
   t.hidden = false;
   if (o.action) $('tAct').onclick = () => { t.hidden = true; o.action.fn(); };
+  if ($('tX')) $('tX').onclick = () => { t.hidden = true; };
   clearTimeout(toastT);
-  toastT = setTimeout(() => t.hidden = true, o.ms || (o.action ? 6500 : 3200));
+  toastT = setTimeout(() => t.hidden = true, o.ms || (problem ? 10000 : o.action ? 6500 : 3200));
 }
 /** A toast with a spinner that stays until the next toast (or hideToast) replaces it. */
 function toastBusy(msg) {
@@ -1142,7 +1195,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); }
 window.addEventListener('scroll', hideTip, { passive: true });
 window.addEventListener('offline', () => { $('offline').hidden = false; });
 window.addEventListener('online', () => { $('offline').hidden = true; toast('Back online', { type: 'ok' }); });
-window.addEventListener('error', () => toast('Something went wrong in the app. Reload if it keeps happening.', { type: 'err' }));
 
 /* ───────── navigation ───────── */
 const TABS = ['today', 'iv', 'home', 'activity'];
@@ -1329,7 +1381,7 @@ async function undoHistory(ts, btn) {
       renderHome();
       const bits = [u.removed && u.removed + ' removed', u.restored && u.restored + ' moved back', u.readded && u.readded + ' put back'].filter(Boolean);
       toast('Undone' + (bits.length ? ': ' + bits.join(', ') : ''), { type: 'ok' });
-      if (u.errors && u.errors.length) dialog({ tone: 'warn', title: 'Some changes could not be undone', body: u.errors.join(' '), primary: 'OK' });
+      if (u.errors && u.errors.length) toast(u.errors.join(' '), { type: 'warn', title: 'Some changes could not be undone' });
     } catch (e) { showError(e, { retry: () => undoHistory(ts, btn) }); }
   });
 }
@@ -1373,7 +1425,7 @@ async function onFiles(ev) {
     for (const f of files) images.push(await fileToJpeg(f));
   } catch (e) {
     progress(false);
-    dialog({ tone: 'warn', title: "Couldn't open that photo", body: errMsg(e) + ' Try taking the photo again, or pick a JPEG or PNG.', primary: 'OK' });
+    toast(errMsg(e) + ' Try taking the photo again, or pick a JPEG or PNG.', { type: 'warn', title: "Couldn't open that photo" });
     return;
   }
   analyzeNow();
@@ -1406,7 +1458,8 @@ async function queueForLater(e) {
     S.queue = await run('queueScan', { profileId: selId, hint: 'auto', images: images.map(i => ({ data: i.data, mime: i.mime })) });
   } catch (err) { return false; }
   renderQueue(); startQueuePoll();
-  dialog({ tone: 'warn', title: 'Saved to try again', body: `The AI models are busy right now, so Relay kept your ${p ? p.project : ''} photo and will keep trying every 5 minutes${S.queueBackground ? ', even with the app closed' : ' while Relay is open'}. It shows on the home screen when it's ready to review. Nothing changes in your calendar until you tap Apply.`, primary: 'OK' });
+  toast(`AI models are busy, so Relay kept your ${p ? p.project + ' ' : ''}photo and retries every 5 minutes${S.queueBackground ? ', even with the app closed' : ' while Relay is open'}. It shows on Sync when it's ready to review.`,
+    { type: 'warn', title: 'Saved to try again', ms: 12000 });
   return true;
 }
 function prepReview() {
@@ -1751,7 +1804,7 @@ async function doUndo(btn) {
       renderHome(); go('tab');
       const bits = [u.removed && u.removed + ' removed', u.restored && u.restored + ' moved back', u.readded && u.readded + ' put back'].filter(Boolean);
       toast('Undone' + (bits.length ? ': ' + bits.join(', ') : ''), { type: 'ok' });
-      if (u.errors && u.errors.length) dialog({ tone: 'warn', title: 'Some changes could not be undone', body: u.errors.join(' '), primary: 'OK' });
+      if (u.errors && u.errors.length) toast(u.errors.join(' '), { type: 'warn', title: 'Some changes could not be undone' });
     } catch (e) { showError(e, { retry: () => doUndo() }); }
   });
 }
@@ -3280,10 +3333,9 @@ async function startRecording() {
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
   catch (e) {
     const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
-    dialog({ tone: 'warn', title: denied ? 'Microphone is blocked' : "Couldn't start the microphone",
-      body: denied ? 'Allow microphone access for Relay (iPhone: Settings → Safari → Microphone, or tap "aA" in the address bar → Website Settings). Or type the meeting instead.'
+    toast(denied ? 'Allow microphone access for Relay (iPhone: Settings → Safari → Microphone, or "aA" in the address bar → Website Settings), or type the meeting instead.'
         : 'Another app may be using the microphone. You can type the meeting instead.',
-      primary: 'Type instead', secondary: 'Close', onPrimary: () => openTyper() });
+      { type: 'warn', title: denied ? 'Microphone is blocked' : "Couldn't start the microphone", action: { label: 'Type instead', fn: () => openTyper() } });
     return;
   }
   const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
@@ -3529,7 +3581,7 @@ async function init() {
     setSec = 'calendars'; go('settings'); renderSettings();
     setTimeout(() => { const el = $('acctSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
     if (signIn.ok) toast(`Connected ${signIn.email}`, { type: 'ok' });
-    else dialog({ tone: 'warn', title: "Couldn't connect the account", body: signIn.msg, primary: 'OK' });
+    else toast(signIn.msg, { type: 'err', title: "Couldn't connect the account" });
   }, 400);
   if (!(window.google && google.script && google.script.run) && !traceKey()) return lockedScreen();
   go('today');
