@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '109dcdcb04';</script>
+<script>window.TRACE_VER = 'a97f903fc8';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -225,6 +225,41 @@
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  #v-today > div:empty { display: none; }
+  .tdsw { display: flex; align-items: center; gap: 10px; }
+  .tdsw .grow { flex: 1; text-align: center; display: grid; } .tdsw .grow b { font-size: 16px; } .tdsw .grow span { font-size: 13px; color: var(--muted); }
+  .tdstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .tdst { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 10px 9px; display: grid; gap: 2px; align-content: start; text-align: left; font: inherit; color: var(--fg); min-width: 0; }
+  button.tdst { cursor: pointer; }
+  .tdst b { font-size: 20px; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tdst b small { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .tdst span { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+  .tdst.bad b { color: var(--remove); }
+  .tdtl { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .tdtl > * + * { border-top: 1px solid var(--line); }
+  .tdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--fg); }
+  .tdr.dim { opacity: .5; }
+  .tdr-t { width: 72px; flex: none; font-weight: 600; font-size: 14px; white-space: nowrap; } .tdr-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .tdr-b { flex: 1; min-width: 0; display: grid; gap: 1px; }
+  .tdr-n { display: flex; align-items: center; gap: 8px; font-weight: 550; min-width: 0; }
+  .tdr-x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .tdr-s { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tdr .chev { width: 16px; height: 16px; color: var(--faint); flex: none; }
+  .tdr a.btn { flex: none; text-decoration: none; }
+  .ivtag { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--focus); flex: none; }
+  .tdcg { position: relative; }
+  .tdcg::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 3px 3px 0; background: var(--remove); }
+  .tdcg > .tdr + .tdr { border-top: 1px dashed var(--line); }
+  .tdcg-h { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px 0 16px; font-size: 11.5px; font-weight: 600; color: var(--remove); }
+  .tdcg-h .i { width: 15px; height: 15px; }
+  .tdgap { display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); }
+  .tdgap::before, .tdgap::after { content: ""; flex: 1; border-top: 1px dashed var(--line-strong); }
+  .tdgap b { color: var(--new); font-weight: 600; }
+  .nowbar { height: 2px; background: var(--remove); position: relative; border: 0 !important; }
+  .nowbar::before { content: ""; position: absolute; left: 10px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--remove); }
+  .tdearl { display: flex; align-items: center; gap: 10px; padding: 11px 14px; width: 100%; border: 0; background: none; cursor: pointer; font: inherit; color: var(--muted); font-size: 13.5px; text-align: left; }
+  .tdearl .i { width: 16px; height: 16px; }
+  #v-today .sdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .sheet.sf { height: min(92vh, 860px); max-height: 92vh; grid-template-rows: auto 1fr auto auto; padding-block: 14px calc(14px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
   .sf-h { display: flex; align-items: center; gap: 10px; } .sf-h h2 { flex: 1; min-width: 0; }
   .sf-steps { display: flex; gap: 4px; } .sf-steps i { width: 20px; height: 4px; border-radius: 2px; background: var(--line-strong); } .sf-steps i.on { background: var(--ink); }
@@ -790,6 +825,10 @@
   </div>
 </div>
 
+<div class="sheet-wrap" id="clashSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="clsTitle" id="clsBody" style="max-height:90vh;overflow-y:auto"></div>
+</div>
+
 <div class="sheet-wrap" id="sfSheet" hidden>
   <div class="sheet sf" role="dialog" aria-modal="true" aria-labelledby="sfTitle" id="sfBody"></div>
 </div>
@@ -1077,7 +1116,7 @@ function go(v) {
   document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === v ? 'page' : 'false'));
   const titles = { home: 'Sync', activity: 'Activity', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
-  $('subtitle').textContent = v === 'today' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
+  $('subtitle').textContent = '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
   window.scrollTo(0, 0);
 }
@@ -1966,38 +2005,11 @@ async function loadToday(offset) {
   try { ag = await run('agenda', offset || 0); agOffset = offset || 0; agAt = Date.now(); }
   catch (e) { if (view === 'today') showError(e, { retry: () => loadToday(offset) }); ag = ag && agOffset === (offset || 0) ? ag : null; }
   finally { agLoading = false; }
-  if (view === 'today') { renderTodayCard(); renderToday(); }
+  if (view === 'today') renderToday();
 }
-function renderTodayCard() {
-  const el = $('todayCard');
-  if (!S.settings.hasKey && !ag) { el.innerHTML = ''; return; }
-  if (!ag || agOffset !== 0) { el.innerHTML = `<div class="tc"><div class="tc-top"><div class="grow"><div class="tc-k">Today</div><div class="skel" style="height:18px;width:60%;margin-top:6px"></div></div></div></div>`; return; }
-  const tz = ag.homeTz, n = ag.next, st = ag.stats;
-  const clashes = ag.clashList.filter(c => c.type === 'clash').length, dups = ag.clashList.filter(c => c.type === 'duplicate').length;
-  const nowOn = n && n.start <= Date.now();
-  const p = n ? prof(n.proj) : null;
-  el.innerHTML = `<div class="tc">
-    <button class="tc-top" id="tcOpen" type="button">
-      <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)">${icon('sun')}</span>
-      <span class="grow">
-        <span class="tc-k">${nowOn ? 'On now' : 'Next up'}</span>
-        <div class="tc-next">${n ? esc(n.title) : 'Nothing else today'}</div>
-        <div class="tc-when">${n ? `<b>${esc(nowOn ? 'until ' + fmtT(n.end, tz) : inLabel(n.start))}</b> · ${esc(fmtDay(n.start, tz))}, ${esc(fmtT(n.start, tz))}${otherSide(n) ? ' · ' + esc(otherSide(n)) : ''}` : 'Enjoy the break.'}</div>
-      </span>
-      ${icon('chev', 'chev')}
-    </button>
-    <div class="tc-bar">
-      ${n && n.join ? `<a class="tpill join" href="${esc(n.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
-      <button class="tpill" id="tcAll" type="button">${st.count} meeting${st.count === 1 ? '' : 's'} today · ${fmtDur(st.mins)}</button>
-      ${clashes ? `<button class="tpill warn" id="tcClash" type="button">${icon('clash')}${clashes} clash${clashes > 1 ? 'es' : ''} ahead</button>` : ''}
-      ${dups ? `<button class="tpill" id="tcDup" type="button">${dups} listed twice</button>` : ''}
-    </div></div>`;
-  const open = tab => { agTab = tab; renderToday(); const b = $('todayBody'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-  $('tcOpen').onclick = () => open('agenda');
-  $('tcAll').onclick = () => open('agenda');
-  if ($('tcClash')) $('tcClash').onclick = () => open('clashes');
-  if ($('tcDup')) $('tcDup').onclick = () => open('clashes');
-}
+/* ───────── Today: next up, four numbers, the day as a calm timeline ───────── */
+let tdEarlier = false, tdSwipe = false;
+function renderTodayCard() { const el = $('todayCard'); if (el) el.innerHTML = ''; }   // next-up now lives inside Today
 function renderTodayTab() {
   renderShareBox();
   renderTodayCard();
@@ -2005,77 +2017,138 @@ function renderTodayTab() {
   renderToday();
   if (!ivl) loadIv();
 }
-function renderNextIv() {
-  const el = $('nextIvBox');
-  if (!el) return;
-  if (!ivl) { el.innerHTML = ''; return; }
-  const tz = ivl.homeTz, x = ivl.upcoming.find(i => i.resp !== 'declined' && !i.handed);
-  el.innerHTML = `<div class="section"><div class="eyebrow" style="display:flex;justify-content:space-between;align-items:baseline">Next interview<button class="linkbtn" type="button" id="nivAll" style="text-transform:none;letter-spacing:0;font-weight:500">All interviews</button></div>
-    ${x ? `<div class="group">${ivRowHtml(x, tz, Date.now())}</div>` : `<div class="group"><div class="empty">No interviews in the next ${ivl.days} days.</div></div>`}</div>`;
-  $('nivAll').onclick = () => openTab('iv');
-  bindIvRows(el);
+function renderNextIv() { const el = $('nextIvBox'); if (el) el.innerHTML = ''; }   // interviews are in the timeline now
+const fmtHm = m => m < 60 ? m + 'm' : Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '');
+/** Merge overlapping [start, end] blocks. */
+function tdMerge(list) {
+  const out = [];
+  list.slice().sort((a, b) => a.start - b.start).forEach(x => {
+    const l = out[out.length - 1];
+    if (l && x.start <= l.end) l.end = Math.max(l.end, x.end); else out.push({ start: x.start, end: x.end });
+  });
+  return out;
+}
+function tdRow(e, tz, now, extra) {
+  const p = prof(e.proj), past = e.end <= now, live = e.start <= now && !past;
+  const iv = ivl && e.iv ? ivFind(e.id) : null;
+  const subs = [];
+  if (e.forOther) subs.push('For ' + e.forOther);
+  if (live) subs.push('On now · until ' + fmtT(e.end, tz));
+  if (otherSide(e)) subs.push(otherSide(e));
+  if (iv && !e.forOther) subs.push([iv.who, iv.round].filter(Boolean).join(' · '));
+  if (e.weekly) subs.push('weekly');
+  if (e.resp === 'declined') subs.push('Declined');
+  const dim = past || e.forOther || e.resp === 'declined' || e.free;
+  const name = iv && !e.forOther ? ivName(iv) : e.title;
+  return `<div class="tdr ${dim ? 'dim' : ''}" role="button" tabindex="0" data-td="${esc(e.id)}">
+    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtDur(Math.round((e.end - e.start) / 60000)))}</small></span>
+    <span class="tdr-b"><span class="tdr-n">${p ? chip(p, true) : ''}${e.iv ? '<span class="ivtag">Interview</span>' : ''}<span class="tdr-x">${esc(name)}</span></span>${subs.length ? `<span class="tdr-s">${esc(subs.join(' · '))}</span>` : ''}</span>
+    ${e.resp === 'needsAction' && !e.forOther && !past ? '<i class="sdot info" title="Needs a reply"></i>' : ''}
+    ${(extra && extra.join) && e.join ? `<a class="btn sm ink" href="${esc(e.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : icon('chev', 'chev')}</div>`;
 }
 function renderToday() {
   const el = $('todayBody');
   if (!ag) { el.innerHTML = skelRows(5); loadToday(agOffset); return; }
-  const n = ag.clashList.length;
-  let html = `<div class="seg2" role="tablist">
-      <button type="button" data-tab="agenda" aria-pressed="${agTab === 'agenda'}">Agenda</button>
-      <button type="button" data-tab="clashes" aria-pressed="${agTab === 'clashes'}">Clashes${n ? ' · ' + n : ''}</button></div>`;
-  html += agTab === 'agenda' ? agendaHtml() : clashesHtml();
+  const tz = ag.homeTz, now = Date.now(), isToday = agOffset === 0;
+  const evs = ag.events.slice().sort((a, b) => a.start - b.start);
+  const mine = evs.filter(e => !e.forOther && e.resp !== 'declined' && !e.free);
+  const inDay = (a, b) => Math.max(0, (Math.min(b, ag.to) - Math.max(a, ag.from)) / 60000);
+  // numbers
+  const total = mine.length, left = isToday ? mine.filter(e => e.end > now).length : total;
+  const booked = Math.round(tdMerge(mine).reduce((n, b) => n + inDay(b.start, b.end), 0));
+  const blocks = tdMerge(mine.filter(e => !isToday || e.end > now));
+  let gapFrom = blocks[0] ? blocks[0].start : ag.from;   // free time between meetings, not before the first one
+  const gaps = [];
+  blocks.forEach(b => { if (b.start - gapFrom >= 30 * 60000) gaps.push({ start: gapFrom, end: b.start }); gapFrom = Math.max(gapFrom, b.end); });
+  const longest = gaps.reduce((m, g) => (!m || g.end - g.start > m.end - m.start) ? g : m, null);
+  const ahead = mine.filter(e => !isToday || e.end > now);
+  const clashN = Math.round(ahead.reduce((n, e) => n + e.clashes.filter(c => c.type === 'clash' && ahead.some(x => x.id === c.id)).length, 0) / 2);
+  const reply = mine.filter(e => e.resp === 'needsAction' && e.end > now).length;
+  const label = agOffset === 0 ? 'Today' : agOffset === 1 ? 'Tomorrow' : agOffset === -1 ? 'Yesterday' : new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' }).format(ag.from);
+  let html = `<div class="tdsw"><button class="iconbtn" type="button" id="tdPrev" aria-label="Previous day">${icon('back')}</button>
+      <div class="grow"><b>${esc((agOffset === 0 ? '' : label + ' · ') + new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(ag.from))}</b>${agOffset ? '<button class="linkbtn" type="button" id="tdBack" style="font-size:13px">Back to today</button>' : ''}</div>
+      <button class="iconbtn" type="button" id="tdNext" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
+  const n = isToday ? ag.next : null;
+  if (isToday) html += n ? `<div class="ivhero">
+      <div class="ivh-top"><span class="eyebrow">${n.start <= now ? 'On now' : 'Next up'}</span><span class="ivh-count tnum">${esc(n.start <= now ? 'until ' + fmtT(n.end, tz) : inLabel(n.start))}</span></div>
+      <div class="ivh-name" style="display:flex;gap:10px;align-items:center">${prof(n.proj) ? chip(prof(n.proj), true) : ''}<span>${esc(n.title)}</span></div>
+      <div class="ivh-when tnum"><b>${esc(fmtT(n.start, tz))} – ${esc(fmtT(n.end, tz))}</b>${dayIn(n.start, tz) !== dayIn(now, tz) ? ' · ' + esc(fmtDay(n.start, tz)) : ''}${otherSide(n) ? ' · ' + esc(otherSide(n)) : ''}</div>
+      ${n.join ? `<div class="ivh-acts"><a class="btn sm ink" href="${esc(n.join)}" target="_blank" rel="noopener">${icon('video')}Join</a></div>` : ''}</div>`
+    : `<div class="ivhero"><span class="eyebrow">Next up</span><div class="ivh-name">Nothing else today</div></div>`;
+  html += `<div class="tdstats">
+      <div class="tdst"><b>${left}${isToday ? `<small> of ${total}</small>` : ''}</b><span>${isToday ? 'meetings left' : 'meetings'}</span></div>
+      <div class="tdst"><b>${booked ? esc(fmtHm(booked)) : '0'}</b><span>booked</span></div>
+      <div class="tdst"><b>${longest ? esc(fmtHm(Math.round((longest.end - longest.start) / 60000))) : '–'}</b><span>${longest ? 'longest free · ' + esc(fmtT(longest.start, tz)) : 'no free gap'}</span></div>
+      <button class="tdst ${clashN ? 'bad' : ''}" type="button" id="tdClash"><b>${clashN}</b><span>clash${clashN === 1 ? '' : 'es'}${reply ? ` · ${reply} need${reply === 1 ? 's' : ''} a reply` : ''}</span></button></div>`;
+  // timeline
+  let tl = '';
+  const done = isToday ? evs.filter(e => e.end <= now) : [];
+  const rest = isToday ? evs.filter(e => e.end > now) : evs;
+  if (done.length) tl += tdEarlier ? done.map(e => tdRow(e, tz, now)).join('') + `<button class="tdearl" type="button" id="tdEarl">${icon('chevdown')}Hide earlier</button>`
+    : `<button class="tdearl" type="button" id="tdEarl">${icon('chev')}${done.length} earlier today · done</button>`;
+  if (isToday) tl += `<div class="nowbar" aria-label="Now, ${esc(fmtT(now, tz))}"></div>`;
+  let lastEnd = null, group = [], groupEnd = 0;
+  const flush = () => {
+    if (!group.length) return;
+    if (group.length === 1) tl += tdRow(group[0], tz, now, { join: n && group[0].id === n.id });
+    else {
+      let ov = 0; for (let i = 1; i < group.length; i++) ov = Math.max(ov, Math.min(group[i - 1].end, group[i].end) - group[i].start);
+      tl += `<div class="tdcg"><div class="tdcg-h"><span>Overlap · ${esc(fmtDur(Math.max(1, Math.round(ov / 60000))))}</span>${icon('clash')}</div>${group.map(e => tdRow(e, tz, now, { join: n && e.id === n.id })).join('')}</div>`;
+    }
+    group = [];
+  };
+  rest.forEach(e => {
+    const counts = !e.forOther && e.resp !== 'declined' && !e.free;
+    if (!counts) { flush(); tl += tdRow(e, tz, now); return; }
+    if (group.length && e.start < groupEnd) { group.push(e); groupEnd = Math.max(groupEnd, e.end); return; }
+    flush();
+    if (lastEnd !== null && e.start - lastEnd >= 30 * 60000) tl += `<div class="tdgap"><span><b>Free ${esc(fmtDur(Math.round((e.start - lastEnd) / 60000)))}</b> · ${esc(fmtT(lastEnd, tz))} – ${esc(fmtT(e.start, tz))}</span></div>`;
+    group = [e]; groupEnd = e.end;
+    lastEnd = Math.max(lastEnd || 0, e.end);
+  });
+  flush();
+  if (!evs.length) tl = `<div class="empty">No meetings ${isToday ? 'today' : 'this day'}.</div>`;
+  else if (!rest.length && isToday) tl += `<div class="empty">That’s everything for today.</div>`;
+  html += `<div class="tdtl">${tl}</div>
+    <div class="hint">Tap a meeting to open it. Blue dot: you haven’t replied. Dimmed: done, declined, or someone else’s (handed over, or a teammate’s interview copied to you). Swipe left or right to change day.</div>`;
   el.innerHTML = html;
-  el.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { agTab = b.dataset.tab; renderToday(); });
-  if ($('agPrev')) $('agPrev').onclick = () => { el.querySelector('.daynav').style.opacity = .5; loadToday(agOffset - 1); };
-  if ($('agNext')) $('agNext').onclick = () => { el.querySelector('.daynav').style.opacity = .5; loadToday(agOffset + 1); };
-  if ($('agToday')) $('agToday').onclick = () => loadToday(0);
-  el.querySelectorAll('[data-hide]').forEach(b => b.onclick = async () => {
-    await withBusy(b, 'Hiding…', async () => {
-      try { await run('ignoreClash', b.dataset.hide, true); ag.clashList = ag.clashList.filter(c => c.key !== b.dataset.hide); ag.ignoredCount++; renderToday(); renderTodayCard(); toast('Clash hidden', { type: 'ok' }); }
+  $('tdPrev').onclick = () => { el.style.opacity = .5; loadToday(agOffset - 1); };
+  $('tdNext').onclick = () => { el.style.opacity = .5; loadToday(agOffset + 1); };
+  $('tdClash').onclick = openClashSheet;
+  if ($('tdBack')) $('tdBack').onclick = () => { el.style.opacity = .5; loadToday(0); };
+  if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
+  el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
+  el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
+    if (ev.target.closest('a')) return;
+    const e = evs.find(x => x.id === b.dataset.td);
+    const iv = ivl && e && e.iv ? ivFind(e.id) : null;
+    if (iv) openIvDetail(iv.id); else if (e && e.link) window.open(e.link, '_blank', 'noopener');
+  });
+  el.style.opacity = '';
+  if (!tdSwipe) {
+    tdSwipe = true;
+    let sx = 0, sy = 0;
+    el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    el.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) > 70 && Math.abs(dy) < 45 && !agLoading) { el.style.opacity = .5; loadToday(agOffset + (dx < 0 ? 1 : -1)); }
+    }, { passive: true });
+  }
+}
+function openClashSheet() {
+  $('clsBody').innerHTML = `<div class="ivs-h"><h2 id="clsTitle">Clashes</h2><button class="iconbtn" type="button" id="clsX" aria-label="Close">${icon('x')}</button></div>` + clashesHtml();
+  $('clashSheet').hidden = false;
+  $('clsX').onclick = () => { $('clashSheet').hidden = true; };
+  const b = $('clsBody');
+  b.querySelectorAll('[data-hide]').forEach(x => x.onclick = async () => {
+    await withBusy(x, 'Hiding…', async () => {
+      try { await run('ignoreClash', x.dataset.hide, true); ag.clashList = ag.clashList.filter(c => c.key !== x.dataset.hide); ag.ignoredCount++; openClashSheet(); toast('Clash hidden', { type: 'ok' }); }
       catch (e) { showError(e); }
     });
   });
   if ($('clUnhide')) $('clUnhide').onclick = async e => {
-    await withBusy(e.currentTarget, 'Showing…', async () => { try { await run('ignoreClash', '*', false); await loadToday(agOffset); } catch (er) { showError(er); } });
+    await withBusy(e.currentTarget, 'Showing…', async () => { try { await run('ignoreClash', '*', false); await loadToday(agOffset); openClashSheet(); } catch (er) { showError(er); } });
   };
-}
-function agendaHtml() {
-  const tz = ag.homeTz, now = Date.now();
-  const label = agOffset === 0 ? 'Today' : agOffset === 1 ? 'Tomorrow' : agOffset === -1 ? 'Yesterday' : fmtDay(ag.from, tz);
-  let html = `<div class="daynav">
-      <button class="iconbtn" id="agPrev" type="button" aria-label="Previous day">${icon('back')}</button>
-      <div class="grow">${esc(label)}<small>${esc(new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' }).format(ag.from))}</small></div>
-      <button class="iconbtn" id="agNext" type="button" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
-  const st = ag.stats;
-  html += `<div class="pills" style="margin-bottom:12px">
-      <span class="pill">${st.count} meeting${st.count === 1 ? '' : 's'}</span><span class="pill">${fmtDur(st.mins)}</span>
-      ${st.clashes ? `<span class="pill moved">${st.clashes} clash${st.clashes > 1 ? 'es' : ''}</span>` : ''}
-      ${st.unanswered ? `<span class="pill">${st.unanswered} not answered</span>` : ''}
-      ${agOffset ? `<button class="tpill" id="agToday" type="button">Back to today</button>` : ''}</div>`;
-  if (!ag.events.length) return html + `<div class="group"><div class="empty">No meetings this day.</div></div>`;
-  let rows = '', nowDone = agOffset !== 0, lastSec = '';
-  const midnight = zoned(nextDay(ag.day), '00:00', tz);
-  ag.events.forEach(e => {
-    const hh = +localTime(e.start, tz).slice(0, 2);
-    const sec = e.start < ag.from ? 'Started earlier' : e.start >= midnight ? 'After midnight' : hh < 6 ? 'Early morning' : hh < 17 ? 'Daytime' : 'Evening';
-    if (sec !== lastSec) { lastSec = sec; rows += `<div class="agsec">${sec}</div>`; }
-    if (!nowDone && e.start > now) { nowDone = true; rows += `<div class="nowline" aria-label="Now"></div>`; }
-    const p = prof(e.proj);
-    const past = e.end <= now, cl = e.clashes.filter(c => c.type === 'clash'), dup = e.clashes.filter(c => c.type === 'duplicate');
-    const sub = [otherSide(e), fmtDur(Math.round((e.end - e.start) / 60000)), e.weekly ? 'Weekly' : '',
-      e.resp === 'needsAction' ? 'Not answered' : e.resp === 'tentative' ? 'Maybe' : e.resp === 'declined' ? 'Declined' : ''].filter(Boolean).join(' · ');
-    rows += `<div class="ag ${past ? 'past' : ''} ${cl.length ? 'clash' : ''}" ${e.resp === 'declined' ? 'style="opacity:.45"' : ''}>
-      <div class="ag-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtT(e.end, tz))}</small></div>
-      <div class="ag-b">
-        <div class="ag-title">${p ? chip(p, true) : ''}<a href="${esc(e.link || '#')}" target="_blank" rel="noopener">${esc(e.title)}</a></div>
-        ${sub ? `<div class="ag-sub tnum">${esc(sub)}</div>` : ''}
-        ${cl.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${fmtDur(c.mins)})</span></div>`).join('')}
-        ${dup.map(c => `<div class="ag-sub">Also in your calendar as “${esc(c.title)}”</div>`).join('')}
-      </div>
-      ${e.join && !past ? `<a class="tpill join" href="${esc(e.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
-    </div>`;
-  });
-  if (!nowDone) rows += `<div class="nowline" aria-label="Now"></div>`;
-  return html + `<div class="group">${rows}</div><div class="hint">Tap a meeting to open it in Google Calendar. Each day runs midnight to midnight, your time. Meetings after midnight are on the next day.</div>`;
 }
 function clashesHtml() {
   const tz = ag.homeTz, list = ag.clashList;
@@ -2098,7 +2171,7 @@ function clashesHtml() {
     <div class="hint">Overlaps in the next 14 days, in your time. Declined meetings are left out.${ag.ignoredCount ? ` <button class="linkbtn" id="clUnhide" type="button">Show ${ag.ignoredCount} hidden</button>` : ''}</div>`;
 }
 
-setInterval(() => { if (view === 'today' && ag && agOffset === 0) renderTodayCard(); }, 60000);
+setInterval(() => { if (view === 'today' && ag && agOffset === 0 && !document.hidden) renderToday(); }, 60000);
 
 /* ───────── newer version? reload once (GitHub Pages copies are cached up to 10 min) ───────── */
 function checkVersion() {
@@ -2957,6 +3030,7 @@ let hsIv = null;
 function closeHand() { $('handSheet').hidden = true; hsIv = null; }
 $('handSheet').addEventListener('click', e => { if (e.target === $('handSheet')) closeHand(); });
 $('ivSheet').addEventListener('click', e => { if (e.target === $('ivSheet')) closeIvSheet(); });
+$('clashSheet').addEventListener('click', e => { if (e.target === $('clashSheet')) $('clashSheet').hidden = true; });
 async function openHand(x, preTo) {
   if (!x) return;
   hsIv = x;
