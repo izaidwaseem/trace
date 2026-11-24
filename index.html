@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '766d46c399';</script>
+<script>window.TRACE_VER = '2fb1f9d95b';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -1681,7 +1681,7 @@ function pendingActions() {
 }
 function updateApply() {
   const n = pendingActions().filter(a => a.action !== 'ignore').length;
-  $('abPrimary').textContent = n ? `Apply ${n} change${n > 1 ? 's' : ''}` : 'Done';
+  $('abPrimary').textContent = n ? `Apply ${n} change${n > 1 ? 's' : ''}` : 'Mark as synced';
   $('abSecondary').textContent = 'Cancel';
 }
 $('abSecondary').onclick = async () => {
@@ -1691,7 +1691,7 @@ $('abSecondary').onclick = async () => {
 $('abPrimary').onclick = () => view === 'voice' ? applyVoiceNow() : applyNow();
 async function applyNow() {
   const actions = pendingActions();
-  if (!actions.length) { dropQueued(); review = null; go('tab'); return; }
+  if (!actions.length) return markSynced();
   $('abSecondary').disabled = true;
   await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
     try {
@@ -1704,6 +1704,23 @@ async function applyNow() {
       renderDone();
       go('done');
     } catch (e) { showError(e, { retry: applyNow }); }
+  });
+  $('abSecondary').disabled = false;
+}
+
+/** Nothing new in the photo: still record it, so the project shows "Synced just now · no changes". */
+async function markSynced() {
+  $('abSecondary').disabled = true;
+  await withBusy($('abPrimary'), 'Saving…', async () => {
+    try {
+      await run('applyChanges', { profileId: review.profileId, range: review.range ? review.range.label : '',
+        rangeStart: review.range ? review.range.start : '', actions: [], model: review.model || '' });
+      dropQueued();
+      const p = prof(review.profileId);
+      try { S = await run('getState'); } catch (e) {}
+      review = null; renderHome(); go('tab');
+      toast(`${p ? p.project : 'Project'} is up to date · nothing new to add`, { type: 'ok' });
+    } catch (e) { showError(e, { retry: markSynced }); }
   });
   $('abSecondary').disabled = false;
 }
@@ -1721,7 +1738,7 @@ function renderDone() {
     ${r.errors.length ? `<div class="notice warn">${icon('info')}<span class="grow"><b>${r.errors.length} change${r.errors.length > 1 ? 's' : ''} couldn't be saved</b><br>${r.errors.map(esc).join('<br>')}</span></div>` : ''}
     <div class="stack">
       <a class="btn ink block" href="${esc(r.calendarUrl || 'https:\/\/calendar.google.com')}" target="_blank" rel="noopener">${icon('external')}Open Google Calendar</a>
-      ${S.undo ? `<button class="btn block" id="dUndo">${icon('undo')}Undo these changes</button>` : ''}
+      ${S.undo && total ? `<button class="btn block" id="dUndo">${icon('undo')}Undo these changes</button>` : ''}
       <button class="btn ghost block" id="dHome">Back to projects</button>
     </div>`;
   $('dHome').onclick = () => { review = null; renderHome(); go('tab'); };
