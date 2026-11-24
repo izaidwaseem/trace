@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'b2b7dcc464';</script>
+<script>window.TRACE_VER = '04c97494cf';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -78,8 +78,8 @@
     -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Safari sizes a grid's single column to its widest child (buttons don't shrink), so pin columns to the container. */
-  .tc, .section, .pad, .stack, .cl { grid-template-columns: minmax(0, 1fr); }
-  .tc > *, .section > *, .pad > *, .stack > *, .cl > * { min-width: 0; }
+  .section, .pad, .stack, .cl { grid-template-columns: minmax(0, 1fr); }
+  .section > *, .pad > *, .stack > *, .cl > * { min-width: 0; }
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -179,14 +179,6 @@
   /* today + clashes */
   .todaycard { margin-bottom: 12px; }
   .todaycard:empty { display: none; }
-  .tc { display: grid; gap: 0; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
-  .tc-top { display: flex; align-items: center; gap: 12px; padding: 14px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
-  .tc-top .grow { flex: 1; min-width: 0; }
-  .tc-k { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .tc-next { font-size: 16px; font-weight: 600; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tc-when { font-size: 13px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tc-when b { color: var(--fg); font-weight: 600; }
-  .tc-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 14px 14px; }
   .tpill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg);
     border: 0; font-family: inherit; cursor: pointer; }
   .tpill svg { width: 14px; height: 14px; }
@@ -195,26 +187,14 @@
   .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-2); margin-bottom: 16px; }
   .seg2 button { min-height: 38px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 600 14px var(--font); cursor: pointer; }
   .seg2 button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-  .daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  .daynav .grow { flex: 1; text-align: center; font-weight: 600; }
-  .daynav .grow small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
   .ag { display: flex; gap: 12px; padding: 12px 14px; align-items: flex-start; position: relative; }
   .ag.past { opacity: .5; }
   .ag.clash::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--moved); }
-  .ag-t { width: 74px; flex-shrink: 0; font-size: 14px; font-weight: 600; line-height: 1.3; white-space: nowrap; }
-  .ag-t small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
-  .ag-b { flex: 1; min-width: 0; display: grid; gap: 3px; }
-  .ag-title { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 15px; }
-  .ag-title a { color: inherit; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ag-sub { font-size: 13px; color: var(--muted); }
   .ag-warn { font-size: 13px; color: var(--moved); display: flex; gap: 6px; align-items: flex-start; }
   .ag-warn svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
   .ag .tpill.join { flex-shrink: 0; align-self: center; }
   .seg2.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tpill[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); }
-  .ivpeople { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 12px; scrollbar-width: none; }
-  .ivpeople::-webkit-scrollbar { display: none; }
-  .ivpeople .tpill { flex-shrink: 0; border: 0; cursor: pointer; font: 500 13px var(--font); }
   .ivlinks { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
   .ivlinks .tag { text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
   .ag.dim { opacity: .45; }
@@ -224,7 +204,6 @@
   .slot small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
-  .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   #v-today > div:empty { display: none; }
   #v-today { margin-top: -8px; }
   #todayBody { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
@@ -366,13 +345,8 @@
   .hs-chk { display: grid; gap: 8px; font-size: 14px; }
   .hs-chk div { display: flex; gap: 8px; align-items: flex-start; }
   .hs-chk .i { width: 17px; height: 17px; flex: none; margin-top: 1px; }
-  .ivrev { display: grid; gap: 8px; }
-  .ivrev .big { font-size: 17px; font-weight: 600; }
   .wdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .wdays .tpill { justify-content: center; border: 0; cursor: pointer; font: 600 13px var(--font); padding: 8px 0; }
-  .nowline { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 0; position: relative; z-index: 1; }
-  .nowline::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--remove); margin-left: -4px; }
-  .nowline::after { content: ""; flex: 1; height: 2px; background: var(--remove); }
   .agsec { padding: 6px 14px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
   .cl { padding: 14px; display: grid; gap: 10px; }
   .cl-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
@@ -790,9 +764,6 @@
   <!-- INTERVIEWS -->
   <section class="view" id="v-iv" hidden></section>
 
-  <!-- INTERVIEW FORM -->
-  <section class="view" id="v-ivform" hidden></section>
-
   <!-- INTERVIEW CHECK -->
   <section class="view" id="v-check" hidden></section>
 </main>
@@ -954,6 +925,20 @@ function callServer(fn, args, ok, fail) {
     .then(j => j.ok ? ok(j.result) : fail(new Error(j.error)))
     .catch(fail);
 }
+/* Calls that only read. After any other call the prefetched days are dropped and fetched again. */
+const READ_CALLS = new Set(['getState', 'listCalendars', 'listModels', 'countForProfile', 'getModelStatus', 'agenda', 'busyFor', 'sharing', 'checkInterviews', 'queueResult',
+  'ivCalendars', 'ivList', 'ivSlots', 'accounts', 'ivBoard', 'boot', 'prefetch', 'ivPast', 'analyze', 'voice', 'acctStart']);
+let agCache = {}, bdCache = {}, preAt = 0, prefetching = false, bootPeople = null;
+function dropPrefetch() { agCache = {}; bdCache = {}; preAt = 0; }
+/** Quietly load Today for yesterday … 6 days ahead and the Board for the next 7 days, so switching day is instant. */
+async function prefetchDays() {
+  if (prefetching || (preAt && Date.now() - preAt < 3 * 60000)) return;
+  prefetching = true;
+  try { const r = await run('prefetch'); Object.assign(agCache, r.agendas || {}); Object.assign(bdCache, r.boards || {}); preAt = Date.now(); }
+  catch (e) {}
+  finally { prefetching = false; }
+}
+const fresh5 = () => preAt && Date.now() - preAt < 5 * 60000;
 function run(fn, ...args) {
   const limit = ['analyze', 'processQueue', 'queueScan', 'queueResult'].includes(fn) ? 150000 : 60000;
   return new Promise((res, rej) => {
@@ -961,7 +946,7 @@ function run(fn, ...args) {
     let done = false;
     const t = setTimeout(() => { if (!done) { done = true; rej(mkErr('timeout', 'This is taking much longer than usual. Check your connection and try again.')); } }, limit);
     callServer(fn, args,
-      v => { if (done) return; done = true; clearTimeout(t); res(v); },
+      v => { if (done) return; done = true; clearTimeout(t); if (!READ_CALLS.has(fn)) dropPrefetch(); res(v); },
       e => { if (done) return; done = true; clearTimeout(t); rej(e); });
   });
 }
@@ -1122,14 +1107,14 @@ function go(v) {
   view = v;
   const isTab = TABS.includes(v);
   if (isTab) curTab = v;
-  ['home', 'today', 'activity', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv', 'ivform'].forEach(x => $('v-' + x).hidden = x !== v);
+  ['home', 'today', 'activity', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv'].forEach(x => $('v-' + x).hidden = x !== v);
   $('backBtn').hidden = isTab || v === 'done';
   $('setBtn').hidden = !isTab;
   $('logo').hidden = !isTab;
   $('tabbar').hidden = !isTab;
   document.body.classList.toggle('tabs', isTab);
   document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === v ? 'page' : 'false'));
-  const titles = { home: 'Sync', activity: 'Activity', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const titles = { home: 'Sync', activity: 'Activity', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
   $('subtitle').textContent = '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
@@ -2035,9 +2020,11 @@ function otherSide(e) {   // the project's own clock, when it differs from yours
   return fmtT(e.start, p.tz) + ' ' + (tzName(p.tz) || a);
 }
 async function loadToday(offset) {
+  offset = offset || 0;
+  if (fresh5() && agCache[offset]) { ag = agCache[offset]; agOffset = offset; agAt = Date.now(); if (view === 'today') renderToday(); return; }
   if (agLoading) return;
   agLoading = true;
-  try { ag = await run('agenda', offset || 0); agOffset = offset || 0; agAt = Date.now(); }
+  try { ag = await run('agenda', offset); agOffset = offset; agAt = Date.now(); agCache[offset] = ag; }
   catch (e) { if (view === 'today') showError(e, { retry: () => loadToday(offset) }); ag = ag && agOffset === (offset || 0) ? ag : null; }
   finally { agLoading = false; }
   if (view === 'today') renderToday();
@@ -2474,13 +2461,26 @@ let ivl = null, ivlAt = 0, ivlLoading = false, ivTab = 'up', ivWho = '';
 async function loadIv(force) {
   if (ivlLoading || (!force && ivl && Date.now() - ivlAt < 60000)) return;
   ivlLoading = true;
-  try { ivl = await run('ivList'); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); if (view === 'today') renderNextIv(); }
+  try { ivl = keepPast(await run('ivList')); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); if (view === 'today') renderNextIv(); }
   catch (e) {
     if (view === 'iv' && !ivl) {
       $('v-iv').innerHTML = ivSegHtml() + `<div class="group"><div class="empty">Couldn't load your interviews. ${esc(errMsg(e))} <button class="btn sm" id="ivlRetry" type="button">Try again</button></div></div>`;
       bindIvSeg(); $('ivlRetry').onclick = () => { renderIv(); loadIv(true); };
     } else if (view === 'iv') showError(e, { retry: () => loadIv(true) });
   } finally { ivlLoading = false; }
+}
+/** The list arrives without past interviews; keep any already loaded until Past is opened again. */
+function keepPast(n) {
+  if (n && n.pastLater && ivl && !ivl.pastLater && ivl.done) { n = Object.assign({}, n, { done: ivl.done, pastLater: false, pastStale: true }); }
+  return n;
+}
+let pastLoading = false;
+async function loadPast() {
+  if (pastLoading) return;
+  pastLoading = true;
+  try { const d = await run('ivPast'); ivl.done = d; ivl.pastLater = false; ivl.pastStale = false; if (view === 'iv' && ivTab === 'past') renderIv(); }
+  catch (e) { if (view === 'iv' && ivTab === 'past') showError(e, { retry: loadPast }); }
+  finally { pastLoading = false; }
 }
 function renderIvCardSub() {
   if (ivl && $('ivDot')) $('ivDot').hidden = !ivl.counts.attention;
@@ -2569,6 +2569,8 @@ function renderIv() {
     if (bad.length) html += `<div class="notice warn">${icon('info')}<span class="grow small">${bad.map(b => `<b>${esc(b.name || 'Other calendars')}</b>: ${esc(b.error)}`).join('<br>')}. Busy times there aren't checked.</span></div>`;
     html += `<button class="btn ink block" id="ivNew" type="button">${icon('plus')}Schedule an interview</button>`;
   } else {
+    if (ivl.pastLater || ivl.pastStale) loadPast();
+    if (ivl.pastLater) { el.innerHTML = ivSegHtml() + `<div class="group">${skelRows(5)}</div>`; bindIvSeg(); return; }
     html += ivSegHtml();
     const list = ivl.done.filter(x => !ivWho || x.who === ivWho);
     const weekAgo = now - 7 * 864e5, attended = list.filter(x => x.resp !== 'declined' && !x.handed && !x.forOther);
@@ -2588,8 +2590,6 @@ function renderIv() {
   if ($('ivNew')) $('ivNew').onclick = () => openIvForm(null);
 }
 function tzOffsetDiffers(a, b, ms) { return fmtT(ms, a) !== fmtT(ms, b); }
-const ivTabsHtml = () => ivSegHtml(), bindIvTabs = () => bindIvSeg();   // used by the older find-a-time screen
-
 /* details sheet */
 function ivFind(id) { return ivl && (ivl.upcoming.find(x => x.id === id || x.ids.includes(id)) || ivl.done.find(x => x.id === id || x.ids.includes(id))); }
 function closeIvSheet() { $('ivSheet').hidden = true; }
@@ -2633,6 +2633,7 @@ function openIvDetail(id) {
 let bdDay = null, bd = null, bdFor = null, bdLoading = false;
 const BD_PX = 46;
 async function loadBoard(day) {
+  if (fresh5() && bdCache[day]) { bd = bdCache[day]; bdFor = day; if (view === 'iv' && ivTab === 'board') renderBoard(); return; }
   if (bdLoading) return;
   bdLoading = true;
   try { const r = await run('ivBoard', { day }); if (r.day === bdDay) { bd = r; bdFor = day; } }
@@ -2733,104 +2734,8 @@ function bindBoardDrag(ivs) {
 }
 
 /* ───────── schedule / edit / move / cancel ───────── */
-let ivf = null, ivfRev = null;
 const ROUNDS = ['Intro', 'Phone', 'Screen', '1st round', '2nd round', '3rd round', 'Technical', 'Final'];
 /** x: an interview from the list (edit/move), or null (new). slot: { start, tz, mins } from Find a time. */
-function openIvFormPage(x, slot) {
-  const fqp = findPrefs();
-  const tz = slot ? slot.tz : x ? (x.tz || S.settings.homeTz) : fqp.tz;
-  const start = slot ? slot.start : x ? x.start : null;
-  ivf = { id: x ? x.editIds[0] : '', ids: x ? x.editIds : [], timeOnly: !!(x && x.editKind === 'own'), title: x ? x.title : '',
-    tz, date: start ? dayIn(start, tz) : dayIn(Date.now() + 864e5, tz), time: start ? localTime(start, tz) : '10:00',
-    mins: slot ? slot.mins : x ? Math.round((x.end - x.start) / 60000) : fqp.mins,
-    who: x ? x.who : '', company: x ? x.company : '', role: x ? x.role : '', round: x ? x.round : '', with: x ? x.with : '',
-    join: x ? x.join : '', job: x ? x.job : '', resume: x ? x.resume : '', notes: x ? x.notes || '' : '' };
-  ivfRev = null;
-  go('ivform'); renderIvForm();
-}
-function renderIvForm() {
-  const f = ivf, el = $('v-ivform'), home = S.settings.homeTz;
-  const people = (ivl ? ivl.people.map(p => p.who) : []).filter(w => /^[A-Z][a-z]+$/.test(w));
-  const lens = [30, 45, 60, 90, 120].concat([30, 45, 60, 90, 120].includes(+f.mins) ? [] : [+f.mins]).sort((a, b) => a - b);
-  const field = (k, label, ph, extra) => `<label class="f"><span>${label}</span><input class="in" data-f="${k}" value="${esc(f[k])}" placeholder="${esc(ph || '')}" autocomplete="off" ${extra || ''}></label>`;
-  el.innerHTML = `<div class="group"><div class="pad">
-    ${f.timeOnly ? `<div class="notice">${icon('info')}<span class="grow small"><b>${esc(f.title)}</b><br>You made this one yourself, so Relay only changes its time. The title and notes stay as you wrote them.</span></div>` : `
-    ${field('who', 'Who it’s for', 'e.g. Zaid, or the candidate’s name', 'list="ivWhoList"')}
-    <datalist id="ivWhoList">${people.map(w => `<option value="${esc(w)}">`).join('')}</datalist>
-    <div class="two">${field('company', 'Company', 'e.g. Geico')}${field('round', 'Round', 'e.g. 2nd round', 'list="ivRoundList"')}</div>
-    <datalist id="ivRoundList">${ROUNDS.map(r => `<option value="${esc(r)}">`).join('')}</datalist>
-    <div class="two">${field('role', 'Role', 'e.g. Senior Engineer')}${field('with', 'Interviewer', 'Name')}</div>`}
-    <div class="two">
-      <label class="f"><span>Day</span><input class="in" type="date" data-f="date" value="${esc(f.date)}"></label>
-      <label class="f"><span>Start</span><input class="in" type="time" data-f="time" value="${esc(f.time)}" step="300"></label>
-    </div>
-    <div class="two">
-      <label class="f"><span>Length</span><select class="in" data-f="mins">${lens.map(m => `<option value="${m}" ${+m === +f.mins ? 'selected' : ''}>${fmtDur(m)}</option>`).join('')}</select></label>
-      <label class="f"><span>Time zone${tip('The zone the day and start time are in, usually the company’s. The event shows at the right time for you.')}</span><select class="in" data-f="tz">${tzOptions(f.tz)}</select></label>
-    </div>
-    <div class="hint" id="ivfYour"></div>
-    ${f.timeOnly ? '' : `
-    ${field('join', 'Meeting link', 'https:\/\/zoom.us/j/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}
-    <div class="two">${field('job', 'Job post', 'https:\/\/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}${field('resume', 'Resume', 'https:\/\/…', 'type="url" inputmode="url" autocapitalize="off" spellcheck="false"')}</div>
-    <label class="f"><span>Notes</span><textarea class="in" data-f="notes" rows="3" placeholder="Anything to remember. Avoid SSNs and dates of birth.">${esc(f.notes)}</textarea></label>`}
-    <button class="btn ink block" id="ivfCheck" type="button">${icon('listcheck')}Check and review</button>
-    <div class="hint">Saved in your main calendar. Nobody is invited and no emails are sent.</div>
-  </div></div>
-  <div id="ivfRev"></div>`;
-  const yours = () => {
-    const el2 = $('ivfYour'); if (!el2) return;
-    if (!f.date || !f.time || f.tz === home) { el2.textContent = ''; return; }
-    const ms = zoned(f.date, f.time, f.tz);
-    el2.textContent = `That's ${fmtDay(ms, home)}, ${fmtT(ms, home)} your time.`;
-  };
-  el.querySelectorAll('[data-f]').forEach(inp => {
-    const upd = () => { f[inp.dataset.f] = inp.value; yours(); if (ivfRev) { ivfRev = null; $('ivfRev').innerHTML = ''; } };
-    inp.addEventListener('input', upd); inp.addEventListener('change', upd);
-  });
-  yours();
-  $('ivfCheck').onclick = checkIvForm;
-}
-function ivfReq(check) {
-  const f = ivf;
-  return { id: f.id || undefined, check, date: f.date, time: f.time, mins: +f.mins, tz: f.tz, who: f.who, company: f.company, role: f.role,
-    round: f.round, with: f.with, join: f.join.trim(), job: f.job.trim(), resume: f.resume.trim(), notes: f.notes };
-}
-async function checkIvForm() {
-  const f = ivf;
-  if (!f.timeOnly && !f.who.trim() && !f.company.trim() && !f.role.trim()) { toast('Add who it’s for, or the company.'); const i = document.querySelector('[data-f="who"]'); if (i) i.focus(); return; }
-  if (!f.date || !f.time) { toast('Pick the day and start time.'); return; }
-  const bad = ['join', 'job', 'resume'].find(k => f[k].trim() && !/^https?:\/\/\S+$/i.test(f[k].trim()));
-  if (bad) { toast('Links must start with https:\/\/'); document.querySelector(`[data-f="${bad}"]`).focus(); return; }
-  await withBusy($('ivfCheck'), 'Checking…', async () => {
-    try { ivfRev = await run('ivSave', ivfReq(true)); renderIvRev(); const r = $('ivfRev'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    catch (e) { showError(e, { retry: checkIvForm }); }
-  });
-}
-function renderIvRev() {
-  const r = ivfRev, home = r.homeTz, tz = r.tz;
-  const when = (a, b) => `${fmtDay(a, tz)}, ${fmtT(a, tz)} – ${fmtT(b, tz)} ${zoneWord(tz)}` + (tz !== home ? ` · ${fmtDay(a, home)}, ${fmtT(a, home)} your time` : '');
-  const warn = [];
-  if (r.past) warn.push(`<div class="ag-warn">${icon('info')}<span>This time has already passed.</span></div>`);
-  r.clashes.forEach(c => warn.push(`<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, home))} – ${esc(fmtT(c.end, home))} your time)</span></div>`));
-  r.busyOn.forEach(n => warn.push(`<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`));
-  r.calErrors.forEach(c => warn.push(`<div class="ag-sub">${esc(c.name)}'s busy times weren't checked: ${esc(c.error)}</div>`));
-  $('ivfRev').innerHTML = `<div class="section"><div class="eyebrow">Review</div><div class="group"><div class="pad ivrev">
-      <div class="big">${esc(r.title)}</div>
-      ${r.before ? `<div class="ag-sub">Now: ${esc(when(r.before.start, r.before.end))}</div><div><b>${r.timeOnly ? 'Moves to' : 'New time'}:</b> ${esc(when(r.start, r.end))}</div>` : `<div>${esc(when(r.start, r.end))}</div>`}
-      <div class="ag-sub">In ${esc(r.calendar)} · nobody is invited, no emails</div>
-      ${warn.length ? warn.join('') : `<div class="ag-sub" style="color:var(--new)">${icon('check')} No clashes${r.calErrors.length ? ' in the calendars Relay could read' : ''}</div>`}
-      <button class="btn ink block" id="ivfSave" type="button">${icon('check')}${r.mode === 'new' ? 'Save to calendar' : 'Save the change'}</button>
-    </div></div></div>`;
-  $('ivfSave').onclick = saveIvForm;
-}
-async function saveIvForm() {
-  await withBusy($('ivfSave'), 'Saving…', async () => {
-    try {
-      const res = await run('ivSave', ivfReq(false));
-      afterIvChange(res.added ? 'Interview saved to your calendar' : 'Interview moved');
-    } catch (e) { showError(e, { retry: saveIvForm }); }
-  });
-}
 async function cancelIv(x, btn) {
   if (!x) return;
   const tz = S.settings.homeTz;
@@ -2843,7 +2748,7 @@ async function cancelIv(x, btn) {
   });
 }
 async function afterIvChange(msg) {
-  ivf = null; ivfRev = null; ivTab = 'up';
+  ivTab = 'up';
   try { S = await run('getState'); } catch (e) {}
   bd = null; go('iv'); ivl = null; renderIv(); loadIv(true);
   toast(msg, { type: 'ok', action: { label: 'Undo', fn: async () => {
@@ -2872,6 +2777,7 @@ function openIvForm(x, slot) {
     slots: null, day: null, theirBig: true, prefsOpen: false, custom: false, rev: null };
   $('sfSheet').hidden = false;
   sfRender();
+  if (sf.step === 1) sfLoadSlots();   // free times load while you fill in step 1
 }
 function sfClose() { $('sfSheet').hidden = true; sf = null; }
 $('sfSheet').addEventListener('click', e => { if (e.target === $('sfSheet')) sfClose(); });
@@ -3096,10 +3002,11 @@ async function openHand(x, preTo) {
     <div class="small"><b>${esc([x.who, x.company].filter(Boolean).join(' · ') || x.title)}</b><br><span class="muted">${esc(fmtDay(x.start, tz))}, ${esc(fmtT(x.start, tz))} your time · ${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</span></div>`;
   $('hsBody').innerHTML = head + skelRows(3);
   $('handSheet').hidden = false;
-  try { if (!ivCals) ivCals = await run('ivCalendars'); }
+  let team = bootPeople ? bootPeople.map(p => ({ email: p.email, person: p.name, level: p.level, main: false })) : null;
+  try { if (!team) { if (!ivCals) ivCals = await run('ivCalendars'); team = ivCals.cals; } }
   catch (e) { $('hsBody').innerHTML = head + `<div class="empty">Couldn't load the team's calendars. ${esc(errMsg(e))}</div><button class="btn block" type="button" id="hsClose">Close</button>`; $('hsClose').onclick = closeHand; return; }
   if (hsIv !== x) return;
-  const people = ivCals.cals.filter(c => c.person && !c.main);
+  const people = team.filter(c => c.person && !c.main);
   $('hsBody').innerHTML = head + `<div class="hs-people">${people.map(c => `<button type="button" class="hs-p" data-to="${esc(c.email)}">
       <span class="hs-av">${esc(c.person[0])}</span>
       <span class="t"><b>${esc(c.person)}</b><span>${c.level === 'edit' || c.level === 'owner' ? 'Goes straight onto their calendar' : 'Sent as an invite from you (no email)'}</span></span>${icon('chev', 'chev')}</button>`).join('')}</div>
@@ -3148,7 +3055,7 @@ async function doHand(x, to) {
 /* ───────── find a time (read-only) ───────── */
 const FIND_KEY = 'trace_iv_find';
 const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S'], WD_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-let fq = null, fres = null, fpick = {};
+let fq = null;
 function findPrefs() {
   if (fq) return fq;
   let saved = {};
@@ -3161,117 +3068,6 @@ const dayIn = (ms, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:
 const addDay = (d, n) => { const p = d.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10); };
 const dayLabel = d => { const p = d.split('-').map(Number); return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.UTC(p[0], p[1] - 1, p[2])); };
 const zoneWord = tz => tzName(tz).replace(/\s*\(.*\)$/, '');
-function renderFind() {
-  const el = $('v-iv'), q = findPrefs(), home = S.settings.homeTz;
-  const opt = (arr, val, f) => arr.map(v => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${f(v)}</option>`).join('');
-  let html = ivTabsHtml() + `<div class="group"><div class="pad">
-    <div class="two">
-      <label class="f"><span>Length</span><select class="in" id="fqMins">${opt([30, 45, 60, 90, 120], q.mins, fmtDur)}</select></label>
-      <label class="f"><span>Gap around meetings${tip('Free time kept before and after your other meetings, so an interview never starts right as another ends.')}</span><select class="in" id="fqBuf">${opt([0, 10, 15, 30], q.buffer, v => v ? v + ' min' : 'None')}</select></label>
-    </div>
-    <div class="two">
-      <label class="f"><span>From</span><input class="in" type="date" id="fqStart" value="${esc(q.start)}"></label>
-      <label class="f"><span>For</span><select class="in" id="fqSpan">${opt([1, 3, 7, 14, 21], q.span, v => v === 1 ? '1 day' : v + ' days')}</select></label>
-    </div>
-    <label class="f"><span>Their hours${tip('The hours the interviewer or company can meet, in their time zone. Times are listed in their zone and yours.')}</span><select class="in" id="fqTz">${tzOptions(q.tz)}</select></label>
-    <div class="two">
-      <label class="f"><span>From</span><input class="in" type="time" id="fqFrom" value="${esc(q.from)}" step="900"></label>
-      <label class="f"><span>To</span><input class="in" type="time" id="fqTo" value="${esc(q.to)}" step="900"></label>
-    </div>
-    <div class="wdays" role="group" aria-label="Their weekdays">${WD.map((w, i) => `<button type="button" class="tpill" data-wd="${i}" aria-pressed="${q.weekdays.includes(i)}" aria-label="${WD_LONG[i]}">${w}</button>`).join('')}</div>
-    <label class="toggle"><span class="cb"><input type="checkbox" id="fqMine" ${q.mineOn ? 'checked' : ''}><span class="box">${icon('check')}</span></span><span class="small">Only when I'm free to take it (${esc(zoneWord(home))} time)</span></label>
-    <div class="two" id="fqMineRow" ${q.mineOn ? '' : 'hidden'}>
-      <label class="f"><span>My hours from</span><input class="in" type="time" id="fqMineFrom" value="${esc(q.mineFrom)}" step="900"></label>
-      <label class="f"><span>To</span><input class="in" type="time" id="fqMineTo" value="${esc(q.mineTo)}" step="900"></label>
-    </div>
-    <button class="btn ink block" id="fqGo" type="button">${icon('clock')}${fres ? 'Look again' : 'Find free times'}</button>
-    <div class="hint">Checks your main calendar and the calendars ticked in Settings → Interview calendars. Read-only: nothing is added.</div>
-  </div></div>`;
-  if (fres) html += findResultHtml(fres);
-  el.innerHTML = html;
-  bindIvTabs();
-  const read = () => {
-    q.mins = +$('fqMins').value; q.buffer = +$('fqBuf').value; q.start = $('fqStart').value || dayIn(Date.now(), q.tz); q.span = +$('fqSpan').value;
-    q.tz = $('fqTz').value; q.from = $('fqFrom').value; q.to = $('fqTo').value; q.mineOn = $('fqMine').checked;
-    q.mineFrom = $('fqMineFrom').value; q.mineTo = $('fqMineTo').value;
-    const keep = Object.assign({}, q); delete keep.start;
-    store.set(FIND_KEY, JSON.stringify(keep));
-  };
-  el.querySelectorAll('[data-wd]').forEach(b => b.onclick = () => {
-    const i = +b.dataset.wd; q.weekdays = q.weekdays.includes(i) ? q.weekdays.filter(x => x !== i) : q.weekdays.concat(i).sort();
-    b.setAttribute('aria-pressed', q.weekdays.includes(i)); read();
-  });
-  $('fqMine').onchange = () => { $('fqMineRow').hidden = !$('fqMine').checked; read(); };
-  el.querySelectorAll('#v-iv select, #v-iv input').forEach(x => { if (!x.dataset.wd) x.addEventListener('change', read); });
-  $('fqGo').onclick = () => { read(); runFind(); };
-  el.querySelectorAll('[data-slot]').forEach(b => b.onclick = () => {
-    const k = b.dataset.slot; if (fpick[k]) delete fpick[k]; else fpick[k] = true;
-    b.setAttribute('aria-pressed', !!fpick[k]); updateCopyBtn();
-  });
-  if ($('fqCopy')) $('fqCopy').onclick = copySlots;
-  updateCopyBtn();
-  if ($('fqFixCals')) $('fqFixCals').onclick = () => { setSec = 'calendars'; go('settings'); renderSettings(); setTimeout(() => { const s2 = $('ivCalSec'); if (s2) s2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
-}
-async function runFind() {
-  const q = fq;
-  if (!q.weekdays.length) { toast('Pick at least one weekday.'); return; }
-  if (!q.from || !q.to) { toast('Set their hours first.'); return; }
-  await withBusy($('fqGo'), 'Looking…', async () => {
-    try {
-      fres = await run('ivSlots', { mins: q.mins, buffer: q.buffer, tz: q.tz, from: q.from, to: q.to, weekdays: q.weekdays,
-        fromDay: q.start, toDay: addDay(q.start, q.span - 1), mine: q.mineOn ? { from: q.mineFrom, to: q.mineTo } : null, step: 30, lead: 60 });
-      fpick = {};
-      if (view === 'iv' && ivTab === 'find') { renderFind(); const r = $('fqSum'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    } catch (e) { showError(e, { retry: runFind }); }
-  });
-}
-function findResultHtml(r) {
-  const home = r.homeTz, tz = r.tz, same = tz === home;
-  const bad = r.cals.filter(c => c.error);
-  let html = `<div class="section" id="fqSum"><div class="pills" style="padding:0;margin-bottom:12px">
-      <span class="pill ${r.count ? 'new' : ''}">${r.count}${r.truncated ? '+' : ''} start time${r.count === 1 ? '' : 's'}</span>
-      <span class="pill">${esc(fmtDur(r.mins))}${r.buffer ? ' · ' + r.buffer + ' min gap' : ''}</span>
-      <span class="pill">Checked: ${esc(r.cals.filter(c => !c.error).map(c => c.name).join(', '))}</span></div>`;
-  if (bad.length) html += `<div class="notice warn" style="margin-bottom:12px">${icon('info')}<span class="grow small">${bad.map(c => `<b>${esc(c.name)}</b>: ${esc(c.error)}`).join('<br>')}. Their busy times weren't checked.</span><button class="btn sm" id="fqFixCals" type="button">Settings</button></div>`;
-  if (!r.days.length) return html + `<div class="group"><div class="empty">No free ${esc(fmtDur(r.mins))} slot in those hours. Try more days, a shorter length, a smaller gap or wider hours.</div></div></div>`;
-  html += `<div class="group">${r.days.map(d => `<div class="agsec">${esc(dayLabel(d.day))}${same ? '' : ' · ' + esc(zoneWord(tz)) + ' day'}</div>
-    <div class="slots">${d.slots.map(x => `<button type="button" class="slot tnum" data-slot="${x.start}" aria-pressed="${!!fpick[x.start]}">${esc(fmtT(x.start, tz))}${same ? '' : `<small>${esc(fmtT(x.start, home))}${fmtDay(x.start, home) !== dayLabel(d.day) ? ' ' + esc(fmtDay(x.start, home).split(',')[0]) : ''} you</small>`}</button>`).join('')}</div>`).join('')}</div>
-    <div class="stack" style="margin-top:12px"><button class="btn ink block" id="fqSched" type="button" hidden>${icon('plus')}<span id="fqSchedTxt">Schedule</span></button>
-      <button class="btn block" id="fqCopy" type="button">${icon('listcheck')}<span id="fqCopyTxt">Copy all as text</span></button></div>
-    <div class="hint">${same ? '' : `Big times are ${esc(zoneWord(tz))}, small ones are yours. `}Tap times to pick a few and copy them for the recruiter, or pick one and schedule it.</div></div>`;
-  return html;
-}
-function updateCopyBtn() {
-  const keys = Object.keys(fpick), n = keys.length;
-  if ($('fqCopyTxt')) $('fqCopyTxt').textContent = n ? `Copy ${n} picked time${n === 1 ? '' : 's'}` : 'Copy all as text';
-  if ($('fqSched')) {
-    $('fqSched').hidden = n !== 1;
-    if (n === 1) { const t = +keys[0]; $('fqSchedTxt').textContent = `Schedule at ${fmtDay(t, fres.tz)}, ${fmtT(t, fres.tz)}`;
-      $('fqSched').onclick = () => openIvForm(null, { start: t, tz: fres.tz, mins: fres.mins }); }
-  }
-}
-async function copySlots() {
-  const r = fres, tz = r.tz, home = r.homeTz, same = tz === home;
-  const picked = Object.keys(fpick).length;
-  const span = (a, b, z) => `${fmtT(a, z)} – ${fmtT(b, z)}`;
-  const lines = [picked ? `Times for a ${fmtDur(r.mins)} interview:` : `Free for a ${fmtDur(r.mins)} interview (any start within these times):`];
-  r.days.forEach(d => {
-    let parts = d.slots.filter(x => !picked || fpick[x.start]).map(x => ({ start: x.start, end: x.end }));
-    if (!parts.length) return;
-    if (!picked) parts = parts.reduce((acc, x) => { const l = acc[acc.length - 1]; if (l && x.start <= l.end) l.end = Math.max(l.end, x.end); else acc.push(Object.assign({}, x)); return acc; }, []);
-    lines.push(`${dayLabel(d.day)}: ${parts.map(x => span(x.start, x.end, tz)).join(', ')} ${tzAbbr(tz, parts[0].start)}` +
-      (same ? '' : ` (${parts.map(x => span(x.start, x.end, home)).join(', ')} ${zoneWord(home)} time)`));
-  });
-  const text = lines.join('\n');
-  try { await navigator.clipboard.writeText(text); }
-  catch (e) {
-    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select(); let ok2 = false; try { ok2 = document.execCommand('copy'); } catch (x) {} ta.remove();
-    if (!ok2) { dialog({ title: 'Copy these times', body: text, primary: 'Done' }); return; }
-  }
-  toast(picked ? `Copied ${picked} time${picked === 1 ? '' : 's'}` : 'Copied the free times', { type: 'ok' });
-}
-
 /* ───────── check interviews ───────── */
 let ivRes = null, ivText = '';
 const IV_TZ_KEY = 'trace_iv_tz';
@@ -3649,7 +3445,9 @@ function bootSave(r) { try { localStorage.setItem(BOOT_KEY, JSON.stringify({ at:
 function applyBoot(r) {
   S = r.state;
   if (agOffset === 0 || !ag) { ag = r.agenda; agOffset = 0; agAt = Date.now(); }
-  ivl = r.ivl; ivlAt = Date.now();
+  agCache[0] = r.agenda;
+  if (r.people) bootPeople = r.people;
+  ivl = keepPast(r.ivl); ivlAt = Date.now();
   renderHome(); renderIvCardSub();
   if (view === 'today') renderTodayTab(); else if (view === 'iv') renderIv(); else if (view === 'activity') { renderHist(); renderUndoBox(); }
 }
@@ -3661,6 +3459,7 @@ async function boot(force) {
   try { const r = await run('boot', !!force); bootAt = Date.now(); applyBoot(r); bootSave(r); again = !force && r.age > 60; }
   finally { booting = false; }
   if (again) boot(true).catch(() => {});
+  else prefetchDays();
 }
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && bootAt && Date.now() - bootAt > 60000 && !['review', 'voice', 'ivform'].includes(view)) boot(false).catch(() => {});
