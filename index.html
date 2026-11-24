@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '5e039a62ee';</script>
+<script>window.TRACE_VER = '109dcdcb04';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2043,7 +2043,7 @@ function agendaHtml() {
   const label = agOffset === 0 ? 'Today' : agOffset === 1 ? 'Tomorrow' : agOffset === -1 ? 'Yesterday' : fmtDay(ag.from, tz);
   let html = `<div class="daynav">
       <button class="iconbtn" id="agPrev" type="button" aria-label="Previous day">${icon('back')}</button>
-      <div class="grow">${esc(label)}<small>${esc(fmtDay(ag.from, tz))}, 6 AM – ${esc(fmtDay(ag.to, tz))}, 6 AM</small></div>
+      <div class="grow">${esc(label)}<small>${esc(new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long', month: 'long', day: 'numeric' }).format(ag.from))}</small></div>
       <button class="iconbtn" id="agNext" type="button" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
   const st = ag.stats;
   html += `<div class="pills" style="margin-bottom:12px">
@@ -2055,7 +2055,8 @@ function agendaHtml() {
   let rows = '', nowDone = agOffset !== 0, lastSec = '';
   const midnight = zoned(nextDay(ag.day), '00:00', tz);
   ag.events.forEach(e => {
-    const sec = e.start >= midnight ? 'After midnight' : (+localTime(e.start, tz).slice(0, 2) < 17 ? 'Daytime' : 'Evening');
+    const hh = +localTime(e.start, tz).slice(0, 2);
+    const sec = e.start < ag.from ? 'Started earlier' : e.start >= midnight ? 'After midnight' : hh < 6 ? 'Early morning' : hh < 17 ? 'Daytime' : 'Evening';
     if (sec !== lastSec) { lastSec = sec; rows += `<div class="agsec">${sec}</div>`; }
     if (!nowDone && e.start > now) { nowDone = true; rows += `<div class="nowline" aria-label="Now"></div>`; }
     const p = prof(e.proj);
@@ -2074,7 +2075,7 @@ function agendaHtml() {
     </div>`;
   });
   if (!nowDone) rows += `<div class="nowline" aria-label="Now"></div>`;
-  return html + `<div class="group">${rows}</div><div class="hint">Tap a meeting to open it in Google Calendar. A day runs 6 AM to 6 AM, so your late-night meetings stay on the same day.</div>`;
+  return html + `<div class="group">${rows}</div><div class="hint">Tap a meeting to open it in Google Calendar. Each day runs midnight to midnight, your time. Meetings after midnight are on the next day.</div>`;
 }
 function clashesHtml() {
   const tz = ag.homeTz, list = ag.clashList;
@@ -2418,9 +2419,9 @@ function bindIvSeg() {
 function bindIvRows(root) { root.querySelectorAll('[data-ivd]').forEach(b => b.onclick = () => openIvDetail(b.dataset.ivd)); }
 function ivGroupRows(list, tz, now) {
   let rows = '', lastDay = '';
-  const rel = ms => { const d = fmtDay(ms - 6 * 3600000, tz); return d === fmtDay(now - 6 * 3600000, tz) ? 'Today' : d === fmtDay(now + 18 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 30 * 3600000, tz) ? 'Yesterday' : ''; };
+  const rel = ms => { const d = fmtDay(ms, tz); return d === fmtDay(now, tz) ? 'Today' : d === fmtDay(now + 24 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 24 * 3600000, tz) ? 'Yesterday' : ''; };
   list.forEach(x => {
-    const day = fmtDay(x.start - 6 * 3600000, tz);
+    const day = fmtDay(x.start, tz);
     if (day !== lastDay) { lastDay = day; const r = rel(x.start); rows += `<div class="agsec">${esc(r ? r + ' · ' + day : day)}</div>`; }
     rows += ivRowHtml(x, tz, now);
   });
@@ -2512,10 +2513,10 @@ async function loadBoard(day) {
 }
 function renderBoard() {
   const el = $('v-iv'), tz = ivl.homeTz, now = Date.now();
-  const today = dayIn(now, tz);   // the calendar date where you are, even before 6 AM
+  const today = dayIn(now, tz);
   if (!bdDay || bdDay < today) bdDay = today;
   const days = []; for (let i = 0; i < 7; i++) days.push(addDay(today, i));
-  const workDayOf = ms => dayIn(ms - 6 * 3600000, tz);
+  const workDayOf = ms => dayIn(ms, tz);
   const count = d => ivl.upcoming.filter(x => workDayOf(x.start) === d && x.resp !== 'declined').length;
   let html = ivSegHtml() + `<div class="days7" role="group" aria-label="Day">${days.map(d => `<button type="button" class="day7" data-bday="${d}" aria-pressed="${d === bdDay}">
       <span class="w">${esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span><span class="c">${count(d) ? count(d) + ' iv' : ''}</span></button>`).join('')}</div>`;
