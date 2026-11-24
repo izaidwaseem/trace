@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'df85ae9be1';</script>
+<script>window.TRACE_VER = '5e039a62ee';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2512,8 +2512,8 @@ async function loadBoard(day) {
 }
 function renderBoard() {
   const el = $('v-iv'), tz = ivl.homeTz, now = Date.now();
-  const today = dayIn(now - 6 * 3600000, tz);
-  if (!bdDay) bdDay = today;
+  const today = dayIn(now, tz);   // the calendar date where you are, even before 6 AM
+  if (!bdDay || bdDay < today) bdDay = today;
   const days = []; for (let i = 0; i < 7; i++) days.push(addDay(today, i));
   const workDayOf = ms => dayIn(ms - 6 * 3600000, tz);
   const count = d => ivl.upcoming.filter(x => workDayOf(x.start) === d && x.resp !== 'declined').length;
