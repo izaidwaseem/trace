@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '04c97494cf';</script>
+<script>window.TRACE_VER = 'a2ef605742';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -128,6 +128,9 @@
   .pick[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   #v-activity .hscroll { max-height: none; }
   #v-activity .hist.more::after { display: none; }
+  /* iOS home-screen launch can measure the page short of the screen; --vbgap closes that strip (0 normally). */
+  .tabbar, .actionbar, .sheet-wrap { bottom: calc(0px - var(--vbgap, 0px)); }
+  .tdload { display: flex; gap: 8px; align-items: center; justify-content: center; color: var(--muted); font-size: 14px; padding: 6px 0 2px; }
   body.tabs main { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
   .section { display: grid; gap: 10px; }
   .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -928,17 +931,50 @@ function callServer(fn, args, ok, fail) {
 /* Calls that only read. After any other call the prefetched days are dropped and fetched again. */
 const READ_CALLS = new Set(['getState', 'listCalendars', 'listModels', 'countForProfile', 'getModelStatus', 'agenda', 'busyFor', 'sharing', 'checkInterviews', 'queueResult',
   'ivCalendars', 'ivList', 'ivSlots', 'accounts', 'ivBoard', 'boot', 'prefetch', 'ivPast', 'analyze', 'voice', 'acctStart']);
-let agCache = {}, bdCache = {}, preAt = 0, prefetching = false, bootPeople = null;
-function dropPrefetch() { agCache = {}; bdCache = {}; preAt = 0; }
-/** Quietly load Today for yesterday … 6 days ahead and the Board for the next 7 days, so switching day is instant. */
-async function prefetchDays() {
-  if (prefetching || (preAt && Date.now() - preAt < 3 * 60000)) return;
-  prefetching = true;
-  try { const r = await run('prefetch'); Object.assign(agCache, r.agendas || {}); Object.assign(bdCache, r.boards || {}); preAt = Date.now(); }
-  catch (e) {}
-  finally { prefetching = false; }
+/* Day caches: { key: { v, at, d } }. Shown for 30 min (refreshed quietly after 3), only on the day they were made
+   (Today's keys are offsets from today), and kept across app restarts. Any change made in Relay drops them. */
+const PRE_SHOW_MS = 30 * 60000, PRE_FRESH_MS = 3 * 60000, PRE_KEY = 'relay_pre_v1';
+let agCache = {}, bdCache = {}, preAt = 0, prefetching = null, preGen = 0, preTimer = 0, bootPeople = null;
+const preDay = () => dayIn(Date.now(), (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz) || undefined);
+const cachePut = (c, k, v, at) => { c[k] = { v, at: at || Date.now(), d: preDay() }; };
+const cacheGet = (c, k) => { const e = c[k]; return e && e.d === preDay() && Date.now() - e.at < PRE_SHOW_MS ? e.v : null; };
+const cacheOld = (c, k) => !c[k] || Date.now() - c[k].at > PRE_FRESH_MS;
+function dropPrefetch() {
+  preGen++; agCache = {}; bdCache = {}; preAt = 0; prefetching = null;
+  try { localStorage.removeItem(PRE_KEY); } catch (e) {}
+  clearTimeout(preTimer); preTimer = setTimeout(() => prefetchDays(), 1500);
 }
-const fresh5 = () => preAt && Date.now() - preAt < 5 * 60000;
+function preRestore() {
+  try {
+    const o = JSON.parse(localStorage.getItem(PRE_KEY) || 'null');
+    if (!o || o.k !== traceKey().slice(0, 8)) return;
+    Object.keys(o.ag || {}).forEach(k => { agCache[k] = o.ag[k]; });
+    Object.keys(o.bd || {}).forEach(k => { bdCache[k] = o.bd[k]; });
+    preAt = o.at || 0;
+  } catch (e) {}
+}
+const same = (a, b) => { try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; } };
+/** Quietly load Today for yesterday … 6 days ahead and the Board for the next 7 days, so switching day is instant. */
+function prefetchDays(force) {
+  if (prefetching) return prefetching;
+  if (!force && preAt && Date.now() - preAt < PRE_FRESH_MS) return Promise.resolve();
+  const gen = preGen;
+  const p = run('prefetch').then(r => {
+    if (gen !== preGen) return;
+    const at = Date.now();
+    Object.keys(r.agendas || {}).forEach(k => cachePut(agCache, k, r.agendas[k], at));
+    Object.keys(r.boards || {}).forEach(k => cachePut(bdCache, k, r.boards[k], at));
+    preAt = at;
+    try { localStorage.setItem(PRE_KEY, JSON.stringify({ at, k: traceKey().slice(0, 8), ag: agCache, bd: bdCache })); } catch (e) {}
+    // the day on screen may have changed since it was shown
+    const a = cacheGet(agCache, agOffset);
+    if (view === 'today' && agWant === agOffset && a && !same(a, ag)) { ag = a; renderToday(); }
+    const b = bdDay && cacheGet(bdCache, bdDay);
+    if (view === 'iv' && ivTab === 'board' && b && !same(b, bd) && !document.querySelector('.ghostdrag')) { bd = b; bdFor = bdDay; renderBoard(); }
+  }).catch(() => {}).finally(() => { if (prefetching === p) prefetching = null; });
+  prefetching = p;
+  return p;
+}
 function run(fn, ...args) {
   const limit = ['analyze', 'processQueue', 'queueScan', 'queueResult'].includes(fn) ? 150000 : 60000;
   return new Promise((res, rej) => {
@@ -2019,15 +2055,54 @@ function otherSide(e) {   // the project's own clock, when it differs from yours
   const a = tzAbbr(p.tz, e.start);
   return fmtT(e.start, p.tz) + ' ' + (tzName(p.tz) || a);
 }
+let agWant = 0;   // the day asked for (agOffset is the day shown)
 async function loadToday(offset) {
-  offset = offset || 0;
-  if (fresh5() && agCache[offset]) { ag = agCache[offset]; agOffset = offset; agAt = Date.now(); if (view === 'today') renderToday(); return; }
-  if (agLoading) return;
+  offset = offset || 0; agWant = offset;
+  const hit = cacheGet(agCache, offset);
+  if (hit) {
+    ag = hit; agOffset = offset; agAt = Date.now();
+    if (view === 'today') renderToday();
+    if (cacheOld(agCache, offset)) { if (offset >= -1 && offset <= 6) prefetchDays(true); else refreshDay(offset); }
+    return;
+  }
+  if (view === 'today') renderTodayLoading(offset);
   agLoading = true;
-  try { ag = await run('agenda', offset); agOffset = offset; agAt = Date.now(); agCache[offset] = ag; }
-  catch (e) { if (view === 'today') showError(e, { retry: () => loadToday(offset) }); ag = ag && agOffset === (offset || 0) ? ag : null; }
-  finally { agLoading = false; }
+  try {
+    if (prefetching && offset >= -1 && offset <= 6) await prefetching;
+    let v = cacheGet(agCache, offset);
+    if (!v) { v = await run('agenda', offset); cachePut(agCache, offset, v); }
+    if (agWant !== offset) return;   // moved on to another day meanwhile
+    ag = v; agOffset = offset; agAt = Date.now();
+  } catch (e) {
+    if (agWant !== offset) return;
+    agWant = agOffset;
+    if (view === 'today') { if (ag) renderToday(); showError(e, { retry: () => loadToday(offset) }); }
+    return;
+  } finally { agLoading = false; }
   if (view === 'today') renderToday();
+}
+async function refreshDay(offset) {
+  try { const v = await run('agenda', offset); cachePut(agCache, offset, v); if (view === 'today' && agOffset === offset && agWant === offset && !same(v, ag)) { ag = v; renderToday(); } } catch (e) {}
+}
+function tdHead(offset, ms, tz) {
+  const label = offset === 0 ? 'Today' : offset === 1 ? 'Tomorrow' : offset === -1 ? 'Yesterday' : new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' }).format(ms);
+  return `<div class="tdsw"><button class="iconbtn" type="button" id="tdPrev" aria-label="Previous day">${icon('back')}</button>
+      <div class="grow"><b>${esc((offset === 0 ? '' : label + ' · ') + new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(ms))}</b>${offset ? '<button class="linkbtn" type="button" id="tdBack" style="font-size:13px">Back to today</button>' : ''}</div>
+      <button class="iconbtn" type="button" id="tdNext" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
+}
+function bindTdNav() {
+  $('tdPrev').onclick = () => loadToday(agWant - 1);
+  $('tdNext').onclick = () => loadToday(agWant + 1);
+  if ($('tdBack')) $('tdBack').onclick = () => loadToday(0);
+}
+/** Not loaded yet: show the day asked for at once, with a spinner, so the tap feels answered. */
+function renderTodayLoading(offset) {
+  const el = $('todayBody'), tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
+  const day = addDay(dayIn(Date.now(), tz), offset);
+  el.innerHTML = tdHead(offset, Date.parse(day + 'T12:00:00Z'), 'UTC')
+    + `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading…</div><div class="group">${skelRows(4)}</div>`;
+  el.style.opacity = '';
+  bindTdNav();
 }
 /* ───────── Today: next up, four numbers, the day as a calm timeline ───────── */
 let tdEarlier = false, tdSwipe = false;
@@ -2086,10 +2161,7 @@ function renderToday() {
   const ahead = mine.filter(e => !isToday || e.end > now);
   const clashN = Math.round(ahead.reduce((n, e) => n + e.clashes.filter(c => c.type === 'clash' && ahead.some(x => x.id === c.id)).length, 0) / 2);
   const reply = mine.filter(e => e.resp === 'needsAction' && e.end > now).length;
-  const label = agOffset === 0 ? 'Today' : agOffset === 1 ? 'Tomorrow' : agOffset === -1 ? 'Yesterday' : new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' }).format(ag.from);
-  let html = `<div class="tdsw"><button class="iconbtn" type="button" id="tdPrev" aria-label="Previous day">${icon('back')}</button>
-      <div class="grow"><b>${esc((agOffset === 0 ? '' : label + ' · ') + new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(ag.from))}</b>${agOffset ? '<button class="linkbtn" type="button" id="tdBack" style="font-size:13px">Back to today</button>' : ''}</div>
-      <button class="iconbtn" type="button" id="tdNext" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
+  let html = tdHead(agOffset, ag.from, tz);
   let n = isToday ? ag.next : null;
   if (n && n.end <= now) n = mine.find(e => e.end > now) || null;   // the saved copy is a few minutes old
   if (isToday) html += n ? `<div class="ivhero">
@@ -2135,10 +2207,8 @@ function renderToday() {
   html += `<div class="tdtl">${tl}</div>
     <div class="hint">Tap a meeting to open it. Blue dot: you haven’t replied. Dimmed: done, declined, or someone else’s (handed over, or a teammate’s interview copied to you). Swipe left or right to change day.</div>`;
   el.innerHTML = html;
-  $('tdPrev').onclick = () => { el.style.opacity = .5; loadToday(agOffset - 1); };
-  $('tdNext').onclick = () => { el.style.opacity = .5; loadToday(agOffset + 1); };
+  bindTdNav();
   $('tdClash').onclick = openClashSheet;
-  if ($('tdBack')) $('tdBack').onclick = () => { el.style.opacity = .5; loadToday(0); };
   if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
   el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
   el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
@@ -2154,7 +2224,7 @@ function renderToday() {
     el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
     el.addEventListener('touchend', e => {
       const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-      if (Math.abs(dx) > 70 && Math.abs(dy) < 45 && !agLoading) { el.style.opacity = .5; loadToday(agOffset + (dx < 0 ? 1 : -1)); }
+      if (Math.abs(dx) > 70 && Math.abs(dy) < 45) loadToday(agWant + (dx < 0 ? 1 : -1));
     }, { passive: true });
   }
 }
@@ -2633,10 +2703,11 @@ function openIvDetail(id) {
 let bdDay = null, bd = null, bdFor = null, bdLoading = false;
 const BD_PX = 46;
 async function loadBoard(day) {
-  if (fresh5() && bdCache[day]) { bd = bdCache[day]; bdFor = day; if (view === 'iv' && ivTab === 'board') renderBoard(); return; }
+  const hit = cacheGet(bdCache, day);
+  if (hit) { bd = hit; bdFor = day; if (view === 'iv' && ivTab === 'board') renderBoard(); if (cacheOld(bdCache, day)) prefetchDays(true); return; }
   if (bdLoading) return;
   bdLoading = true;
-  try { const r = await run('ivBoard', { day }); if (r.day === bdDay) { bd = r; bdFor = day; } }
+  try { const r = await run('ivBoard', { day }); cachePut(bdCache, day, r); if (r.day === bdDay) { bd = r; bdFor = day; } }
   catch (e) { if (view === 'iv' && ivTab === 'board') showError(e, { retry: () => loadBoard(day) }); }
   finally { bdLoading = false; }
   if (view === 'iv' && ivTab === 'board') renderBoard();
@@ -3417,6 +3488,8 @@ async function init() {
   $('projList').innerHTML = skelRows(3);
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
+  fixBottomGap();
+  preRestore();
   const saved = bootLoad();
   if (saved) applyBoot(saved.r);   // last known data, on screen at once
   try {
@@ -3434,6 +3507,32 @@ async function init() {
 /* ───────── fast start: show the last data at once, refresh in one call ───────── */
 const BOOT_KEY = 'relay_boot_v1';
 let bootAt = 0, booting = false;
+/**
+ * iOS home-screen apps (seen on iOS 26) can start with the page measured shorter than the screen, by about the
+ * status bar, so bars pinned to the bottom float with a strip under them until iOS catches up. When the page runs
+ * full-screen (content under the status bar) it should be exactly as tall as the screen: if it isn't, move the
+ * bottom bars down by the difference (--vbgap). Resets to 0 as soon as iOS reports the right height.
+ */
+function fixBottomGap() {
+  const standalone = navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  if (!standalone) return;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  const fix = () => {
+    const underStatusBar = probe.offsetHeight > 0;   // black-translucent: the page should fill the whole screen
+    const full = innerWidth < innerHeight ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    const gap = underStatusBar ? full - innerHeight : 0;
+    document.documentElement.style.setProperty('--vbgap', gap > 0 && gap < 120 ? gap + 'px' : '0px');
+  };
+  fix();
+  [50, 250, 600, 1200, 2500].forEach(ms => setTimeout(fix, ms));
+  addEventListener('resize', fix);
+  addEventListener('pageshow', fix);
+  addEventListener('orientationchange', () => setTimeout(fix, 300));
+  if (window.visualViewport) visualViewport.addEventListener('resize', fix);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { fix(); setTimeout(fix, 400); } });
+}
 function bootLoad() {
   try {
     const c = JSON.parse(localStorage.getItem(BOOT_KEY) || 'null');
@@ -3445,7 +3544,7 @@ function bootSave(r) { try { localStorage.setItem(BOOT_KEY, JSON.stringify({ at:
 function applyBoot(r) {
   S = r.state;
   if (agOffset === 0 || !ag) { ag = r.agenda; agOffset = 0; agAt = Date.now(); }
-  agCache[0] = r.agenda;
+  cachePut(agCache, 0, r.agenda);
   if (r.people) bootPeople = r.people;
   ivl = keepPast(r.ivl); ivlAt = Date.now();
   renderHome(); renderIvCardSub();
@@ -3458,8 +3557,8 @@ async function boot(force) {
   let again = false;
   try { const r = await run('boot', !!force); bootAt = Date.now(); applyBoot(r); bootSave(r); again = !force && r.age > 60; }
   finally { booting = false; }
+  prefetchDays();
   if (again) boot(true).catch(() => {});
-  else prefetchDays();
 }
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && bootAt && Date.now() - bootAt > 60000 && !['review', 'voice', 'ivform'].includes(view)) boot(false).catch(() => {});
