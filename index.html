@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '8a337491af';</script>
+<script>window.TRACE_VER = '249ac46e81';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -244,6 +244,8 @@
   .sf-slot[aria-pressed="true"] { background: var(--note-soft); } .sf-slot[aria-pressed="true"] .r { border: 7px solid var(--ink); }
   .sf-send { justify-self: center; display: inline-flex; gap: 6px; align-items: center; font-size: 14px; text-decoration: none; color: var(--muted); }
   .sf-send .i { width: 15px; height: 15px; }
+  .setico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); flex: none; }
+  .setico .i { width: 19px; height: 19px; }
   .ivhero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; gap: 8px; }
   .ivh-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .ivh-count { font: 600 13px var(--mono); background: var(--surface-2); padding: 3px 8px; border-radius: 8px; }
@@ -616,8 +618,9 @@
     #v-today { max-width: 720px; margin: 0 auto; width: 100%; }
     #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
     .rv-side { position: sticky; top: 88px; }
-    #v-settings, #v-project { display: block; columns: 2; column-gap: 32px; }
-    #v-settings > *, #v-project > * { break-inside: avoid; margin-bottom: 20px; }
+    #v-project { display: block; columns: 2; column-gap: 32px; }
+    #v-project > * { break-inside: avoid; margin-bottom: 20px; }
+    #v-settings { max-width: 720px; margin: 0 auto; width: 100%; }
     #v-done { max-width: 560px; margin: 0 auto; }
     .actionbar .in-bar { grid-template-columns: 180px 320px; justify-content: end; }
   }
@@ -1070,6 +1073,7 @@ $('backBtn').onclick = async () => {
   if (view === 'review' && !(await leaveReview())) return;
   if (view === 'voice' && !(await leaveVoice())) return;
   if (view === 'check' || view === 'ivform') { go('iv'); renderIv(); return; }
+  if (view === 'settings' && setSec) { setSec = ''; applySetSec(); window.scrollTo(0, 0); return; }
   go(view === 'project' ? 'settings' : 'tab');
   if (view === 'today') renderTodayTab(); else if (view === 'iv') renderIv(); else if (view === 'activity') renderHist();
 };
@@ -1087,7 +1091,7 @@ async function leaveReview() {
   if (!n) return true;
   return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
 }
-$('setBtn').onclick = () => { go('settings'); renderSettings(); };
+$('setBtn').onclick = () => { setSec = ''; go('settings'); renderSettings(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
@@ -1129,10 +1133,17 @@ function renderUndoBox() {
 }
 
 /* ───────── recent syncs: own scrolling card, grouped by day ───────── */
+let actFilter = 'all';
+const histKind = h => /^Undo of /.test(h.range || '') ? 'undo' : (h.voice || /^Voice: /.test(h.range || '')) ? 'voice' : (h.iv || /^Interview: /.test(h.range || '')) ? 'iv' : 'photo';
 function renderHist() {
-  const H = S.history || [];
+  const Hall = S.history || [];
+  if ($('actFilter')) {
+    $('actFilter').innerHTML = [['all', 'All'], ['photo', 'Photos'], ['voice', 'Voice'], ['iv', 'Interviews']].map(([k, l]) => `<button type="button" class="pick" data-af="${k}" aria-pressed="${actFilter === k}">${l}</button>`).join('');
+    $('actFilter').querySelectorAll('[data-af]').forEach(b => b.onclick = () => { actFilter = b.dataset.af; renderHist(); });
+  }
+  const H = actFilter === 'all' ? Hall : Hall.filter(h => histKind(h) === actFilter || (histKind(h) === 'undo' && actFilter === 'all'));
   $('histCnt').textContent = H.length ? H.length : '';
-  if (!H.length) { $('hist').innerHTML = `<div class="empty">Your syncs will show up here.</div>`; return; }
+  if (!H.length) { $('hist').innerHTML = `<div class="empty">${actFilter === 'all' ? 'Changes Relay makes to your calendar will show up here.' : 'Nothing of this kind yet.'}</div>`; return; }
   const tz = S.settings.homeTz;
   const today = localDate(Date.now(), tz), yest = localDate(Date.now() - 864e5, tz);
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
@@ -1140,7 +1151,7 @@ function renderHist() {
   H.forEach(h => {
     const k = localDate(h.ts, tz);
     if (k !== last) { last = k; html += `<div class="hday">${k === today ? 'Today' : k === yest ? 'Yesterday' : esc(fmtDay(h.ts, tz))}</div>`; }
-    html += histRow(h, H, timeFmt);
+    html += histRow(h, Hall, timeFmt);
   });
   $('hist').innerHTML = `<div class="hscroll" id="hScroll">${html}</div>`;
   $('hist').querySelectorAll('.hundo').forEach(b => b.onclick = () => undoHistory(+b.dataset.ts, b));
@@ -1169,7 +1180,7 @@ function histRow(h, H, timeFmt) {
     title = t.charAt(0).toUpperCase() + t.slice(1);
     kind = 'Interview';
   } else {
-    title = range || 'Sync';
+    title = [p ? p.project : h.code, range].filter(Boolean).join(' · ') || 'Sync';
     kind = 'Photo';
   }
   const undone = h.undone || (!h.batch && H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when));   // older entries without undo flags
@@ -1630,22 +1641,23 @@ async function renderSettings() {
   const st = S.settings;
   const calName = cals ? ((cals.find(c => c.id === st.calendarId) || {}).name || 'Main calendar') : 'Main calendar';
   $('v-settings').innerHTML = `
-    <div class="section"><div class="eyebrow">Projects</div><div class="group">
+    ${setMenuHtml()}
+    <div class="section" data-sec="projects"><div class="eyebrow">Projects</div><div class="group">
       ${S.profiles.map(p => `<button class="srow" data-p="${esc(p.id)}">${chip(p)}<span class="txt"><span class="lbl">${esc(p.project)}${p.person ? ' · ' + esc(p.person) : ''}</span>
         <span class="val" style="display:block">${esc(tzName(p.tz))} · ${esc((APPS.find(a => a[0] === p.app) || ['', 'Other'])[1])}${p.doubleCheck ? ' · double-check' : ''} · label ${p.placement === 'none' ? 'off' : esc(p.label)}</span></span>${icon('chev', 'chev')}</button>`).join('')}
       <button class="srow" id="addProj"><span class="chip" style="background:var(--surface-2);color:var(--fg)">${icon('plus')}</span><span class="txt lbl">Add project</span></button>
     </div></div>
 
-    <div class="section"><div class="eyebrow">Your calendar</div><div class="group"><div class="pad">
+    <div class="section" data-sec="calendars"><div class="eyebrow">Your calendar</div><div class="group"><div class="pad">
       <label class="f"><span>Add events to${tip('The Google Calendar Relay writes to. Only calendars you can edit are listed.')}</span><select class="in" id="sCal">${cals ? cals.map(c => `<option value="${esc(c.id)}" ${c.id === st.calendarId ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="${esc(st.calendarId)}">${esc(calName)}</option>`}</select></label>
       <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
     </div></div></div>
 
-    <div class="section" id="acctSec"><div class="eyebrow">Accounts${tip('Relay runs as your main Google account. Connect other people’s Google accounts (like Awais) so Relay can also use the calendars they can see, such as Husnain’s.')}</div>
+    <div class="section" data-sec="calendars" id="acctSec"><div class="eyebrow">Accounts${tip('Relay runs as your main Google account. Connect other people’s Google accounts (like Awais) so Relay can also use the calendars they can see, such as Husnain’s.')}</div>
       <div class="group" id="acctRows">${skelRows(2)}</div>
     </div>
 
-    <div class="section" id="ivCalSec"><div class="eyebrow">Interview calendars${tip('Interviews are saved in your main calendar. Ticked calendars also count when Relay looks for free times, so an interview never lands on a busy time in any of them. Relay only reads their busy times.')}</div>
+    <div class="section" data-sec="calendars" id="ivCalSec"><div class="eyebrow">Interview calendars${tip('Interviews are saved in your main calendar. Ticked calendars also count when Relay looks for free times, so an interview never lands on a busy time in any of them. Relay only reads their busy times.')}</div>
       <div class="group" id="ivCalRows">${skelRows(2)}</div>
       <div class="group"><div class="pad">
         <label class="f" id="fIvCal"><span>Add a calendar shared with you</span><input class="in" id="ivCalEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@gmail.com"><span class="ferr" id="err-ivCalEmail"></span></label>
@@ -1654,7 +1666,7 @@ async function renderSettings() {
       </div></div>
     </div>
 
-    <div class="section" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Relay can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
+    <div class="section" data-sec="calendars" id="shareSec"><div class="eyebrow">Who can see your calendar${tip('People you shared your main Google Calendar with. Relay can share busy blocks, turn someone down to busy blocks, or remove them. It never gives anyone more.')}</div>
       <div class="group" id="shareRows">${skelRows(3)}</div>
       <div class="group"><div class="pad">
         <label class="f" id="fShEmail"><span>Share busy blocks with</span><input class="in" id="shEmail" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="name@example.com"><span class="ferr" id="err-shEmail"></span></label>
@@ -1664,12 +1676,12 @@ async function renderSettings() {
       </div></div>
     </div>
 
-    <div class="section"><div class="eyebrow">Appearance</div><div class="group"><div class="pad">
+    <div class="section" data-sec="appearance"><div class="eyebrow">Appearance</div><div class="group"><div class="pad">
       <div class="seg" role="radiogroup" aria-label="Appearance">${['system', 'light', 'dark'].map(t => `<button type="button" data-theme-pick="${t}" role="radio" aria-pressed="${getTheme() === t}" aria-checked="${getTheme() === t}">${icon(t === 'system' ? 'auto' : t === 'light' ? 'sun' : 'moon')}${t === 'system' ? 'System' : t === 'light' ? 'Light' : 'Dark'}</button>`).join('')}</div>
       <div class="hint">System follows your phone's light or dark mode. Saved on this device and applied straight away.</div>
     </div></div></div>
 
-    <div class="section"><div class="eyebrow">AI model${tip('On the free tier some models allow only 20 photos a day. Limits reset at midnight Pacific (3 AM Eastern). Paused models are skipped automatically.')}</div>
+    <div class="section" data-sec="ai"><div class="eyebrow">AI model${tip('On the free tier some models allow only 20 photos a day. Limits reset at midnight Pacific (3 AM Eastern). Paused models are skipped automatically.')}</div>
       <div class="group" id="modelRows">${skelRows(3)}</div>
       <div class="group"><div class="pad">
         <label class="f"><span>Model${tip('Automatic is recommended. Pick a specific model only to test it; it will still fall back if that model is busy.')}</span><select class="in" id="sModel"><option value="">Automatic (recommended)</option></select></label>
@@ -1677,9 +1689,9 @@ async function renderSettings() {
         <div id="keyBox"></div>
       </div></div>
     </div>
-    <button class="btn ink block" id="sSave">Save settings</button>
+    <button class="btn ink block" id="sSave" data-sec="calendars ai">Save settings</button>
 
-    <div class="section"><div class="eyebrow">Test${tip('Checks that Relay can write to your calendar, without using any AI requests.')}</div><div class="group"><div class="pad">
+    <div class="section" data-sec="test"><div class="eyebrow">Test${tip('Checks that Relay can write to your calendar, without using any AI requests.')}</div><div class="group"><div class="pad">
       <div class="small">Adds a "Relay test event" at the next full hour today, using the normal review and Apply steps. No photo or AI is used. Remove it afterwards with Undo.</div>
       <label class="f"><span>As project</span><select class="in" id="tProj">${S.profiles.map(p => `<option value="${esc(p.id)}">${esc(p.code)} · ${esc(p.name)}</option>`).join('')}</select></label>
       <button class="btn block" id="tSample" type="button">Add a sample event for today</button>
@@ -1693,6 +1705,7 @@ async function renderSettings() {
   $('addProj').onclick = () => openProject(null);
   renderKeyBox(false);
   $('sSave').onclick = saveSettings;
+  applySetSec();
   $('tSample').onclick = () => runSample($('tProj').value);
   $('shAdd').onclick = shareAdd;
   $('shEmail').onkeydown = e => { if (e.key === 'Enter') shareAdd(); };
@@ -1720,6 +1733,24 @@ async function renderSettings() {
     $('modelRows').innerHTML = `<div class="empty">Couldn't check the models. ${esc(errMsg(e))} <button class="btn sm" id="mRetry" type="button">Try again</button></div>`;
     $('mRetry').onclick = renderSettings;
   }
+}
+/* Settings is a short menu; each row opens its own section (the others stay hidden). */
+let setSec = '';
+const SET_SECS = [
+  ['calendars', 'listcheck', 'Calendars', () => 'Main calendar, connected accounts, interview calendars, sharing'],
+  ['projects', 'repeat', 'Projects', () => (S.profiles || []).map(p => p.project).join(', ') || 'None yet'],
+  ['ai', 'double', 'AI model', () => 'Photo reading and voice notes'],
+  ['appearance', 'moon', 'Appearance', () => ({ system: 'System', light: 'Light', dark: 'Dark' })[getTheme()] || 'System'],
+  ['test', 'check', 'Test', () => 'Check Relay can write to your calendar']];
+function setMenuHtml() {
+  return `<div class="group setmenu" data-sec="">${SET_SECS.map(x => `<button class="srow" type="button" data-setsec="${x[0]}"><span class="setico">${icon(x[1])}</span>
+    <span class="txt"><span class="lbl">${x[2]}</span><span class="val" style="display:block">${esc(x[3]())}</span></span>${icon('chev', 'chev')}</button>`).join('')}</div>`;
+}
+function applySetSec() {
+  $('v-settings').querySelectorAll('[data-sec]').forEach(el => { el.hidden = !String(el.dataset.sec).split(' ').includes(setSec); });
+  $('v-settings').querySelectorAll('[data-setsec]').forEach(b => b.onclick = () => { setSec = b.dataset.setsec; applySetSec(); window.scrollTo(0, 0); });
+  const t = (SET_SECS.find(x => x[0] === setSec) || [0, 0, 'Settings'])[2];
+  $('title').firstChild.textContent = t;
 }
 function renderKeyBox(editing) {
   const has = S.settings.hasKey;
@@ -2144,7 +2175,7 @@ function renderShareBox() {
 }
 let shareList = null;
 function openSharing() {
-  go('settings'); renderSettings();
+  setSec = 'calendars'; go('settings'); renderSettings();
   setTimeout(() => { const el = $('shareSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
 }
 async function loadSharing() {
@@ -3034,7 +3065,7 @@ function renderFind() {
   });
   if ($('fqCopy')) $('fqCopy').onclick = copySlots;
   updateCopyBtn();
-  if ($('fqFixCals')) $('fqFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s2 = $('ivCalSec'); if (s2) s2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
+  if ($('fqFixCals')) $('fqFixCals').onclick = () => { setSec = 'calendars'; go('settings'); renderSettings(); setTimeout(() => { const s2 = $('ivCalSec'); if (s2) s2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
 }
 async function runFind() {
   const q = fq;
@@ -3435,7 +3466,7 @@ async function init() {
     return;
   }
   if (signIn) setTimeout(() => {
-    go('settings'); renderSettings();
+    setSec = 'calendars'; go('settings'); renderSettings();
     setTimeout(() => { const el = $('acctSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
     if (signIn.ok) toast(`Connected ${signIn.email}`, { type: 'ok' });
     else dialog({ tone: 'warn', title: "Couldn't connect the account", body: signIn.msg, primary: 'OK' });
