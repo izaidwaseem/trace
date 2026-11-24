@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'dda20e7fb3';</script>
+<script>window.TRACE_VER = '7f155df781';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -109,7 +109,26 @@
     padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
   .view { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
   .view > * { min-width: 0; }
-  #ivCard { margin: 6px 0 0; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 16; background: var(--surface); border-top: 1px solid var(--line);
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+  .tb-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; }
+  .tb { position: relative; border: 0; background: none; display: grid; justify-items: center; gap: 3px; padding: 6px 0 2px; font: 500 11px var(--font); color: var(--faint); cursor: pointer; }
+  .tb .i { width: 22px; height: 22px; }
+  .tb[aria-current="page"] { color: var(--fg); }
+  .tb-dot { position: absolute; top: 3px; left: calc(50% + 7px); width: 9px; height: 9px; border-radius: 50%; background: var(--moved); border: 2px solid var(--surface); }
+  .tb-plus { justify-self: center; width: 52px; height: 52px; border-radius: 17px; border: 0; background: var(--ink); color: var(--ink-fg); display: grid; place-items: center; cursor: pointer; margin-bottom: 2px; }
+  .tb-plus .i { width: 26px; height: 26px; stroke-width: 2.2; }
+  .qa { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .qa button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 16px; padding: 14px; text-align: left; display: grid; gap: 6px; cursor: pointer; color: var(--fg); font: inherit; }
+  .qa button .i { width: 22px; height: 22px; }
+  .qa b { font-weight: 600; }
+  .qa small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+  .picks { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick { border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 7px 13px; font: 500 14px var(--font); cursor: pointer; }
+  .pick[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+  #v-activity .hscroll { max-height: none; }
+  #v-activity .hist.more::after { display: none; }
+  body.tabs main { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
   .section { display: grid; gap: 10px; }
   .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .muted { color: var(--muted); }
@@ -516,7 +535,8 @@
   @media (min-width: 900px) {
     :root { --maxw: 1040px; }
     #v-home { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
-    #v-home > #undoBox, #v-home > #queueBox, #v-home > #setupBox, #v-home > #shareBox, #v-home > #voiceCard, #v-home > #todayCard { grid-column: 1 / -1; }
+    #v-home > #queueBox, #v-home > #setupBox { grid-column: 1 / -1; }
+    #v-today { max-width: 720px; margin: 0 auto; width: 100%; }
     #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
     .rv-side { position: sticky; top: 88px; }
     #v-settings, #v-project { display: block; columns: 2; column-gap: 32px; }
@@ -582,42 +602,48 @@
   <!-- HOME -->
   <div class="notice warn" id="offline" hidden style="margin-bottom:16px"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
     <span class="grow">You're offline. Relay needs a connection to read photos and update your calendar.</span></div>
-  <section class="view" id="v-home">
-    <div id="undoBox"></div>
-    <div id="queueBox"></div>
-    <div id="setupBox"></div>
+  <!-- TODAY (tab) -->
+  <section class="view" id="v-today">
     <div id="shareBox"></div>
     <div class="todaycard" id="todayCard"></div>
-    <div class="voicecard" id="voiceCard">
-      <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
-        <span class="vc-ico"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></span>
-        <span class="vc-txt"><b>Add or change meetings by voice</b><span>e.g. “START data review tomorrow 9:30 Central”</span></span>
-      </button>
-      <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
-    </div>
+    <div id="nextIvBox"></div>
+    <div id="todayBody"></div>
+  </section>
+
+  <!-- SYNC (tab): project calendars, photos, voice -->
+  <section class="view" id="v-home" hidden>
+    <div id="queueBox"></div>
+    <div id="setupBox"></div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
       <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
-      <div class="voicecard" id="ivCard">
-        <button class="vc-main" id="ivOpen" type="button" aria-label="Interviews">
-          <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg></span>
-          <span class="vc-txt"><b>Interviews</b><span id="ivCardSub">Upcoming and completed, clashes, sheet check</span></span>
-        </button>
-        <svg class="i chev" aria-hidden="true" style="flex-shrink:0;margin-right:10px;color:var(--faint)"><use href="#i-chev"/></svg>
-      </div>
     </div>
     <div class="section">
-      <div class="eyebrow">Recent <span class="cnt" id="histCnt"></span></div>
+      <div class="eyebrow">Change meetings by voice</div>
+      <div class="voicecard" id="voiceCard">
+        <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
+          <span class="vc-ico"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></span>
+          <span class="vc-txt"><b>Say it</b><span>e.g. “START data review tomorrow 9:30 Central”</span></span>
+        </button>
+        <button class="iconbtn vc-type" id="vcType" type="button" aria-label="Type instead"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY (tab) -->
+  <section class="view" id="v-activity" hidden>
+    <div id="undoBox"></div>
+    <div class="section">
+      <div class="picks" id="actFilter" role="group" aria-label="Show"></div>
       <div class="group hist" id="hist"></div>
+      <div class="hint">Undo puts your calendar back the way it was before that change. <span class="cnt" id="histCnt"></span></div>
     </div>
   </section>
 
   <!-- REVIEW -->
   <section class="view" id="v-review" hidden></section>
 
-  <!-- TODAY -->
-  <section class="view" id="v-today" hidden></section>
 
   <!-- VOICE REVIEW -->
   <section class="view" id="v-voice" hidden></section>
@@ -640,6 +666,24 @@
   <!-- INTERVIEW CHECK -->
   <section class="view" id="v-check" hidden></section>
 </main>
+
+<nav class="tabbar" id="tabbar" aria-label="Main">
+  <div class="tb-in">
+    <button class="tb" type="button" data-tab="today"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg>Today</button>
+    <button class="tb" type="button" data-tab="iv"><svg class="i" aria-hidden="true"><use href="#i-listcheck"/></svg>Interviews<span class="tb-dot" id="ivDot" hidden></span></button>
+    <button class="tb-plus" type="button" id="plusBtn" aria-label="Add"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    <button class="tb" type="button" data-tab="home"><svg class="i" aria-hidden="true"><use href="#i-repeat"/></svg>Sync</button>
+    <button class="tb" type="button" data-tab="activity"><svg class="i" aria-hidden="true"><use href="#i-undo"/></svg>Activity</button>
+  </div>
+</nav>
+
+<div class="sheet-wrap" id="plusSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="plTitle">
+    <h2 id="plTitle">Add</h2>
+    <div class="qa" id="plBody"></div>
+    <button class="btn block" type="button" id="plClose">Cancel</button>
+  </div>
+</div>
 
 <div class="actionbar" id="actionbar" hidden>
   <div class="in-bar">
@@ -916,15 +960,23 @@ window.addEventListener('online', () => { $('offline').hidden = true; toast('Bac
 window.addEventListener('error', () => toast('Something went wrong in the app. Reload if it keeps happening.', { type: 'err' }));
 
 /* ───────── navigation ───────── */
+const TABS = ['today', 'iv', 'home', 'activity'];
+let curTab = 'today';
 function go(v) {
+  if (v === 'tab') v = curTab;
   view = v;
-  ['home', 'today', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv', 'ivform'].forEach(x => $('v-' + x).hidden = x !== v);
-  $('backBtn').hidden = v === 'home' || v === 'done';
-  $('setBtn').hidden = v !== 'home';
-  $('logo').hidden = v !== 'home';
-  const titles = { home: 'Relay', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
+  const isTab = TABS.includes(v);
+  if (isTab) curTab = v;
+  ['home', 'today', 'activity', 'review', 'voice', 'done', 'settings', 'project', 'check', 'iv', 'ivform'].forEach(x => $('v-' + x).hidden = x !== v);
+  $('backBtn').hidden = isTab || v === 'done';
+  $('setBtn').hidden = !isTab;
+  $('logo').hidden = !isTab;
+  $('tabbar').hidden = !isTab;
+  document.body.classList.toggle('tabs', isTab);
+  document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.setAttribute('aria-current', b.dataset.tab === v ? 'page' : 'false'));
+  const titles = { home: 'Sync', activity: 'Activity', review: 'Review changes', voice: 'Review voice note', today: 'Today', done: 'Calendar updated', settings: 'Settings', check: 'Check interviews', iv: 'Interviews', ivform: ivf && ivf.id ? (ivf.timeOnly ? 'Move interview' : 'Edit interview') : 'Schedule interview', project: editProj && editProj.id ? 'Edit project' : 'New project' };
   $('title').firstChild.textContent = titles[v];
-  $('subtitle').textContent = v === 'home' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
+  $('subtitle').textContent = v === 'today' ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date()) : '';
   $('actionbar').hidden = v !== 'review' && v !== 'voice';
   window.scrollTo(0, 0);
 }
@@ -933,8 +985,17 @@ $('backBtn').onclick = async () => {
   if (view === 'review' && !(await leaveReview())) return;
   if (view === 'voice' && !(await leaveVoice())) return;
   if (view === 'check' || view === 'ivform') { go('iv'); renderIv(); return; }
-  go(view === 'project' ? 'settings' : 'home');
+  go(view === 'project' ? 'settings' : 'tab');
+  if (view === 'today') renderTodayTab(); else if (view === 'iv') renderIv(); else if (view === 'activity') renderHist();
 };
+function openTab(t) {
+  go(t);
+  if (t === 'today') renderTodayTab();
+  else if (t === 'iv') renderIv();
+  else if (t === 'activity') { renderHist(); renderUndoBox(); }
+  else renderHome();
+}
+document.querySelectorAll('#tabbar [data-tab]').forEach(b => b.onclick = () => openTab(b.dataset.tab));
 function confirmDiscard(title, body, keep) { return dialog({ title, body, primary: 'Discard', secondary: keep, danger: true }); }
 async function leaveReview() {
   const n = review ? pendingActions().filter(a => a.action !== 'ignore').length : 0;
@@ -942,7 +1003,6 @@ async function leaveReview() {
   return confirmDiscard('Discard this review?', 'Nothing has been added to your calendar yet. You can take the photo again any time.', 'Keep reviewing');
 }
 $('setBtn').onclick = () => { go('settings'); renderSettings(); };
-$('ivCard').onclick = () => { go('iv'); renderIv(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
@@ -965,11 +1025,7 @@ function renderHome() {
   $('projList').querySelectorAll('[data-cam]').forEach(b => b.onclick = () => { selId = b.dataset.cam; $('camIn').click(); });
   $('projList').querySelectorAll('[data-up]').forEach(b => b.onclick = () => { selId = b.dataset.up; $('upIn').click(); });
 
-  const u = S.undo;
-  $('undoBox').innerHTML = u ? `<div class="notice"><span class="grow">${u.code === 'IV' ? 'Last change <b>Interview</b>' : `Last sync <b>${esc(u.code)}</b>`} · ${esc(u.when)}${tip('Undo reverses your last Apply for 24 hours: added events are removed, moved ones go back to their old time, removed ones come back.')}<br>${countsHtml(u.added, u.updated, u.removed)}</span>
-      <button class="btn sm" id="undoBtn">${icon('undo')}Undo</button></div>` : '';
-  if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
-
+  renderUndoBox();
   renderShareBox();
   renderQueue();
   $('setupBox').innerHTML = !S.settings.hasKey ? `<div class="notice warn">${icon('info')}<span class="grow">Add your Gemini API key in Settings to start reading photos.</span></div>` : '';
@@ -978,6 +1034,13 @@ function renderHome() {
   renderTodayCard();
   if (S.settings.hasKey !== undefined && (!ag || agOffset !== 0 || Date.now() - agAt > 60000)) loadToday(0);
   if (S.settings.hasKey !== undefined) { renderIvCardSub(); loadIv(); }
+}
+
+function renderUndoBox() {
+  const u = S.undo;
+  $('undoBox').innerHTML = u ? `<div class="notice"><span class="grow">${u.code === 'IV' ? 'Last change <b>Interview</b>' : `Last sync <b>${esc(u.code)}</b>`} · ${esc(u.when)}${tip('Undo reverses your last Apply for 24 hours: added events are removed, moved ones go back to their old time, removed ones come back.')}<br>${countsHtml(u.added, u.updated, u.removed)}</span>
+      <button class="btn sm" id="undoBtn">${icon('undo')}Undo</button></div>` : '';
+  if (u) $('undoBtn').onclick = e => doUndo(e.currentTarget);
 }
 
 /* ───────── recent syncs: own scrolling card, grouped by day ───────── */
@@ -1408,13 +1471,13 @@ function updateApply() {
   $('abSecondary').textContent = 'Cancel';
 }
 $('abSecondary').onclick = async () => {
-  if (view === 'voice') { if (!(await leaveVoice())) return; vReview = null; go('home'); return; }
-  if (!(await leaveReview())) return; review = null; go('home');
+  if (view === 'voice') { if (!(await leaveVoice())) return; vReview = null; go('tab'); return; }
+  if (!(await leaveReview())) return; review = null; go('tab');
 };
 $('abPrimary').onclick = () => view === 'voice' ? applyVoiceNow() : applyNow();
 async function applyNow() {
   const actions = pendingActions();
-  if (!actions.length) { dropQueued(); review = null; go('home'); return; }
+  if (!actions.length) { dropQueued(); review = null; go('tab'); return; }
   $('abSecondary').disabled = true;
   await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
     try {
@@ -1447,7 +1510,7 @@ function renderDone() {
       ${S.undo ? `<button class="btn block" id="dUndo">${icon('undo')}Undo these changes</button>` : ''}
       <button class="btn ghost block" id="dHome">Back to projects</button>
     </div>`;
-  $('dHome').onclick = () => { review = null; renderHome(); go('home'); };
+  $('dHome').onclick = () => { review = null; renderHome(); go('tab'); };
   if ($('dUndo')) $('dUndo').onclick = e => doUndo(e.currentTarget);
 }
 async function doUndo(btn) {
@@ -1455,7 +1518,7 @@ async function doUndo(btn) {
     try {
       const u = await run('undoLast');
       try { S = await run('getState'); } catch (e) {}
-      renderHome(); go('home');
+      renderHome(); go('tab');
       const bits = [u.removed && u.removed + ' removed', u.restored && u.restored + ' moved back', u.readded && u.readded + ' put back'].filter(Boolean);
       toast('Undone' + (bits.length ? ': ' + bits.join(', ') : ''), { type: 'ok' });
       if (u.errors && u.errors.length) dialog({ tone: 'warn', title: 'Some changes could not be undone', body: u.errors.join(' '), primary: 'OK' });
@@ -1774,8 +1837,7 @@ async function loadToday(offset) {
   try { ag = await run('agenda', offset || 0); agOffset = offset || 0; agAt = Date.now(); }
   catch (e) { if (view === 'today') showError(e, { retry: () => loadToday(offset) }); ag = ag && agOffset === (offset || 0) ? ag : null; }
   finally { agLoading = false; }
-  if (view === 'home') renderTodayCard();
-  if (view === 'today') renderToday();
+  if (view === 'today') { renderTodayCard(); renderToday(); }
 }
 function renderTodayCard() {
   const el = $('todayCard');
@@ -1801,14 +1863,33 @@ function renderTodayCard() {
       ${clashes ? `<button class="tpill warn" id="tcClash" type="button">${icon('clash')}${clashes} clash${clashes > 1 ? 'es' : ''} ahead</button>` : ''}
       ${dups ? `<button class="tpill" id="tcDup" type="button">${dups} listed twice</button>` : ''}
     </div></div>`;
-  const open = tab => { agTab = tab; go('today'); renderToday(); };
+  const open = tab => { agTab = tab; renderToday(); const b = $('todayBody'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   $('tcOpen').onclick = () => open('agenda');
   $('tcAll').onclick = () => open('agenda');
   if ($('tcClash')) $('tcClash').onclick = () => open('clashes');
   if ($('tcDup')) $('tcDup').onclick = () => open('clashes');
 }
+function renderTodayTab() {
+  renderShareBox();
+  renderTodayCard();
+  renderNextIv();
+  renderToday();
+  if (!ivl) loadIv();
+}
+function renderNextIv() {
+  const el = $('nextIvBox');
+  if (!el) return;
+  if (!ivl) { el.innerHTML = ''; return; }
+  const tz = ivl.homeTz, x = ivl.upcoming.find(i => i.resp !== 'declined' && !i.handed);
+  el.innerHTML = `<div class="section"><div class="eyebrow" style="display:flex;justify-content:space-between;align-items:baseline">Next interview<button class="linkbtn" type="button" id="nivAll" style="text-transform:none;letter-spacing:0;font-weight:500">All interviews</button></div>
+    ${x ? `<div class="group">${ivRowHtml(x, tz, Date.now())}</div>` : `<div class="group"><div class="empty">No interviews in the next ${ivl.days} days.</div></div>`}</div>`;
+  $('nivAll').onclick = () => openTab('iv');
+  el.querySelectorAll('[data-ivedit]').forEach(b => b.onclick = () => openIvForm(ivl.upcoming.find(i => i.id === b.dataset.ivedit)));
+  el.querySelectorAll('[data-ivcancel]').forEach(b => b.onclick = () => cancelIv(ivl.upcoming.find(i => i.id === b.dataset.ivcancel), b));
+  el.querySelectorAll('[data-ivhand]').forEach(b => b.onclick = () => openHand(ivl.upcoming.find(i => i.id === b.dataset.ivhand)));
+}
 function renderToday() {
-  const el = $('v-today');
+  const el = $('todayBody');
   if (!ag) { el.innerHTML = skelRows(5); loadToday(agOffset); return; }
   const n = ag.clashList.length;
   let html = `<div class="seg2" role="tablist">
@@ -1889,7 +1970,7 @@ function clashesHtml() {
     <div class="hint">Overlaps in the next 14 days, in your time. Declined meetings are left out.${ag.ignoredCount ? ` <button class="linkbtn" id="clUnhide" type="button">Show ${ag.ignoredCount} hidden</button>` : ''}</div>`;
 }
 
-setInterval(() => { if (view === 'home' && ag && agOffset === 0) renderTodayCard(); }, 60000);
+setInterval(() => { if (view === 'today' && ag && agOffset === 0) renderTodayCard(); }, 60000);
 
 /* ───────── newer version? reload once (GitHub Pages copies are cached up to 10 min) ───────── */
 function checkVersion() {
@@ -2155,7 +2236,7 @@ let ivl = null, ivlAt = 0, ivlLoading = false, ivTab = 'up', ivWho = '';
 async function loadIv(force) {
   if (ivlLoading || (!force && ivl && Date.now() - ivlAt < 60000)) return;
   ivlLoading = true;
-  try { ivl = await run('ivList'); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); }
+  try { ivl = await run('ivList'); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); if (view === 'today') renderNextIv(); }
   catch (e) {
     if (view === 'iv' && !ivl) {
       $('v-iv').innerHTML = ivTabsHtml() + `<div class="group"><div class="empty">Couldn't load your interviews. ${esc(errMsg(e))} <button class="btn sm" id="ivlRetry" type="button">Try again</button></div></div>`;
@@ -2164,6 +2245,7 @@ async function loadIv(force) {
   } finally { ivlLoading = false; }
 }
 function renderIvCardSub() {
+  if (ivl && $('ivDot')) $('ivDot').hidden = !ivl.counts.attention;
   const el = $('ivCardSub');
   if (!el || !ivl) return;
   const c = ivl.counts, nx = ivl.upcoming.find(x => x.resp !== 'declined');
@@ -2388,6 +2470,28 @@ async function afterIvChange(msg) {
     catch (e) { showError(e); }
   } } });
 }
+
+/* ───────── + : every way to add something ───────── */
+function openPlus() {
+  $('plBody').innerHTML = `
+    <button type="button" id="plIv">${icon('listcheck')}<b>Schedule an interview</b><small>Pick a free time, review, save</small></button>
+    <button type="button" id="plPhoto">${icon('camera')}<b>Photo of a project calendar</b><small>Only new or changed meetings are added</small></button>
+    <button type="button" id="plVoice">${icon('mic')}<b>Voice note</b><small>“Move my Scorpion 1-1 to Friday 2 PM”</small></button>
+    <button type="button" id="plType">${icon('type')}<b>Type a change</b><small>Same as voice, by keyboard</small></button>`;
+  $('plusSheet').hidden = false;
+  const close = () => { $('plusSheet').hidden = true; };
+  $('plIv').onclick = () => { close(); openIvForm(null); };
+  $('plPhoto').onclick = () => {
+    $('plBody').innerHTML = (S.profiles || []).map(p => `<button type="button" data-plp="${esc(p.id)}">${chip(p)}<b>${esc(p.project)}</b><small>${esc(tzName(p.tz))}</small></button>`).join('') ||
+      `<div class="empty" style="grid-column:1/-1">No projects yet. Add one in Settings.</div>`;
+    $('plBody').querySelectorAll('[data-plp]').forEach(b => b.onclick = () => { close(); selId = b.dataset.plp; $('camIn').click(); });
+  };
+  $('plVoice').onclick = () => { close(); startRecording(); };
+  $('plType').onclick = () => { close(); openTyper(); };
+}
+$('plusBtn').onclick = openPlus;
+$('plClose').onclick = () => { $('plusSheet').hidden = true; };
+$('plusSheet').addEventListener('click', e => { if (e.target === $('plusSheet')) $('plusSheet').hidden = true; });
 
 /* ───────── hand over an interview ───────── */
 let hsIv = null;
@@ -2812,8 +2916,8 @@ function renderVoice() {
       <div class="hint">Times are in the time zone shown on each meeting. Nothing changes in your calendar until you tap Apply.</div></div>`;
   }
   $('v-voice').innerHTML = html;
-  if ($('vAgain')) $('vAgain').onclick = () => { vReview = null; go('home'); startRecording(); };
-  if ($('vTypeIt')) $('vTypeIt').onclick = () => { const t = r.transcript; vReview = null; go('home'); openTyper(t); };
+  if ($('vAgain')) $('vAgain').onclick = () => { vReview = null; go('tab'); startRecording(); };
+  if ($('vTypeIt')) $('vTypeIt').onclick = () => { const t = r.transcript; vReview = null; go('tab'); openTyper(t); };
   $('v-voice').querySelectorAll('.vitem').forEach(row => {
     const it = r.items[+row.dataset.i];
     row.querySelectorAll('[data-k]').forEach(el => {
@@ -2871,7 +2975,7 @@ async function applyVoiceNow() {
   if (bad) { toast(`Set a ${bad.title ? 'day and time' : 'title'} for “${bad.title || 'the new meeting'}”, or untick it.`, { type: 'err' }); return; }
   const items = r.items.filter(it => it.sel).map(it => ({ action: it.action, profileId: it.profileId, title: it.title.trim(), date: it.date,
     start: it.start, mins: it.mins, tz: it.tz, existingId: it.existingId || null, existingTitle: it.existingTitle || '' }));
-  if (!items.length) { vReview = null; go('home'); return; }
+  if (!items.length) { vReview = null; go('tab'); return; }
   $('abSecondary').disabled = true;
   await withBusy($('abPrimary'), 'Updating your calendar…', async () => {
     try {
@@ -2921,11 +3025,11 @@ async function init() {
     else dialog({ tone: 'warn', title: "Couldn't connect the account", body: signIn.msg, primary: 'OK' });
   }, 400);
   if (!(window.google && google.script && google.script.run) && !traceKey()) return lockedScreen();
-  go('home');
+  go('today');
   $('projList').innerHTML = skelRows(3);
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
-  try { S = await run('getState'); renderHome(); loadToday(0); queueNotice(); if ((S.queue || []).some(j => j.status === 'waiting')) { startQueuePoll(); run('processQueue').then(q => { S.queue = q; renderQueue(); queueNotice(); }).catch(() => {}); } }
+  try { S = await run('getState'); renderHome(); renderTodayTab(); loadToday(0); queueNotice(); if ((S.queue || []).some(j => j.status === 'waiting')) { startQueuePoll(); run('processQueue').then(q => { S.queue = q; renderQueue(); queueNotice(); }).catch(() => {}); } }
   catch (e) {
     $('projList').innerHTML = `<div class="empty">Couldn't load your projects.</div>`;
     $('hist').innerHTML = '';
