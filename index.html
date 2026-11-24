@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '8bcb416d08';</script>
+<script>window.TRACE_VER = 'd7feb9524e';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -240,6 +240,9 @@
   .tdst b small { font-size: 12px; font-weight: 500; color: var(--muted); }
   .tdst span { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
   .tdst.bad b { color: var(--remove); }
+  .tdst.warn b { color: var(--moved); }
+  .proj .meta.stale { color: var(--moved); }
+  #v-home { align-content: start; }
   .tdtl { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
   .tdtl > * + * { border-top: 1px solid var(--line); }
   .tdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--fg); }
@@ -660,7 +663,7 @@
   @media (min-width: 900px) {
     :root { --maxw: 1040px; }
     #v-home { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); column-gap: 32px; align-items: start; }
-    #v-home > #queueBox, #v-home > #setupBox { grid-column: 1 / -1; }
+    #v-home > #queueBox, #v-home > #setupBox, #v-home > #syncStats { grid-column: 1 / -1; }
     #v-today { max-width: 720px; margin: 0 auto; width: 100%; }
     #v-review { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); column-gap: 32px; align-items: start; }
     .rv-side { position: sticky; top: 88px; }
@@ -740,13 +743,14 @@
   <section class="view" id="v-home" hidden>
     <div id="queueBox"></div>
     <div id="setupBox"></div>
+    <div id="syncStats"></div>
     <div class="section">
       <div class="eyebrow">Projects</div>
       <div class="group" id="projList"></div>
-      <div class="hint">Take a photo of the project's calendar on your laptop. Only new or changed meetings are added to your calendar.</div>
+      <div class="hint">Photograph a project’s week on your laptop. Only new or changed meetings are added.</div>
     </div>
     <div class="section">
-      <div class="eyebrow">Change meetings by voice</div>
+      <div class="eyebrow">Change meetings by voice or typing</div>
       <div class="voicecard" id="voiceCard">
         <button class="vc-main" id="vcMic" type="button" aria-label="Add or change meetings by voice">
           <span class="vc-ico"><svg class="i" aria-hidden="true"><use href="#i-mic"/></svg></span>
@@ -1158,17 +1162,37 @@ $('setBtn').onclick = () => { setSec = ''; go('settings'); renderSettings(); };
 window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ───────── home ───────── */
+/** Monday 00:00 of this week, in your time zone. */
+function weekStart() {
+  const tz = S.settings.homeTz || 'Asia/Karachi', today = dayIn(Date.now(), tz);
+  const p = today.split('-').map(Number), wd = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+  return zoned(addDay(today, -((wd + 6) % 7)), '00:00', tz);
+}
+function renderSyncStats() {
+  const el = $('syncStats');
+  if (!el) return;
+  const ws = weekStart(), ps = S.profiles || [];
+  const fresh = ps.filter(p => p.lastSync && p.lastSync.ts >= ws).length;
+  const changes = (S.history || []).filter(h => h.ts >= ws && !h.undone && !/^Undo of /.test(h.range || '') && !h.iv)
+    .reduce((n, h) => n + (h.added || 0) + (h.updated || 0) + (h.removed || 0), 0);
+  const stale = ps.length - fresh, waiting = (S.queue || []).filter(j => j.status === 'waiting' || j.status === 'ready').length;
+  el.innerHTML = `<div class="tdstats">
+      <div class="tdst"><b>${fresh}<small> of ${ps.length}</small></b><span>synced this week</span></div>
+      <div class="tdst"><b>${changes}</b><span>calendar changes this week</span></div>
+      <div class="tdst ${stale ? 'warn' : ''}"><b>${stale}</b><span>need${stale === 1 ? 's' : ''} this week’s photo</span></div>
+      <div class="tdst"><b>${waiting}</b><span>photo${waiting === 1 ? '' : 's'} waiting</span></div></div>`;
+}
 function renderHome() {
-  const ps = S.profiles;
+  const ps = S.profiles, ws = weekStart();
+  renderSyncStats();
   $('projList').innerHTML = ps.length ? ps.map(p => {
-    const ls = p.lastSync;
-    const meta = [tzName(p.tz)];
-    if (p.doubleCheck) meta.push('Double-check');
-    if (ls) meta.push('Synced ' + ago(ls.ts));
+    const ls = p.lastSync, fresh = ls && ls.ts >= ws;
+    const did = ls ? [ls.added && ls.added + ' added', ls.updated && ls.updated + ' changed', ls.removed && ls.removed + ' removed'].filter(Boolean).join(', ') : '';
+    const meta = fresh ? `Synced ${ago(ls.ts)}${did ? ' · ' + did : ' · no changes'}` : ls ? `Needs this week’s photo · last synced ${ago(ls.ts)}` : 'Not synced yet · take a photo';
     return `<div class="proj">
       ${chip(p)}
       <div class="txt"><div class="name">${esc(p.project)}${p.person ? ` <span><span class="sep">· </span>${esc(p.person)}</span>` : ''}</div>
-        <div class="meta">${esc(meta.join(' · '))}</div></div>
+        <div class="meta ${fresh ? '' : 'stale'}">${esc(meta)}</div></div>
       <div class="acts">
         <button class="round" data-up="${esc(p.id)}" aria-label="Upload photos for ${esc(p.project)}">${icon('image')}</button>
         <button class="round ink" data-cam="${esc(p.id)}" aria-label="Take photo for ${esc(p.project)}">${icon('camera')}</button>
@@ -2203,6 +2227,7 @@ let qPollT = null, qSeenReady = {};
 function renderQueue() {
   const box = $('queueBox');
   if (!box) return;
+  renderSyncStats();
   const q = S.queue || [];
   box.innerHTML = q.map(j => {
     const p = prof(j.profileId), name = p ? p.project : j.code;
