@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '7f155df781';</script>
+<script>window.TRACE_VER = '9689fae78e';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -225,6 +225,64 @@
   .slot[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   .ivacts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .ivhero { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; gap: 8px; }
+  .ivh-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ivh-count { font: 600 13px var(--mono); background: var(--surface-2); padding: 3px 8px; border-radius: 8px; }
+  .ivh-name { font-size: 20px; font-weight: 650; letter-spacing: -.01em; line-height: 1.2; }
+  .ivh-when { font-size: 14px; color: var(--muted); } .ivh-when b { color: var(--fg); font-weight: 600; }
+  .ivh-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ivh-acts a.btn { text-decoration: none; }
+  .ivbar { display: flex; gap: 8px; align-items: center; }
+  .ivbar .seg2 { flex: 1; margin: 0; }
+  .ivwho { width: auto; min-width: 0; max-width: 42%; min-height: 44px; flex: none; }
+  .ivr { display: flex; align-items: center; gap: 12px; padding: 12px 14px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; color: var(--fg); font: inherit; }
+  .ivr + .ivr { border-top: 1px solid var(--line); }
+  .ivr.dim { opacity: .55; } .ivr.past { opacity: .7; }
+  .ivr-t { width: 66px; flex: none; font-weight: 600; font-size: 14px; } .ivr-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .ivr-b { flex: 1; min-width: 0; display: grid; }
+  .ivr-n { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ivr-s { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ivr .chev { width: 16px; height: 16px; color: var(--faint); flex: none; }
+  .sdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .sdot.bad { background: var(--remove); } .sdot.warn { background: var(--moved); } .sdot.info { background: var(--focus); }
+  .ivs-h { display: flex; align-items: center; gap: 10px; } .ivs-h h2 { flex: 1; min-width: 0; }
+  .ivs-sum { border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 2px; }
+  .ivs-sum b { font-size: 17px; }
+  .hs-chk .k-bad { color: var(--remove); } .hs-chk .k-warn { color: var(--moved); } .hs-chk .k-ok .i { color: var(--new); }
+  .ivlink { display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-decoration: none; color: var(--fg); font-weight: 500; }
+  .ivlink + .ivlink { border-top: 1px solid var(--line); }
+  .ivlink span { flex: 1; } .ivlink .i:last-child { width: 16px; height: 16px; color: var(--faint); }
+  .ivs-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+  .ivs-lock { display: flex; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 14px; }
+  .ivs-lock .i { width: 18px; height: 18px; color: var(--muted); flex: none; margin-top: 1px; }
+  .days7 { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(52px, 1fr); gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .day7 { border: 1px solid var(--line); background: var(--surface); border-radius: 13px; padding: 7px 0; display: grid; justify-items: center; cursor: pointer; color: var(--fg); font: inherit; }
+  .day7 .w { font-size: 12px; color: var(--muted); } .day7 .n { font-size: 18px; font-weight: 650; } .day7 .c { font-size: 10.5px; color: var(--new); font-weight: 600; min-height: 14px; }
+  .day7[aria-pressed="true"] { background: var(--ink); color: var(--ink-fg); border-color: var(--ink); }
+  .day7[aria-pressed="true"] .w, .day7[aria-pressed="true"] .c { color: inherit; opacity: .8; }
+  .board { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .bscroll { overflow-x: auto; }
+  .bgrid { display: grid; position: relative; min-width: 0; }
+  .bhd { padding: 8px 2px 6px; text-align: center; border-bottom: 1px solid var(--line); min-width: 0; }
+  .bhd b { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bhd small { display: block; font-size: 10px; color: var(--muted); }
+  .bav { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 3px; color: var(--ink-fg); background: var(--muted); font-weight: 700; font-size: 12px; }
+  .bav.me { background: var(--ink); }
+  .btimes { position: relative; }
+  .btimes span { position: absolute; right: 4px; font-size: 10px; color: var(--faint); transform: translateY(-50%); white-space: nowrap; }
+  .bcol { position: relative; border-left: 1px solid var(--line); background-image: repeating-linear-gradient(to bottom, transparent 0 45px, var(--line) 45px 46px); min-width: 0; transition: background-color .15s; }
+  .bcol.over { background-color: var(--note-soft); box-shadow: inset 0 0 0 2px var(--focus); }
+  .bcol.off { background-color: var(--surface-2); }
+  .bcol-off { position: absolute; top: 8px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--faint); }
+  .blk { position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 3px 5px; font-size: 11px; line-height: 1.25; overflow: hidden; }
+  .blk b { display: block; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .blk span { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .blk.busy { background: var(--surface-2); color: var(--muted); background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--line) 5px 6px); }
+  .blk.iv { background: var(--note-soft); border-left: 3px solid var(--focus); color: var(--fg); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .blk.iv.got { cursor: default; touch-action: auto; border-left-color: var(--new); background: var(--new-soft); }
+  .blk.ghost { border: 1.5px dashed var(--line-strong); color: var(--faint); background: transparent; }
+  .blk.lifting { opacity: .3; }
+  .ghostdrag { position: fixed; z-index: 1000; pointer-events: none; box-shadow: 0 14px 28px rgba(0,0,0,.28); transform: rotate(-2deg) scale(1.04); right: auto; }
   .hs-people { display: grid; gap: 8px; }
   .hs-p { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
   .hs-p:hover { border-color: var(--line-strong); }
@@ -708,6 +766,10 @@
     <div class="hint" id="recHint">Say the project, the meeting, the day and the time. You can add, move or cancel several meetings in one go.</div>
     <div class="two"><button class="btn" id="recCancel" type="button">Cancel</button><button class="btn ink" id="recDone" type="button">Done</button></div>
   </div>
+</div>
+
+<div class="sheet-wrap" id="ivSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ivsTitle" id="ivsBody" style="max-height:90vh;overflow-y:auto"></div>
 </div>
 
 <div class="sheet-wrap" id="handSheet" hidden>
@@ -1884,9 +1946,7 @@ function renderNextIv() {
   el.innerHTML = `<div class="section"><div class="eyebrow" style="display:flex;justify-content:space-between;align-items:baseline">Next interview<button class="linkbtn" type="button" id="nivAll" style="text-transform:none;letter-spacing:0;font-weight:500">All interviews</button></div>
     ${x ? `<div class="group">${ivRowHtml(x, tz, Date.now())}</div>` : `<div class="group"><div class="empty">No interviews in the next ${ivl.days} days.</div></div>`}</div>`;
   $('nivAll').onclick = () => openTab('iv');
-  el.querySelectorAll('[data-ivedit]').forEach(b => b.onclick = () => openIvForm(ivl.upcoming.find(i => i.id === b.dataset.ivedit)));
-  el.querySelectorAll('[data-ivcancel]').forEach(b => b.onclick = () => cancelIv(ivl.upcoming.find(i => i.id === b.dataset.ivcancel), b));
-  el.querySelectorAll('[data-ivhand]').forEach(b => b.onclick = () => openHand(ivl.upcoming.find(i => i.id === b.dataset.ivhand)));
+  bindIvRows(el);
 }
 function renderToday() {
   const el = $('todayBody');
@@ -2231,7 +2291,7 @@ async function ivCalAdd(email, btn) {
   });
 }
 
-/* ───────── interviews: upcoming and completed (read-only) ───────── */
+/* ───────── Interviews tab: next interview, Upcoming / Board / Past, details sheet ───────── */
 let ivl = null, ivlAt = 0, ivlLoading = false, ivTab = 'up', ivWho = '';
 async function loadIv(force) {
   if (ivlLoading || (!force && ivl && Date.now() - ivlAt < 60000)) return;
@@ -2239,117 +2299,240 @@ async function loadIv(force) {
   try { ivl = await run('ivList'); ivlAt = Date.now(); renderIvCardSub(); if (view === 'iv') renderIv(); if (view === 'today') renderNextIv(); }
   catch (e) {
     if (view === 'iv' && !ivl) {
-      $('v-iv').innerHTML = ivTabsHtml() + `<div class="group"><div class="empty">Couldn't load your interviews. ${esc(errMsg(e))} <button class="btn sm" id="ivlRetry" type="button">Try again</button></div></div>`;
-      bindIvTabs(); $('ivlRetry').onclick = () => { renderIv(); loadIv(true); };
+      $('v-iv').innerHTML = ivSegHtml() + `<div class="group"><div class="empty">Couldn't load your interviews. ${esc(errMsg(e))} <button class="btn sm" id="ivlRetry" type="button">Try again</button></div></div>`;
+      bindIvSeg(); $('ivlRetry').onclick = () => { renderIv(); loadIv(true); };
     } else if (view === 'iv') showError(e, { retry: () => loadIv(true) });
   } finally { ivlLoading = false; }
 }
 function renderIvCardSub() {
   if (ivl && $('ivDot')) $('ivDot').hidden = !ivl.counts.attention;
-  const el = $('ivCardSub');
-  if (!el || !ivl) return;
-  const c = ivl.counts, nx = ivl.upcoming.find(x => x.resp !== 'declined');
-  el.textContent = c.upcoming ? [`${c.week} this week`, nx ? 'next ' + fmtDay(nx.start, ivl.homeTz) + ', ' + fmtT(nx.start, ivl.homeTz) : '', c.attention ? `${c.attention} need${c.attention === 1 ? 's' : ''} a look` : ''].filter(Boolean).join(' · ')
-    : 'No interviews in the next 30 days';
 }
-function ivTabsHtml() {
-  const n = ivl ? ivl.counts.upcoming : 0;
-  return `<div class="seg2 three" role="tablist">
-    <button type="button" data-ivtab="up" aria-pressed="${ivTab === 'up'}">Upcoming${n ? ' · ' + n : ''}</button>
-    <button type="button" data-ivtab="done" aria-pressed="${ivTab === 'done'}">Completed</button>
-    <button type="button" data-ivtab="find" aria-pressed="${ivTab === 'find'}">Find a time</button></div>`;
+/** The one thing to know about an interview, most important first: [tone, text]. */
+function ivStatus(x) {
+  if (x.handed) return ['ok', 'Handed to ' + x.handed.name + (x.handed.mode === 'invite' ? ' · ' + ({ accepted: 'accepted', declined: 'declined', tentative: 'maybe' }[x.handed.resp] || 'no reply yet') : '')];
+  if (x.resp === 'declined') return ['', 'Declined'];
+  if (x.clashes.length) return ['bad', 'Clashes with ' + x.clashes[0].title];
+  if (x.busyOn.length) return ['warn', x.busyOn.join(' and ') + ' busy then'];
+  if (x.resp === 'needsAction' && x.end > Date.now()) return ['info', 'Needs a reply'];
+  return null;
 }
-function bindIvTabs() {
-  $('v-iv').querySelectorAll('[data-ivtab]').forEach(b => b.onclick = () => {
-    ivTab = b.dataset.ivtab; renderIv(); window.scrollTo(0, 0);
+const ivTheirs = (x, tz) => x.tz && x.tz !== tz && tzOffsetDiffers(x.tz, tz, x.start) ? `${fmtT(x.start, x.tz)} ${zoneWord(x.tz)}` : '';
+const ivName = x => [x.who, x.company].filter(Boolean).join(' · ') || x.title;
+function ivRowHtml(x, tz, now) {
+  const st = ivStatus(x), past = x.end <= now;
+  const sub = [x.round, ivTheirs(x, tz), st && st[0] === 'ok' ? st[1] : ''].filter(Boolean).join(' · ');
+  return `<button type="button" class="ivr ${past ? 'past' : ''} ${x.resp === 'declined' || x.handed ? 'dim' : ''}" data-ivd="${esc(x.id)}">
+    <span class="ivr-t tnum">${esc(fmtT(x.start, tz))}<small>${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</small></span>
+    <span class="ivr-b"><span class="ivr-n">${esc(ivName(x))}</span>${sub ? `<span class="ivr-s">${esc(sub)}</span>` : ''}</span>
+    ${st && !past && st[0] !== 'ok' && st[0] ? `<i class="sdot ${st[0]}" title="${esc(st[1])}"></i>` : ''}${icon('chev', 'chev')}</button>`;
+}
+function ivHeroHtml(x, tz) {
+  const st = ivStatus(x), now = Date.now(), on = x.start <= now;
+  return `<div class="ivhero">
+    <div class="ivh-top"><span class="eyebrow">${on ? 'On now' : 'Next interview'}</span><span class="ivh-count tnum">${esc(on ? 'until ' + fmtT(x.end, tz) : inLabel(x.start))}</span></div>
+    <div class="ivh-name">${esc(ivName(x))}</div>
+    <div class="ivh-when tnum"><b>${esc(fmtDay(x.start, tz))}, ${esc(fmtT(x.start, tz))}</b> your time${ivTheirs(x, tz) ? ' · ' + esc(ivTheirs(x, tz)) : ''}${x.round ? ' · ' + esc(x.round) : ''}</div>
+    ${st ? `<div><span class="pill ${st[0] === 'bad' ? 'remove' : st[0] === 'warn' ? 'moved' : st[0] === 'ok' ? 'new' : ''}">${icon(st[0] === 'info' ? 'clock' : st[0] === 'ok' ? 'send' : 'clash')}${esc(st[1])}</span></div>` : ''}
+    <div class="ivh-acts">${x.join ? `<a class="btn sm ink" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}<button class="btn sm ghost" type="button" data-ivd="${esc(x.id)}">Details</button></div>
+  </div>`;
+}
+function ivSegHtml() {
+  const people = ivl ? [...new Set(ivl.upcoming.concat(ivl.done).map(x => x.who).filter(Boolean))].sort() : [];
+  return `<div class="ivbar"><div class="seg2 three" role="tablist">
+      <button type="button" data-ivtab="up" aria-pressed="${ivTab === 'up'}">Upcoming</button>
+      <button type="button" data-ivtab="board" aria-pressed="${ivTab === 'board'}">Board</button>
+      <button type="button" data-ivtab="past" aria-pressed="${ivTab === 'past'}">Past</button></div>
+    ${ivTab === 'board' ? '' : `<select class="in ivwho" id="ivWhoSel" aria-label="Show interviews for"><option value="">Everyone</option>${people.map(p => `<option ${p === ivWho ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>`}</div>`;
+}
+function bindIvSeg() {
+  $('v-iv').querySelectorAll('[data-ivtab]').forEach(b => b.onclick = () => { ivTab = b.dataset.ivtab; renderIv(); window.scrollTo(0, 0); });
+  if ($('ivWhoSel')) $('ivWhoSel').onchange = () => { ivWho = $('ivWhoSel').value; renderIv(); };
+}
+function bindIvRows(root) { root.querySelectorAll('[data-ivd]').forEach(b => b.onclick = () => openIvDetail(b.dataset.ivd)); }
+function ivGroupRows(list, tz, now) {
+  let rows = '', lastDay = '';
+  const rel = ms => { const d = fmtDay(ms - 6 * 3600000, tz); return d === fmtDay(now - 6 * 3600000, tz) ? 'Today' : d === fmtDay(now + 18 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 30 * 3600000, tz) ? 'Yesterday' : ''; };
+  list.forEach(x => {
+    const day = fmtDay(x.start - 6 * 3600000, tz);
+    if (day !== lastDay) { lastDay = day; const r = rel(x.start); rows += `<div class="agsec">${esc(r ? r + ' · ' + day : day)}</div>`; }
+    rows += ivRowHtml(x, tz, now);
   });
+  return rows;
 }
 function renderIv() {
   const el = $('v-iv');
-  if (ivTab === 'find') { renderFind(); return; }
-  if (!ivl) { el.innerHTML = ivTabsHtml() + `<div class="group">${skelRows(4)}</div>`; bindIvTabs(); loadIv(); return; }
+  if (!ivl) { el.innerHTML = ivSegHtml() + `<div class="group">${skelRows(4)}</div>`; bindIvSeg(); loadIv(); return; }
   if (Date.now() - ivlAt > 60000) loadIv();
-  const tz = ivl.homeTz, now = Date.now(), c = ivl.counts;
-  const list = (ivTab === 'up' ? ivl.upcoming : ivl.done).filter(x => !ivWho || x.who === ivWho);
-  let html = ivTabsHtml();
-  const bad = ivl.busyCals.filter(b => b.error);
-  if (bad.length && ivTab === 'up') html += `<div class="notice warn" style="margin-bottom:12px">${icon('info')}<span class="grow small">${bad.map(b => `<b>${esc(b.name || 'Other calendars')}</b>: ${esc(b.error)}`).join('<br>')}. Busy times there aren't checked.</span><button class="btn sm" id="ivFixCals" type="button">Settings</button></div>`;
-  if (ivTab === 'up') html += `<button class="btn ink block" id="ivNew" type="button" style="margin-bottom:12px">${icon('plus')}Schedule an interview</button>`;
-  if (ivTab === 'up') html += `<div class="pills" style="margin-bottom:12px;padding:0">
-      <span class="pill">${c.week} this week</span><span class="pill">${c.upcoming} in ${ivl.days} days</span>
-      ${c.attention ? `<span class="pill moved">${c.attention} need${c.attention === 1 ? 's' : ''} a look</span>` : ''}
-      ${ivl.busyCals.filter(b => !b.error).length ? `<span class="pill">Checks ${esc(ivl.busyCals.filter(b => !b.error).map(b => b.name).join(', '))}${tip('Interviews are also checked against the busy times of the calendars ticked in Settings → Interview calendars.')}</span>` : ''}</div>`;
-  else html += `<div class="pills" style="margin-bottom:12px;padding:0"><span class="pill">${c.done} in the last ${ivl.days} days</span></div>`;
-  if (ivl.people.length) html += `<div class="ivpeople" role="group" aria-label="Show interviews for">
-      <button type="button" class="tpill" data-who="" aria-pressed="${!ivWho}">Everyone</button>
-      ${ivl.people.map(p => `<button type="button" class="tpill" data-who="${esc(p.who)}" aria-pressed="${ivWho === p.who}">${esc(p.who)} · ${p.n}</button>`).join('')}</div>`;
-
-  if (!list.length) {
-    html += ivTab === 'up'
-      ? `<div class="done-hero"><span class="badge">${icon('check')}</span><h2>No interviews coming up</h2><div class="muted">${ivWho ? 'Nothing for ' + esc(ivWho) + ' in the next ' + ivl.days + ' days.' : 'Nothing in the next ' + ivl.days + ' days.'}</div></div>`
-      : `<div class="group"><div class="empty">No interviews in the last ${ivl.days} days${ivWho ? ' for ' + esc(ivWho) : ''}.</div></div>`;
+  if (ivTab === 'board') { renderBoard(); return; }
+  const tz = ivl.homeTz, now = Date.now();
+  let html = '';
+  if (ivTab === 'up') {
+    const list = ivl.upcoming.filter(x => !ivWho || x.who === ivWho);
+    const next = list.find(x => x.resp !== 'declined' && !x.handed);
+    if (next) html += ivHeroHtml(next, tz);
+    html += ivSegHtml();
+    const rest = list.filter(x => x !== next);
+    html += rest.length ? `<div class="group">${ivGroupRows(rest, tz, now)}</div>`
+      : `<div class="group"><div class="empty">${next ? 'Nothing else' : 'No interviews'}${ivWho ? ' for ' + esc(ivWho) : ''} in the next ${ivl.days} days.</div></div>`;
+    const bad = ivl.busyCals.filter(b => b.error);
+    if (bad.length) html += `<div class="notice warn">${icon('info')}<span class="grow small">${bad.map(b => `<b>${esc(b.name || 'Other calendars')}</b>: ${esc(b.error)}`).join('<br>')}. Busy times there aren't checked.</span></div>`;
+    html += `<button class="btn ink block" id="ivNew" type="button">${icon('plus')}Schedule an interview</button>`;
   } else {
-    let rows = '', lastDay = '';
-    const rel = ms => { const d = fmtDay(ms - 6 * 3600000, tz); return d === fmtDay(now - 6 * 3600000, tz) ? 'Today' : d === fmtDay(now + 18 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 30 * 3600000, tz) ? 'Yesterday' : ''; };
-    list.forEach(x => {
-      const day = fmtDay(x.start - 6 * 3600000, tz);   // a day runs 6 AM to 6 AM, like Today
-      if (day !== lastDay) { lastDay = day; const r = rel(x.start); rows += `<div class="agsec">${esc(r ? r + ' · ' + day : day)}</div>`; }
-      rows += ivRowHtml(x, tz, now);
-    });
-    html += `<div class="group">${rows}</div>`;
+    html += ivSegHtml();
+    const list = ivl.done.filter(x => !ivWho || x.who === ivWho);
+    html += list.length ? `<div class="group">${ivGroupRows(list, tz, now)}</div>` : `<div class="group"><div class="empty">No interviews in the last ${ivl.days} days${ivWho ? ' for ' + esc(ivWho) : ''}.</div></div>`;
   }
-  html += `<div class="hint">Interviews found in your main calendar over the ${ivTab === 'up' ? 'next' : 'last'} ${ivl.days} days, with copies of the same invite shown once. Times are yours; tap one to open it in Google Calendar. Nothing here changes your calendar.</div>`;
-  html += `<div class="section"><div class="voicecard"><button class="vc-main" id="ivCheckOpen" type="button">
+  html += `<div class="voicecard"><button class="vc-main" id="ivCheckOpen" type="button">
       <span class="vc-ico" style="background:var(--surface-2);color:var(--fg)">${icon('listcheck')}</span>
-      <span class="vc-txt"><b>Check sheet</b><span>Paste rows from the interview sheet, see if each is in your calendar</span></span></button>
-      ${icon('chev', 'chev')}</div></div>`;
+      <span class="vc-txt"><b>Check Jett’s sheet</b><span>Paste rows, see which are in your calendar</span></span></button>${icon('chev', 'chev')}</div>`;
   el.innerHTML = html;
-  bindIvTabs();
+  bindIvSeg(); bindIvRows(el);
   $('ivCheckOpen').onclick = () => { go('check'); renderCheck(); };
   if ($('ivNew')) $('ivNew').onclick = () => openIvForm(null);
-  el.querySelectorAll('[data-ivedit]').forEach(b => b.onclick = () => openIvForm(ivl.upcoming.find(x => x.id === b.dataset.ivedit)));
-  el.querySelectorAll('[data-ivcancel]').forEach(b => b.onclick = () => cancelIv(ivl.upcoming.find(x => x.id === b.dataset.ivcancel), b));
-  el.querySelectorAll('[data-ivhand]').forEach(b => b.onclick = () => openHand(ivl.upcoming.find(x => x.id === b.dataset.ivhand)));
-  el.querySelectorAll('[data-who]').forEach(b => b.onclick = () => { ivWho = b.dataset.who; renderIv(); });
-  if ($('ivFixCals')) $('ivFixCals').onclick = () => { go('settings'); renderSettings(); setTimeout(() => { const s = $('ivCalSec'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
-}
-function ivRowHtml(x, tz, now) {
-  const past = x.end <= now, live = x.start <= now && !past, declined = x.resp === 'declined';
-  const head = [x.who, x.company].filter(Boolean).join(' · ') || x.title;
-  const zone = x.tz && x.tz !== tz && tzOffsetDiffers(x.tz, tz, x.start) ? `${fmtT(x.start, x.tz)} ${tzName(x.tz).replace(/\s*\(.*\)$/, '')}` : '';
-  const sub = [x.role, x.round, x.with ? 'with ' + x.with : '', zone].filter(Boolean).join(' · ');
-  const tags = [];
-  if (live) tags.push(`<span class="tag ok">On now</span>`);
-  if (declined) tags.push(`<span class="tag">Declined</span>`);
-  else if (x.resp === 'needsAction' && !past) tags.push(`<span class="tag warn">Not answered</span>`);
-  else if (x.resp === 'tentative') tags.push(`<span class="tag">Maybe</span>`);
-  if (x.copies > 1) tags.push(`<span class="tag">Listed ${x.copies === 2 ? 'twice' : x.copies + ' times'}</span>`);
-  if ((x.alsoOn || []).length) tags.push(`<span class="tag">Also on ${esc(x.alsoOn.join(' and '))}'s calendar</span>`);
-  if (x.handed) tags.unshift(`<span class="tag ok">${icon('send')}Handed to ${esc(x.handed.name)}${x.handed.mode === 'invite' ? ' · ' + ({ accepted: 'accepted', declined: 'declined', tentative: 'maybe' }[x.handed.resp] || 'not answered yet') : ''}</span>`);
-  if (x.sensitive.length) tags.push(`<span class="tag warn">${icon('shield')}Notes have ${esc(x.sensitive.join(' and '))}</span>`);
-  if (!x.join && !past && !declined) tags.push(`<span class="tag">No meeting link</span>`);
-  if (x.job) tags.push(`<a class="tag" href="${esc(x.job)}" target="_blank" rel="noopener">${icon('external')}Job post</a>`);
-  if (x.resume) tags.push(`<a class="tag" href="${esc(x.resume)}" target="_blank" rel="noopener">${icon('external')}Resume</a>`);
-  return `<div class="ag ${declined ? 'dim' : ''} ${!past && (x.clashes.length || x.busyOn.length) ? 'clash' : ''}">
-    <div class="ag-t tnum">${esc(fmtT(x.start, tz))}<small>${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}</small></div>
-    <div class="ag-b">
-      <div class="ag-title"><a href="${esc(x.link || '#')}" target="_blank" rel="noopener" title="${esc(x.title)}">${esc(head)}</a></div>
-      ${sub ? `<div class="ag-sub">${esc(sub)}</div>` : ''}
-      ${head !== x.title && !(x.who && x.title.indexOf(x.who) >= 0 && x.company && x.title.indexOf(x.company) >= 0) ? `<div class="ag-sub" style="color:var(--faint)">${esc(x.title)}</div>` : ''}
-      ${!past ? x.clashes.map(c => `<div class="ag-warn">${icon('clash')}<span>Clashes with ${esc(c.title)} (${esc(fmtT(c.start, tz))} – ${esc(fmtT(c.end, tz))})</span></div>`).join('') : ''}
-      ${!past ? x.busyOn.map(n => `<div class="ag-warn">${icon('clash')}<span>${esc(n)} is busy then</span></div>`).join('') : ''}
-      ${tags.length ? `<div class="ivlinks">${tags.join('')}</div>` : ''}
-      ${!past && !declined && x.handed ? `<div class="ag-sub" style="color:var(--faint)">To take it back, use Undo in Recents.</div>` : ''}
-      ${!past && !declined && !x.handed ? `<div class="ivacts">
-          <button class="btn sm ghost" type="button" data-ivhand="${esc(x.id)}">${icon('send')}Hand over</button>
-          ${x.editKind ? `<button class="btn sm ghost" type="button" data-ivedit="${esc(x.id)}">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
-          <button class="btn sm ghost" type="button" data-ivcancel="${esc(x.id)}">${icon('x')}Cancel</button>`
-          : `<span class="ag-sub" style="color:var(--faint);align-self:center">Can't move or cancel${tip(x.why || "Relay can't change this one.")}</span>`}</div>` : ''}
-    </div>
-    ${x.join && !past && !declined ? `<a class="tpill join" href="${esc(x.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : ''}
-  </div>`;
 }
 function tzOffsetDiffers(a, b, ms) { return fmtT(ms, a) !== fmtT(ms, b); }
+const ivTabsHtml = () => ivSegHtml(), bindIvTabs = () => bindIvSeg();   // used by the older find-a-time screen
+
+/* details sheet */
+function ivFind(id) { return ivl && (ivl.upcoming.find(x => x.id === id || x.ids.includes(id)) || ivl.done.find(x => x.id === id || x.ids.includes(id))); }
+function closeIvSheet() { $('ivSheet').hidden = true; }
+function openIvDetail(id) {
+  const x = ivFind(id);
+  if (!x) return;
+  const tz = ivl.homeTz, now = Date.now(), past = x.end <= now, live = !past && x.resp !== 'declined';
+  const know = [];
+  const st = ivStatus(x);
+  if (x.handed) know.push(['ok', 'send', `Handed to ${x.handed.name}${x.handed.mode === 'invite' ? ' as an invite from you (' + ({ accepted: 'accepted', declined: 'declined', tentative: 'maybe' }[x.handed.resp] || 'no reply yet') + ')' : ''}. It no longer blocks your time. Undo it in Activity.`]);
+  if (!past) x.clashes.forEach(c => know.push(['bad', 'clash', `Clashes with ${c.title} (${fmtT(c.start, tz)} – ${fmtT(c.end, tz)}). Move one of them, or keep both if that’s fine.`]));
+  if (!past) x.busyOn.forEach(n => know.push(['warn', 'clash', `${n} is busy then.`]));
+  if (x.resp === 'needsAction' && !past && !x.handed) know.push(['info', 'clock', 'You haven’t answered this invite yet. Reply in Google Calendar so the sender knows.']);
+  if (x.resp === 'declined') know.push(['info', 'x', 'You declined this one.']);
+  (x.alsoOn || []).forEach(n => know.push(['ok', 'check', `Also on ${n}’s calendar.`]));
+  if (x.copies > 1) know.push(['info', 'listcheck', `It’s in your calendar ${x.copies === 2 ? 'twice' : x.copies + ' times'}. Shown once here.`]);
+  if (x.sensitive.length) know.push(['warn', 'shield', `The notes include ${x.sensitive.join(' and ')}. Anyone who can see your meeting details can read it.`]);
+  if (!x.join && !past) know.push(['info', 'video', 'No meeting link yet.']);
+  const pills = [x.round, x.role, x.with && 'with ' + x.with].filter(Boolean);
+  const link = (href, ico, label) => `<a class="ivlink" href="${esc(href)}" target="_blank" rel="noopener">${icon(ico)}<span>${label}</span>${icon('external')}</a>`;
+  $('ivsBody').innerHTML = `<div class="ivs-h"><h2 id="ivsTitle">${esc(ivName(x))}</h2><button class="iconbtn" type="button" id="ivsClose" aria-label="Close">${icon('x')}</button></div>
+    <div class="ivs-sum"><b class="tnum">${esc(fmtDay(x.start, tz))}, ${esc(fmtT(x.start, tz))} – ${esc(fmtT(x.end, tz))}</b>
+      <span class="muted tnum">${ivTheirs(x, tz) ? esc(ivTheirs(x, tz)) + ' · ' : ''}${esc(fmtDur(Math.round((x.end - x.start) / 60000)))}${x.organizer && x.organizer !== 'you' ? ' · invite from ' + esc(x.organizer) : ''}</span>
+      ${pills.length ? `<div class="ivlinks" style="margin-top:4px">${pills.map(p => `<span class="tag">${esc(p)}</span>`).join('')}</div>` : ''}</div>
+    ${know.length ? `<div class="hs-chk">${know.map(k => `<div class="k-${k[0]}">${icon(k[1])}<span>${esc(k[2])}</span></div>`).join('')}</div>` : ''}
+    <div class="group">${[x.join && !past ? link(x.join, 'video', 'Join meeting') : '', x.job ? link(x.job, 'external', 'Job post') : '', x.resume ? link(x.resume, 'external', 'Resume') : '', x.link ? link(x.link, 'listcheck', 'Open in Google Calendar') : ''].join('')}</div>
+    ${x.notes ? `<div class="small"><span class="muted">Notes</span><br>${esc(x.notes)}</div>` : ''}
+    ${live && !x.handed ? `<div class="ivs-acts">
+        <button class="btn ink" type="button" id="ivsHand">${icon('send')}Hand over</button>
+        ${x.editKind ? `<button class="btn" type="button" id="ivsEdit">${icon(x.editKind === 'trace' ? 'pencil' : 'clock')}${x.editKind === 'trace' ? 'Edit' : 'Move'}</button>
+          <button class="btn danger" type="button" id="ivsCancel">${icon('x')}Cancel</button>` : ''}</div>
+      ${x.editKind ? (x.editKind === 'own' ? '<div class="hint">You made this one, so Relay only changes its time.</div>' : '') : `<div class="ivs-lock">${icon('shield')}<span>${esc(x.why || 'Relay can’t change this one.')} You can still hand it over: Relay sends a clean copy.</span></div>`}` : ''}`;
+  $('ivSheet').hidden = false;
+  $('ivsClose').onclick = closeIvSheet;
+  if ($('ivsHand')) $('ivsHand').onclick = () => { closeIvSheet(); openHand(x); };
+  if ($('ivsEdit')) $('ivsEdit').onclick = () => { closeIvSheet(); openIvForm(x); };
+  if ($('ivsCancel')) $('ivsCancel').onclick = e => { closeIvSheet(); cancelIv(x, e.currentTarget); };
+}
+
+/* ───────── Board: one column per person, drag an interview to hand it over ───────── */
+let bdDay = null, bd = null, bdFor = null, bdLoading = false;
+const BD_PX = 46;
+async function loadBoard(day) {
+  if (bdLoading) return;
+  bdLoading = true;
+  try { const r = await run('ivBoard', { day }); if (r.day === bdDay) { bd = r; bdFor = day; } }
+  catch (e) { if (view === 'iv' && ivTab === 'board') showError(e, { retry: () => loadBoard(day) }); }
+  finally { bdLoading = false; }
+  if (view === 'iv' && ivTab === 'board') renderBoard();
+}
+function renderBoard() {
+  const el = $('v-iv'), tz = ivl.homeTz, now = Date.now();
+  const today = dayIn(now - 6 * 3600000, tz);
+  if (!bdDay) bdDay = today;
+  const days = []; for (let i = 0; i < 7; i++) days.push(addDay(today, i));
+  const workDayOf = ms => dayIn(ms - 6 * 3600000, tz);
+  const count = d => ivl.upcoming.filter(x => workDayOf(x.start) === d && x.resp !== 'declined').length;
+  let html = ivSegHtml() + `<div class="days7" role="group" aria-label="Day">${days.map(d => `<button type="button" class="day7" data-bday="${d}" aria-pressed="${d === bdDay}">
+      <span class="w">${esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span><span class="c">${count(d) ? count(d) + ' iv' : ''}</span></button>`).join('')}</div>`;
+  if (!bd || bdFor !== bdDay) {
+    el.innerHTML = html + `<div class="group">${skelRows(4)}</div>`;
+    bindIvSeg(); bindBoardDays(); loadBoard(bdDay); return;
+  }
+  const ivs = ivl.upcoming.filter(x => x.end > bd.from && x.start < bd.to && x.resp !== 'declined');
+  const ivIds = new Set(ivs.flatMap(x => x.ids));
+  const mine = bd.mine.filter(e => !ivIds.has(e.id));
+  const cols = [{ key: 'me', name: 'You', sub: 'You', level: 'me' }].concat(bd.people.map(p => ({ key: p.email, name: p.name, sub: p.level === 'edit' ? 'Can edit' : p.level === 'see' ? 'Invite' : 'Not shared', level: p.level, p })));
+  const spans = [].concat(mine, ivs, ...bd.people.map(p => p.busy)).filter(b => b.end > bd.from && b.start < bd.to);
+  const hr = ms => Math.floor((ms - bd.from) / 3600000);
+  let h0 = spans.length ? Math.max(0, Math.min(...spans.map(b => hr(b.start))) - 1) : 11, h1 = spans.length ? Math.min(24, Math.max(...spans.map(b => hr(b.end - 1) + 1)) + 1) : 22;
+  if (h1 - h0 < 6) h1 = Math.min(24, h0 + 6);
+  const top = ms => (Math.max(ms, bd.from + h0 * 3600000) - (bd.from + h0 * 3600000)) / 3600000 * BD_PX;
+  const hgt = (a, b) => Math.max(20, (Math.min(b, bd.from + h1 * 3600000) - Math.max(a, bd.from + h0 * 3600000)) / 3600000 * BD_PX - 2);
+  const blk = (cls, a, b, inner, attrs) => `<div class="blk ${cls}" style="top:${top(a)}px;height:${hgt(a, b)}px" ${attrs || ''}>${inner}</div>`;
+  const colHtml = c => {
+    let inner = '';
+    if (c.key === 'me') {
+      mine.forEach(e => { inner += blk('busy', e.start, e.end, `<b>${esc(e.title)}</b>`); });
+      ivs.forEach(x => {
+        inner += x.handed ? blk('ghost', x.start, x.end, `<b>${esc(x.company || x.who || 'Interview')}</b><span>→ ${esc(x.handed.name)}</span>`)
+          : blk('iv', x.start, x.end, `<b>${esc(x.company || x.who || x.title)}</b><span>${esc([x.who && x.company ? x.who : '', x.round].filter(Boolean).join(' · '))}</span>`, `tabindex="0" role="button" data-bid="${esc(x.id)}" aria-label="${esc(ivName(x))}, ${esc(fmtT(x.start, tz))}. Drag to someone to hand over."`);
+      });
+    } else {
+      if (c.level === 'none') inner += `<div class="bcol-off">Not shared</div>`;
+      const handed = ivs.filter(x => x.handed && x.handed.to === c.key);
+      c.p.busy.filter(b => !handed.some(x => Math.abs(x.start - b.start) < 300000 && Math.abs(x.end - b.end) < 300000)).forEach(b => { inner += blk('busy', b.start, b.end, ''); });
+      handed.forEach(x => { inner += blk('iv got', x.start, x.end, `<b>${esc(x.company || x.who || 'Interview')}</b><span>from you</span>`); });
+    }
+    return `<div class="bcol ${c.level === 'none' ? 'off' : ''}" data-col="${esc(c.key)}" style="height:${(h1 - h0) * BD_PX}px">${inner}</div>`;
+  };
+  const hours = []; for (let h = h0; h <= h1; h++) hours.push(h);
+  html += `<div class="board"><div class="bscroll"><div class="bgrid" style="grid-template-columns:36px repeat(${cols.length}, minmax(64px, 1fr))">
+      <div class="bhd"></div>${cols.map(c => `<div class="bhd"><span class="bav ${c.key === 'me' ? 'me' : ''}">${esc(c.name[0])}</span><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></div>`).join('')}
+      <div class="btimes" style="height:${(h1 - h0) * BD_PX}px">${hours.map(h => `<span style="top:${(h - h0) * BD_PX}px">${h === h0 ? '' : esc(fmtT(bd.from + h * 3600000, tz).replace(':00', '').replace(' ', ''))}</span>`).join('')}</div>
+      ${cols.map(colHtml).join('')}
+    </div></div></div>
+    <div class="hint">Drag an interview from your column onto someone to hand it over at the same time. Tap one for details. Grey blocks are when people are busy; times are yours.</div>`;
+  el.innerHTML = html;
+  bindIvSeg(); bindBoardDays(); bindBoardDrag(ivs);
+}
+function bindBoardDays() {
+  $('v-iv').querySelectorAll('[data-bday]').forEach(b => b.onclick = () => { bdDay = b.dataset.bday; renderBoard(); });
+}
+function bindBoardDrag(ivs) {
+  const grid = $('v-iv').querySelector('.bgrid');
+  if (!grid) return;
+  const colAt = (x, y) => { const c = [...grid.querySelectorAll('.bcol')].find(c => { const r = c.getBoundingClientRect(); return x >= r.left && x < r.right && y >= r.top - 60 && y < r.bottom + 60; }); return c ? c.dataset.col : null; };
+  grid.querySelectorAll('[data-bid]').forEach(el => {
+    const x = ivs.find(i => i.id === el.dataset.bid);
+    el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHand(x); } };
+    el.addEventListener('pointerdown', e => {
+      if (e.button > 0) return;
+      const sx = e.clientX, sy = e.clientY; let drag = null;
+      try { el.setPointerCapture(e.pointerId); } catch (er) {}
+      const move = ev => {
+        if (!drag && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 7) return;
+        if (!drag) {
+          const r = el.getBoundingClientRect();
+          drag = el.cloneNode(true); drag.classList.add('ghostdrag');
+          drag.style.width = r.width + 'px'; drag.style.height = r.height + 'px'; drag._dx = sx - r.left; drag._dy = sy - r.top;
+          document.body.appendChild(drag); el.classList.add('lifting');
+        }
+        drag.style.left = (ev.clientX - drag._dx) + 'px'; drag.style.top = (ev.clientY - drag._dy) + 'px';
+        const col = colAt(ev.clientX, ev.clientY);
+        grid.querySelectorAll('.bcol').forEach(c => c.classList.toggle('over', c.dataset.col === col && col !== 'me' && !c.classList.contains('off')));
+      };
+      const up = ev => {
+        el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+        grid.querySelectorAll('.bcol').forEach(c => c.classList.remove('over'));
+        el.classList.remove('lifting');
+        if (drag) {
+          drag.remove();
+          const col = ev.type === 'pointerup' ? colAt(ev.clientX, ev.clientY) : null;
+          if (col && col !== 'me') { const off = grid.querySelector(`.bcol[data-col="${CSS.escape(col)}"]`).classList.contains('off'); if (off) toast('That calendar isn’t shared with you yet.'); else openHand(x, col); }
+        } else openIvDetail(x.id);
+      };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    });
+  });
+}
 
 /* ───────── schedule / edit / move / cancel ───────── */
 let ivf = null, ivfRev = null;
@@ -2464,7 +2647,7 @@ async function cancelIv(x, btn) {
 async function afterIvChange(msg) {
   ivf = null; ivfRev = null; ivTab = 'up';
   try { S = await run('getState'); } catch (e) {}
-  go('iv'); ivl = null; renderIv(); loadIv(true);
+  bd = null; go('iv'); ivl = null; renderIv(); loadIv(true);
   toast(msg, { type: 'ok', action: { label: 'Undo', fn: async () => {
     try { await run('undoLast'); toast('Undone', { type: 'ok' }); try { S = await run('getState'); } catch (e) {} ivl = null; if (view === 'iv') { renderIv(); loadIv(true); } }
     catch (e) { showError(e); }
@@ -2497,7 +2680,8 @@ $('plusSheet').addEventListener('click', e => { if (e.target === $('plusSheet'))
 let hsIv = null;
 function closeHand() { $('handSheet').hidden = true; hsIv = null; }
 $('handSheet').addEventListener('click', e => { if (e.target === $('handSheet')) closeHand(); });
-async function openHand(x) {
+$('ivSheet').addEventListener('click', e => { if (e.target === $('ivSheet')) closeIvSheet(); });
+async function openHand(x, preTo) {
   if (!x) return;
   hsIv = x;
   const tz = S.settings.homeTz;
@@ -2515,6 +2699,7 @@ async function openHand(x) {
     <button class="btn block" type="button" id="hsClose">Cancel</button>`;
   $('hsClose').onclick = closeHand;
   $('hsBody').querySelectorAll('[data-to]').forEach(b => b.onclick = () => reviewHand(x, b.dataset.to, b));
+  if (preTo) { const b = $('hsBody').querySelector(`[data-to="${CSS.escape(preTo)}"]`); reviewHand(x, preTo, b || $('hsClose')); }
 }
 async function reviewHand(x, to, btn) {
   let r;
