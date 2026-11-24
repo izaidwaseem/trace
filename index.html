@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'd7feb9524e';</script>
+<script>window.TRACE_VER = 'b2b7dcc464';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2103,7 +2103,8 @@ function renderToday() {
   let html = `<div class="tdsw"><button class="iconbtn" type="button" id="tdPrev" aria-label="Previous day">${icon('back')}</button>
       <div class="grow"><b>${esc((agOffset === 0 ? '' : label + ' · ') + new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric' }).format(ag.from))}</b>${agOffset ? '<button class="linkbtn" type="button" id="tdBack" style="font-size:13px">Back to today</button>' : ''}</div>
       <button class="iconbtn" type="button" id="tdNext" aria-label="Next day" style="transform:scaleX(-1)">${icon('back')}</button></div>`;
-  const n = isToday ? ag.next : null;
+  let n = isToday ? ag.next : null;
+  if (n && n.end <= now) n = mine.find(e => e.end > now) || null;   // the saved copy is a few minutes old
   if (isToday) html += n ? `<div class="ivhero">
       <div class="ivh-top"><span class="eyebrow">${n.start <= now ? 'On now' : 'Next up'}</span><span class="ivh-count tnum">${esc(n.start <= now ? 'until ' + fmtT(n.end, tz) : inLabel(n.start))}</span></div>
       <div class="ivh-name" style="display:flex;gap:10px;align-items:center">${prof(n.proj) ? chip(prof(n.proj), true) : ''}<span>${esc(n.title)}</span></div>
@@ -3620,13 +3621,50 @@ async function init() {
   $('projList').innerHTML = skelRows(3);
   $('hist').innerHTML = skelRows(2);
   $('offline').hidden = navigator.onLine !== false;
-  try { S = await run('getState'); renderHome(); renderTodayTab(); loadToday(0); queueNotice(); if ((S.queue || []).some(j => j.status === 'waiting')) { startQueuePoll(); run('processQueue').then(q => { S.queue = q; renderQueue(); queueNotice(); }).catch(() => {}); } }
-  catch (e) {
+  const saved = bootLoad();
+  if (saved) applyBoot(saved.r);   // last known data, on screen at once
+  try {
+    await boot(false);
+    queueNotice();
+    if ((S.queue || []).some(j => j.status === 'waiting')) { startQueuePoll(); run('processQueue').then(q => { S.queue = q; renderQueue(); queueNotice(); }).catch(() => {}); }
+  } catch (e) {
+    if (saved) { toast("Couldn't refresh. Showing what Relay saw " + ago(saved.at) + '.'); return; }
     $('projList').innerHTML = `<div class="empty">Couldn't load your projects.</div>`;
     $('hist').innerHTML = '';
     showError(e, { retry: init });
   }
 }
+
+/* ───────── fast start: show the last data at once, refresh in one call ───────── */
+const BOOT_KEY = 'relay_boot_v1';
+let bootAt = 0, booting = false;
+function bootLoad() {
+  try {
+    const c = JSON.parse(localStorage.getItem(BOOT_KEY) || 'null');
+    if (c && c.k === traceKey().slice(0, 8) && Date.now() - c.at < 7 * 864e5 && c.r && c.r.state) return c;
+  } catch (e) {}
+  return null;
+}
+function bootSave(r) { try { localStorage.setItem(BOOT_KEY, JSON.stringify({ at: Date.now(), k: traceKey().slice(0, 8), r })); } catch (e) {} }
+function applyBoot(r) {
+  S = r.state;
+  if (agOffset === 0 || !ag) { ag = r.agenda; agOffset = 0; agAt = Date.now(); }
+  ivl = r.ivl; ivlAt = Date.now();
+  renderHome(); renderIvCardSub();
+  if (view === 'today') renderTodayTab(); else if (view === 'iv') renderIv(); else if (view === 'activity') { renderHist(); renderUndoBox(); }
+}
+/** One call for everything the first screens need. If the server's copy is over a minute old, fetch a fresh one quietly. */
+async function boot(force) {
+  if (booting) return;
+  booting = true;
+  let again = false;
+  try { const r = await run('boot', !!force); bootAt = Date.now(); applyBoot(r); bootSave(r); again = !force && r.age > 60; }
+  finally { booting = false; }
+  if (again) boot(true).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && bootAt && Date.now() - bootAt > 60000 && !['review', 'voice', 'ivform'].includes(view)) boot(false).catch(() => {});
+});
 init();
 </script>
 </body>
