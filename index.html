@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'b1718fc04b';</script>
+<script>window.TRACE_VER = '3ba69637a2';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -257,7 +257,10 @@
   .tdtl > * + * { border-top: 1px solid var(--line); }
   .tdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--fg); }
   .tdr.dim { opacity: .5; }
-  .tdr-t { width: 72px; flex: none; font-weight: 600; font-size: 14px; white-space: nowrap; } .tdr-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .tdwork { display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--focus); }
+  .tdwork::before, .tdwork::after { content: ""; flex: 1; border-top: 1px solid color-mix(in srgb, var(--focus) 35%, transparent); }
+  .tdwork small { font-weight: 400; color: var(--muted); margin-left: 4px; }
+  .tdr-t { width: 86px; flex: none; font-weight: 600; font-size: 14px; white-space: nowrap; } .tdr-t small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
   .tdr-b { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .tdr-n { display: flex; align-items: center; gap: 8px; font-weight: 550; min-width: 0; }
   .tdr-x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -1071,7 +1074,7 @@ const READ_CALLS = new Set(['getState', 'listCalendars', 'listModels', 'countFor
    (Today's keys are offsets from today), and kept across app restarts. Any change made in Relay drops them. */
 const PRE_SHOW_MS = 30 * 60000, PRE_FRESH_MS = 3 * 60000, PRE_KEY = 'relay_pre_v1';
 let agCache = {}, bdCache = {}, preAt = 0, prefetching = null, preGen = 0, preTimer = 0, bootPeople = null;
-const preDay = () => dayIn(Date.now(), (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz) || undefined);
+const preDay = () => wday(Date.now());   // caches are for one workday
 const cachePut = (c, k, v, at) => { c[k] = { v, at: at || Date.now(), d: preDay() }; };
 const cacheGet = (c, k) => { const e = c[k]; return e && e.d === preDay() && Date.now() - e.at < PRE_SHOW_MS ? e.v : null; };
 const cacheOld = (c, k) => !c[k] || Date.now() - c[k].at > PRE_FRESH_MS;
@@ -1344,9 +1347,9 @@ window.addEventListener('scroll', () => $('hdr').classList.toggle('scrolled', wi
 /* ───────── home ───────── */
 /** Monday 00:00 of this week, in your time zone. */
 function weekStart() {
-  const tz = S.settings.homeTz || 'Asia/Karachi', today = dayIn(Date.now(), tz);
+  const today = wday(Date.now());
   const p = today.split('-').map(Number), wd = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
-  return zoned(addDay(today, -((wd + 6) % 7)), '00:00', tz);
+  return wStart(addDay(today, -((wd + 6) % 7)));   // Monday's workday
 }
 function renderSyncStats() {
   const el = $('syncStats');
@@ -1412,12 +1415,12 @@ function renderHist() {
   $('histCnt').textContent = H.length ? H.length : '';
   if (!H.length) { $('hist').innerHTML = `<div class="empty">${actFilter === 'all' ? 'Changes Relay makes to your calendar will show up here.' : 'Nothing of this kind yet.'}</div>`; return; }
   const tz = S.settings.homeTz;
-  const today = localDate(Date.now(), tz), yest = localDate(Date.now() - 864e5, tz);
+  const today = wday(Date.now()), yest = addDay(today, -1);
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
   let html = '', last = '';
   H.forEach(h => {
-    const k = localDate(h.ts, tz);
-    if (k !== last) { last = k; html += `<div class="hday">${k === today ? 'Today' : k === yest ? 'Yesterday' : esc(fmtDay(h.ts, tz))}</div>`; }
+    const k = wday(h.ts);
+    if (k !== last) { last = k; html += `<div class="hday">${k === today ? 'Today' : k === yest ? 'Yesterday' : esc(dayLabel(k))}</div>`; }
     html += histRow(h, Hall, timeFmt);
   });
   $('hist').innerHTML = `<div class="hscroll" id="hScroll">${html}</div>`;
@@ -1940,6 +1943,10 @@ async function renderSettings() {
     <div class="section" data-sec="calendars"><div class="eyebrow">Your calendar</div><div class="group"><div class="pad">
       <label class="f"><span>Add events to${tip('The Google Calendar Relay writes to. Only calendars you can edit are listed.')}</span><select class="in" id="sCal">${cals ? cals.map(c => `<option value="${esc(c.id)}" ${c.id === st.calendarId ? 'selected' : ''}>${esc(c.name)}</option>`).join('') : `<option value="${esc(st.calendarId)}">${esc(calName)}</option>`}</select></label>
       <label class="f"><span>Your time zone${tip('Times on the review screen are shown in this zone. Events are always saved at the correct moment.')}</span><select class="in" id="sTz">${tzOptions(st.homeTz)}</select></label>
+      <label class="f"><span>Your workday follows${tip('Relay’s days follow this zone’s date, so an evening that runs past your midnight stays one day. Its times also show beside yours, like “9a ET”.')}</span><select class="in" id="sWTz">${tzOptions(st.workTz || 'America/New_York')}</select></label>
+      <div class="two"><label class="f"><span>Workday starts</span><input class="in" type="time" id="sWFrom" value="${esc(st.workFrom || '08:00')}"></label>
+        <label class="f"><span>Workday ends</span><input class="in" type="time" id="sWTo" value="${esc(st.workTo || '17:00')}"></label></div>
+      <div class="hint" id="sWHint"></div>
     </div></div></div>
 
     <div class="section" data-sec="calendars" id="acctSec"><div class="eyebrow">Accounts${tip('Relay runs as your main Google account. Connect other people’s Google accounts (like Awais) so Relay can also use the calendars they can see, such as Husnain’s.')}</div>
@@ -2001,6 +2008,14 @@ async function renderSettings() {
   $('addProj').onclick = () => openProject(null);
   renderKeyBox(false);
   $('sSave').onclick = saveSettings;
+  const wHint = () => {   // "That's 6 PM – 3 AM your time" for the hours picked
+    if (!$('sWHint')) return;
+    const z = $('sWTz').value, a = $('sWFrom').value || '08:00', b = $('sWTo').value || '17:00', d = dayIn(Date.now(), z), home = $('sTz').value;
+    const f = zoned(d, a, z), t = zoned(b <= a ? addDay(d, 1) : d, b, z);
+    $('sWHint').textContent = `That’s ${fmtT(f, home)} – ${fmtT(t, home)} your time. Block time, Time off and the evening summary use these hours.`;
+  };
+  ['sWTz', 'sWFrom', 'sWTo', 'sTz'].forEach(id => { if ($(id)) $(id).addEventListener('change', wHint); });
+  wHint();
   applySetSec();
   $('tSample').onclick = () => runSample($('tProj').value);
   $('shAdd').onclick = shareAdd;
@@ -2074,7 +2089,8 @@ async function saveSettings() {
   if ($('fKey') && $('fKey').classList.contains('invalid')) { $('sKey').focus(); return; }
   await withBusy($('sSave'), 'Saving…', async () => {
     try {
-      S = await run('saveSettings', { apiKey: $('sKey') ? $('sKey').value.trim() : '', homeTz: $('sTz').value, calendarId: $('sCal').value, model: $('sModel').value });
+      S = await run('saveSettings', { apiKey: $('sKey') ? $('sKey').value.trim() : '', homeTz: $('sTz').value, calendarId: $('sCal').value, model: $('sModel').value,
+        workTz: $('sWTz') ? $('sWTz').value : undefined, workFrom: $('sWFrom') ? $('sWFrom').value : undefined, workTo: $('sWTo') ? $('sWTo').value : undefined });
       toast('Settings saved', { type: 'ok' });
       renderHome(); renderSettings();
     } catch (e) { showError(e, { retry: saveSettings }); }
@@ -2244,7 +2260,7 @@ function inLabel(ms) {
 }
 function otherSide(e) {   // the project's own clock, when it differs from yours
   const p = prof(e.proj), home = S.settings.homeTz;
-  if (!p || !p.tz || p.tz === home) return '';
+  if (!p || !p.tz || p.tz === home || p.tz === WTZ()) return '';   // New York time is shown beside every time already
   const a = tzAbbr(p.tz, e.start);
   return fmtT(e.start, p.tz) + ' ' + (tzName(p.tz) || a);
 }
@@ -2291,7 +2307,7 @@ function bindTdNav() {
 /** Not loaded yet: show the day asked for at once, with a spinner, so the tap feels answered. */
 function todayLoadingHtml(offset) {
   const tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
-  const day = addDay(dayIn(Date.now(), tz), offset);
+  const day = addDay(wday(Date.now()), offset);
   return tdHead(offset, Date.parse(day + 'T12:00:00Z'), 'UTC')
     + `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading…</div><div class="group">${skelRows(4)}</div>`;
 }
@@ -2322,12 +2338,14 @@ function tdMerge(list) {
   });
   return out;
 }
+/** Under a time: New York's time (your clients' clock) and how long it runs. "9a ET · 1h" */
+function tdSub(e) { const m = fmtHm(Math.round((e.end - e.start) / 60000)); return esc(etDiffers(e.start) ? fmtET(e.start) + ' ET · ' + m : m); }
 function tdRow(e, tz, now, extra) {
   if (e.ooo) return `<div class="tdr tdblk ${e.end <= now ? 'dim' : ''}" role="button" tabindex="0" data-ooo="1">
     <span class="tdr-t tnum">${e.end - e.start >= 864e5 ? 'All day' : esc(fmtT(e.start, tz))}<small>time off</small></span>
     <span class="tdr-b"><span class="tdr-n">${icon('away')}<span class="tdr-x">${esc(e.title || 'Out of office')}</span></span><span class="tdr-s">Until ${esc(fmtDay(e.end, tz).replace(/,.*/, ''))} ${esc(fmtT(e.end, tz))} · others see “Busy”</span></span>${icon('chev', 'chev')}</div>`;
   if (e.block) return `<div class="tdr tdblk ${e.end <= now ? 'dim' : ''}" role="button" tabindex="0" data-blk="${e.start}">
-    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtDur(Math.round((e.end - e.start) / 60000)))}</small></span>
+    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${tdSub(e)}</small></span>
     <span class="tdr-b"><span class="tdr-n">${icon('lock')}<span class="tdr-x">${esc(e.title || 'Blocked')}</span></span><span class="tdr-s">Blocked until ${esc(fmtT(e.end, tz))} · others see “Busy”</span></span>${icon('chev', 'chev')}</div>`;
   const p = prof(e.proj), past = e.end <= now, live = e.start <= now && !past;
   const iv = ivl && e.iv ? ivFind(e.id) : null;
@@ -2342,7 +2360,7 @@ function tdRow(e, tz, now, extra) {
   const dim = past || e.forOther || e.resp === 'declined' || e.free;
   const name = iv && !e.forOther ? ivName(iv) : e.title;
   return `<div class="tdr ${dim ? 'dim' : ''}" role="button" tabindex="0" data-td="${esc(e.id)}">
-    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtDur(Math.round((e.end - e.start) / 60000)))}</small></span>
+    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${tdSub(e)}</small></span>
     <span class="tdr-b"><span class="tdr-n">${p ? chip(p, true) : ''}${e.iv ? '<span class="ivtag">Interview</span>' : ''}<span class="tdr-x">${esc(name)}</span></span>${subs.length ? `<span class="tdr-s">${esc(subs.join(' · '))}</span>` : ''}</span>
     ${e.resp === 'needsAction' && !e.forOther && !past ? '<i class="sdot info" title="Needs a reply"></i>' : ''}
     ${(extra && extra.join) && e.join ? `<a class="btn sm ink" href="${esc(e.join)}" target="_blank" rel="noopener">${icon('video')}Join</a>` : icon('chev', 'chev')}</div>`;
@@ -2354,7 +2372,7 @@ function renderToday() {
   el.innerHTML = html;
   bindTdNav();
   $('tdClash').onclick = openClashSheet;
-  const blkDay = () => addDay(dayIn(ag.from + 12 * 3600000, ag.homeTz), 0);
+  const blkDay = () => wday(ag.from + 3600000);
   if ($('tdBlock')) $('tdBlock').onclick = () => openBlock(agOffset === 0 ? null : blkDay(), $('tdBlock').dataset.sug ? { all: true } : null);
   if ($('tdOff')) $('tdOff').onclick = () => {
     const h = $('tdOff').dataset.hol;
@@ -2367,10 +2385,9 @@ function renderToday() {
   if (!usHol) loadHolidays().then(l => { if (l.length && view === 'today' && $('tdOff') && !$('tdOff').dataset.hol) renderToday(); });
   el.querySelectorAll('[data-gap]').forEach(b => b.onclick = () => {
     const [a, z] = b.dataset.gap.split('-').map(Number), tz = ag.homeTz;
-    const d = dayIn(a, tz), day = a < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d;   // after midnight it's the evening before
-    openBlock(day, { start: a, end: z });
+    openBlock(wday(a), { start: a, end: z });
   });
-  el.querySelectorAll('[data-blk]').forEach(b => { b.onclick = () => { const a = +b.dataset.blk, tz = ag.homeTz, d = dayIn(a, tz); openBlock(a < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d); }; b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } }; });
+  el.querySelectorAll('[data-blk]').forEach(b => { b.onclick = () => openBlock(wday(+b.dataset.blk)); b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } }; });
   if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
   el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
   el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
@@ -2411,7 +2428,7 @@ function todayHtml(ag, agOffset) {
   else if (isToday) html += n ? `<div class="ivhero">
       <div class="ivh-top"><span class="eyebrow">${n.start <= now ? 'On now' : 'Next up'}</span><span class="ivh-count tnum">${esc(n.start <= now ? 'until ' + fmtT(n.end, tz) : inLabel(n.start))}</span></div>
       <div class="ivh-name" style="display:flex;gap:10px;align-items:center">${prof(n.proj) ? chip(prof(n.proj), true) : ''}<span>${esc(n.title)}</span></div>
-      <div class="ivh-when tnum"><b>${esc(fmtT(n.start, tz))} – ${esc(fmtT(n.end, tz))}</b>${dayIn(n.start, tz) !== dayIn(now, tz) ? ' · ' + esc(fmtDay(n.start, tz)) : ''}${otherSide(n) ? ' · ' + esc(otherSide(n)) : ''}</div>
+      <div class="ivh-when tnum"><b>${esc(fmtT(n.start, tz))} – ${esc(fmtT(n.end, tz))}</b>${etDiffers(n.start) ? ' · ' + esc(fmtET(n.start)) + ' ET' : ''}${wday(n.start) !== wday(now) ? ' · ' + esc(fmtDay(n.start, tz)) : ''}${otherSide(n) ? ' · ' + esc(otherSide(n)) : ''}</div>
       ${n.join ? `<div class="ivh-acts"><a class="btn sm ink" href="${esc(n.join)}" target="_blank" rel="noopener">${icon('video')}Join</a></div>` : ''}</div>`
     : `<div class="ivhero"><span class="eyebrow">Next up</span><div class="ivh-name">Nothing else today</div></div>`;
   html += `<div class="tdstats">
@@ -2421,9 +2438,9 @@ function todayHtml(ag, agOffset) {
       <button class="tdst ${clashN ? 'bad' : ''}" type="button" id="tdClash"><b>${clashN}</b><span>clash${clashN === 1 ? '' : 'es'}${reply ? ` · ${reply} need${reply === 1 ? 's' : ''} a reply` : ''}</span></button></div>`;
   if (agOffset >= 0) {
     const bm = Math.round(blocked.filter(e => e.end > now).reduce((n, e) => n + (e.end - Math.max(e.start, now)) / 60000, 0));
-    const eve = agOffset === 0 ? blkToday(tz) : dayIn(ag.from + 12 * 3600000, tz), ew = blkWindow(eve, tz);
+    const eve = agOffset === 0 ? blkToday(tz) : wday(ag.from + 3600000), ew = blkWindow(eve, tz);
     const suggest = !away && !bm && !blocked.some(e => e.end > ew.from && e.start < ew.to) && BLK_BUSY_DAYS.includes(blkWeekday(eve)) && ew.to > now;
-    const soonOff = oooSoon(), today = dayIn(now, tz);
+    const soonOff = oooSoon(), today = wday(now);
     const hol = !soonOff && (usHol || []).find(h => h.day >= today && h.day <= addDay(today, 7));
     if (!away) html += `<div class="tdacts">
       <button class="tdact ${suggest ? 'sug' : ''}" type="button" id="tdBlock" ${suggest ? 'data-sug="1"' : ''}>${icon('lock')}<b>Block hours</b><small>${bm ? esc(fmtDur(bm)) + ' blocked' : suggest ? 'Busy ' + esc(blkDayName(eve).slice(0, 3)) + '? Block it' : 'Look busy tonight'}</small></button>
@@ -2448,21 +2465,30 @@ function todayHtml(ag, agOffset) {
   };
   const canBlock = agOffset >= 0;
   let gapsBlockable = false;
+  // a divider where your workday starts, when something comes before it (the 1 PM standup)
+  const wW = blkWindow(wday(ag.from + 3600000));
+  let workShown = !evs.some(e => e.start < wW.from && !e.block && !e.ooo) || wW.from <= ag.from;
+  const mark = e => {
+    if (workShown || e.start < wW.from - 60000) return;
+    workShown = true;
+    tl += `<div class="tdwork"><span>Workday · ${esc(fmtT(wW.from, tz).replace(':00', ''))} – ${esc(fmtT(wW.to, tz).replace(':00', ''))}<small>${esc(fmtET(wW.from))} – ${esc(fmtET(wW.to))} ET</small></span></div>`;
+  };
   const gap = until => {   // free time before `until`: tap it to block it
     if (lastEnd === null || until - lastEnd < 30 * 60000) return;
     const label = `<span><b>Free ${esc(fmtDur(Math.round((until - lastEnd) / 60000)))}</b> · ${esc(fmtT(lastEnd, tz))} – ${esc(fmtT(until, tz))}</span>`;
-    const inWin = [-1, 0].some(k => { const w = blkWindow(addDay(dayIn(lastEnd, tz), k), tz); return lastEnd < w.to && until > w.from; });   // only your working evening
+    const w = blkWindow(wday(lastEnd)), inWin = lastEnd < w.to && until > w.from;   // only your workday hours
     if (canBlock && until > now && inWin) gapsBlockable = true;
     tl += canBlock && until > now && inWin ? `<button class="tdgap" type="button" data-gap="${lastEnd}-${until}" aria-label="Free ${esc(fmtT(lastEnd, tz))} to ${esc(fmtT(until, tz))}. Block it.">${label}<span class="tdgap-b" aria-hidden="true">${icon('lock')}</span></button>`
       : `<div class="tdgap">${label}</div>`;
   };
   rest.forEach(e => {
-    if (e.block) { flush(); gap(e.start); tl += tdRow(e, tz, now); lastEnd = Math.max(lastEnd || 0, e.end); return; }
+    if (e.block) { flush(); gap(e.start); mark(e); tl += tdRow(e, tz, now); lastEnd = Math.max(lastEnd || 0, e.end); return; }
     const counts = !e.forOther && e.resp !== 'declined' && !e.free;
-    if (!counts) { flush(); tl += tdRow(e, tz, now); return; }
+    if (!counts) { flush(); mark(e); tl += tdRow(e, tz, now); return; }
     if (group.length && e.start < groupEnd) { group.push(e); groupEnd = Math.max(groupEnd, e.end); return; }
     flush();
     gap(e.start);
+    mark(e);
     group = [e]; groupEnd = e.end;
     lastEnd = Math.max(lastEnd || 0, e.end);
   });
@@ -2577,24 +2603,24 @@ function sheetPaint(el, html) {
 }
 function sheetLock() { document.documentElement.classList.toggle('sheet-open', [...document.querySelectorAll('.sheet-wrap')].some(w => !w.hidden)); }
 /* ───────── blocked time: show as "Busy" in your working evening so no one books you ───────── */
-const BLK_FROM_H = 18, BLK_HOURS = 9, BLK_STEP = 30 * 60000;   // 6 PM → 3 AM, half-hour slots (same as the server)
+const BLK_STEP = 30 * 60000;   // half-hour slots (same as the server)
 /** Your usual week: Mondays and Wednesdays are packed (Relay suggests blocking), Tuesdays and Thursdays are lighter. */
 const BLK_BUSY_DAYS = [1, 3], BLK_LIGHT_DAYS = [2, 4];
 const blkWeekday = day => new Date(day + 'T12:00:00Z').getUTCDay();
 const blkDayName = day => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' }).format(Date.parse(day + 'T12:00:00Z'));
 let blk = null;   // the sheet: { day, w, cells, sel: Set of slot starts, orig, saving }
-/** The working evening that starts on `day`: from/to in ms, in your time zone. */
-function blkWindow(day, tz) {
-  const from = zoned(day, String(BLK_FROM_H).padStart(2, '0') + ':00', tz);
-  return { from, to: from + BLK_HOURS * 3600000 };
+/** Your workday hours on `day` (a New York date): 8 AM – 5 PM there, which is 6 PM – 3 AM in Pakistan (5 PM – 2 AM in summer). */
+function blkWindow(day) {
+  const st = (S && S.settings) || {}, a = st.workFrom || '08:00', b = st.workTo || '17:00';
+  return { from: zoned(day, a, WTZ()), to: zoned(b <= a ? addDay(day, 1) : day, b, WTZ()) };
 }
 /** Before 3 AM you're still in last night's evening. */
-function blkToday(tz) { const now = Date.now(), d = dayIn(now, tz); return now < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d; }
-const blkOff = (day, tz) => Math.round((Date.parse(day) - Date.parse(dayIn(Date.now(), tz))) / 864e5);
+function blkToday() { const now = Date.now(), d = wday(now); return now < blkWindow(d).to ? d : addDay(d, 1); }   // once tonight's hours are over, the next workday
+const blkOff = day => Math.round((Date.parse(day) - Date.parse(wday(Date.now()))) / 864e5);
 /** Your events in an evening, from the day caches (asks the server for a day it doesn't have). */
 async function blkEvents(day, tz) {
-  const o = blkOff(day, tz), out = [];
-  for (const k of [o, o + 1]) {
+  const o = blkOff(day), out = [], w0 = blkWindow(day);
+  for (const k of w0.to > wStart(addDay(day, 1)) ? [o, o + 1] : [o]) {   // workday hours fit in one day unless you set them past midnight in New York
     let a = cacheGet(agCache, k);
     if (!a) { a = await run('agenda', k); cachePut(agCache, k, a); }
     a.events.forEach(e => { if (!out.some(x => x.id === e.id)) out.push(e); });
@@ -2770,7 +2796,7 @@ function oooSoon() {
 }
 /** "Thu 26 – Fri 27" for time off that ends at 3 AM after its last day. */
 function oooSpan(e, tz) {
-  const a = dayIn(e.start, tz), z = dayIn(e.end - BLK_HOURS * 3600000, tz);
+  const a = wday(e.start), z = wday(e.end - 1);
   const f = d => dayLabel(d).replace(/,.*/, '') + ' ' + +d.slice(8);
   return a === z ? f(a) : f(a) + ' – ' + f(z);
 }
@@ -2792,11 +2818,11 @@ async function oooAffected() {
   const key = o.from + '|' + o.to;
   if (o.affFor === key) return;
   o.affFor = key; o.aff = null; renderOoo();
-  const tz = o.tz, start = zoned(o.from, '00:00', tz), end = blkWindow(o.to || o.from, tz).to;
-  const today = dayIn(Date.now(), tz), off = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
+  const tz = o.tz, start = wStart(o.from), end = wStart(addDay(o.to || o.from, 1));
+  const today = wday(Date.now()), off = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
   const evs = [];
   try {
-    for (let k = off(o.from); k <= Math.min(14, off(o.to || o.from) + 1); k++) {
+    for (let k = off(o.from); k <= Math.min(14, off(o.to || o.from)); k++) {
       let a = cacheGet(agCache, k);
       if (!a) { a = await run('agenda', k); cachePut(agCache, k, a); }
       a.events.forEach(e => { if (!evs.some(x => x.id === e.id)) evs.push(e); });
@@ -2810,7 +2836,7 @@ async function oooAffected() {
 function renderOoo() {
   const o = oo, el = $('oooBody');
   if (!o) return;
-  const tz = o.tz, today = dayIn(Date.now(), tz);
+  const tz = o.tz, today = wday(Date.now());
   // four weeks from this Monday
   const wd = (new Date(today + 'T12:00:00Z').getUTCDay() + 6) % 7, first = addDay(today, -wd);
   const days = []; for (let i = 0; i < 28; i++) days.push(addDay(first, i));
@@ -2818,7 +2844,7 @@ function renderOoo() {
   const taken = d => (o.list || []).some(x => d >= x.from && d <= x.to);
   const inSel = d => o.from && d >= o.from && d <= (o.to || o.from);
   let html = `<div class="ivs-h"><h2 id="oooTitle">Time off</h2><button class="iconbtn" type="button" id="oooX" aria-label="Close">${icon('x')}</button></div>
-    <div class="hint" style="margin:-8px 0 0">Pick the days you’re away. You’ll show as busy all day, including the evening until 3 AM. Nobody is notified.</div>`;
+    <div class="hint" style="margin:-8px 0 0">Pick the workdays you’re away. You’ll show as busy for the whole day, evening and night included. Nobody is notified.</div>`;
   if ((o.list || []).length) html += `<div class="ooolist">${o.list.map(x => `<div class="ooorow">${icon('away')}<span class="grow"><b>${esc(x.title)}</b><small>${esc(oooSpan(x, tz))}</small></span>
       <button class="btn sm" type="button" data-oooedit="${esc(x.id)}">Change</button><button class="btn sm ghost" type="button" data-ooorm="${esc(x.id)}">Remove</button></div>`).join('')}</div>`;
   // holiday shortcuts: a Thursday holiday offers the long weekend too
@@ -2837,8 +2863,8 @@ function renderOoo() {
   else {
     const hs = Object.keys(hol).filter(d => inSel(d)).map(d => oooShort(hol[d]));
     if (!o.title) o.title = hs[0] || '';
-    const endMs = blkWindow(o.to || o.from, tz).to;
-    html += `<div class="blksum"><b>${esc(dayLabel(o.from))}${nDays > 1 ? ' – ' + esc(dayLabel(o.to)) : ''}</b> · ${nDays} day${nDays === 1 ? '' : 's'}<br>Busy from 12 AM until ${esc(fmtDay(endMs, tz).replace(/,.*/, ''))} ${esc(fmtT(endMs, tz))}</div>`;
+    const startMs = wStart(o.from), endMs = wStart(addDay(o.to || o.from, 1));
+    html += `<div class="blksum"><b>${esc(dayLabel(o.from))}${nDays > 1 ? ' – ' + esc(dayLabel(o.to)) : ''}</b> · ${nDays} day${nDays === 1 ? '' : 's'}<br>Busy from ${esc(fmtDay(startMs, tz).replace(/,.*/, ''))} ${esc(fmtT(startMs, tz))} until ${esc(fmtDay(endMs, tz).replace(/,.*/, ''))} ${esc(fmtT(endMs, tz))}</div>`;
     html += `<label class="blkname"><span>Name on your calendar</span><input id="oooName" type="text" maxlength="60" autocomplete="off" placeholder="Out of office" value="${esc(o.title)}"></label>
       <div class="hint" style="margin:-6px 0 0">Only you see this name. Everyone else sees “Busy”.</div>`;
     // what's already on those days
@@ -3524,10 +3550,10 @@ function bindIvSeg() {
 function bindIvRows(root) { root.querySelectorAll('[data-ivd]').forEach(b => b.onclick = () => openIvDetail(b.dataset.ivd)); }
 function ivGroupRows(list, tz, now) {
   let rows = '', lastDay = '';
-  const rel = ms => { const d = fmtDay(ms, tz); return d === fmtDay(now, tz) ? 'Today' : d === fmtDay(now + 24 * 3600000, tz) ? 'Tomorrow' : d === fmtDay(now - 24 * 3600000, tz) ? 'Yesterday' : ''; };
+  const t0 = wday(now), rel = d => d === t0 ? 'Today' : d === addDay(t0, 1) ? 'Tomorrow' : d === addDay(t0, -1) ? 'Yesterday' : '';
   list.forEach(x => {
-    const day = fmtDay(x.start, tz);
-    if (day !== lastDay) { lastDay = day; const r = rel(x.start); rows += `<div class="agsec">${esc(r ? r + ' · ' + day : day)}</div>`; }
+    const day = wday(x.start);   // by workday, so a 1 AM interview stays with that evening
+    if (day !== lastDay) { lastDay = day; const r = rel(day); rows += `<div class="agsec">${esc(r ? r + ' · ' + dayLabel(day) : dayLabel(day))}</div>`; }
     rows += ivRowHtml(x, tz, now);
   });
   return rows;
@@ -3636,10 +3662,10 @@ async function loadBoard(day) {
 }
 function renderBoard() {
   const el = $('v-iv'), tz = ivl.homeTz, now = Date.now();
-  const today = dayIn(now, tz);
+  const today = wday(now);
   if (!bdDay || bdDay < today) bdDay = today;
   const days = []; for (let i = 0; i < 7; i++) days.push(addDay(today, i));
-  const workDayOf = ms => dayIn(ms, tz);
+  const workDayOf = wday;
   const count = d => ivl.upcoming.filter(x => workDayOf(x.start) === d && x.resp !== 'declined').length;
   let html = ivSegHtml() + `<div class="days7" role="group" aria-label="Day">${days.map(d => `<button type="button" class="day7" data-bday="${d}" aria-pressed="${d === bdDay}">
       <span class="w">${esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span><span class="c">${count(d) ? count(d) + ' iv' : ''}</span></button>`).join('')}</div>`;
@@ -3664,7 +3690,7 @@ function boardHtml(bd, bdDay) {
   const ivIds = new Set(ivs.flatMap(x => x.ids));
   const mine = bd.mine.filter(e => !ivIds.has(e.id));
   const cols = [{ key: 'me', name: 'You', sub: 'You', level: 'me' }].concat(bd.people.map(p => ({ key: p.email, name: p.name, sub: p.level === 'edit' ? 'Can edit' : p.level === 'see' ? 'Invite' : 'Not shared', level: p.level, p })));
-  const isTodayB = bdDay === dayIn(now, tz);
+  const isTodayB = bdDay === wday(now);
   const spans = [].concat(mine, ivs, ...bd.people.map(p => p.busy)).filter(b => b.end > bd.from && b.start < bd.to && (!isTodayB || b.end > now));
   const hr = ms => Math.floor((ms - bd.from) / 3600000);
   let h0 = spans.length ? Math.max(0, Math.min(...spans.map(b => hr(b.start))) - 1) : 11, h1 = spans.length ? Math.min(24, Math.max(...spans.map(b => hr(b.end - 1) + 1)) + 1) : 22;
@@ -4081,6 +4107,13 @@ function findPrefs() {
   return fq;
 }
 const dayIn = (ms, tz) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+/* Your workday: New York's date (10 AM → 10 AM in Pakistan), so an evening that runs past midnight stays one day. */
+const WTZ = () => (S && S.settings && S.settings.workTz) || 'America/New_York';
+const wday = ms => dayIn(ms, WTZ());
+const wStart = d => zoned(d, '00:00', WTZ());
+/** "9a", "9:30a", "4p": a time in New York, compact, shown beside your own. */
+const fmtET = ms => { const p = tzParts(ms, WTZ()), h = +p.hour; return (h % 12 || 12) + (p.minute !== '00' ? ':' + p.minute : '') + (h < 12 ? 'a' : 'p'); };
+const etDiffers = ms => !!(S && S.settings) && offsetMin(ms, WTZ()) !== offsetMin(ms, S.settings.homeTz);
 const addDay = (d, n) => { const p = d.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10); };
 const dayLabel = d => { const p = d.split('-').map(Number); return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(Date.UTC(p[0], p[1] - 1, p[2])); };
 const zoneWord = tz => tzName(tz).replace(/\s*\(.*\)$/, '');
