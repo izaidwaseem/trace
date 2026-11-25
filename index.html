@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '79d834918c';</script>
+<script>window.TRACE_VER = 'db0e2f7fbc';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -223,14 +223,22 @@
   #v-today > div:empty { display: none; }
   #v-today { margin-top: -8px; }
   /* day pager: the day follows your finger and the next/previous day slides in beside it */
-  #tdPager { overflow-x: clip; touch-action: pan-y; }
-  #tdTrack { position: relative; }
-  #tdTrack.anim { transition: transform .24s cubic-bezier(.2,.8,.2,1); }
-  .tdpeek { position: absolute; top: 0; width: 100%; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); pointer-events: none; }
-  .tdpeek > * { min-width: 0; }
-  #todayBody { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
-  #todayBody > * { min-width: 0; }
-  #todayBody > .hint { margin-top: -2px; }
+  .dpager { overflow-x: clip; touch-action: pan-y; }
+  .dtrack { position: relative; }
+  .dtrack.anim { transition: transform .24s cubic-bezier(.2,.8,.2,1); }
+  .dpeek, .dbody { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  .dpeek { position: absolute; top: 0; width: 100%; pointer-events: none; }
+  .dpeek > *, .dbody > * { min-width: 0; }
+  /* a compact key under a day: small marks, one line where it fits */
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 12px; color: var(--muted); line-height: 1.3; }
+  .legend > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend .sdot { position: static; margin: 0; }
+  .lg-dim { font-weight: 600; color: var(--fg); opacity: .45; }
+  .lg-sw { display: inline-flex; } .lg-sw svg { width: 11px; height: 11px; } .lg-sw svg + svg { transform: scaleX(-1); margin-left: -1px; }
+  .lg-blk { width: 14px; height: 10px; border-radius: 3px; flex: none; }
+  .lg-blk.iv { background: var(--note-soft); border-left: 3px solid var(--focus); }
+  .lg-blk.got { background: var(--new-soft); border-left: 3px solid var(--new); }
+  .lg-blk.busy { background: var(--surface-2); background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-strong) 3px 4px); }
   .tdsw .grow .linkbtn { justify-self: center; margin-top: 2px; }
   .tdsw { display: flex; align-items: center; gap: 10px; }
   .tdsw .grow { flex: 1; text-align: center; display: grid; } .tdsw .grow b { font-size: 16px; } .tdsw .grow span { font-size: 13px; color: var(--muted); }
@@ -741,7 +749,7 @@
     <div id="shareBox"></div>
     <div class="todaycard" id="todayCard"></div>
     <div id="nextIvBox"></div>
-    <div id="tdPager"><div id="tdTrack"><div id="todayBody"></div></div></div>
+    <div class="dpager" id="tdPager"><div class="dtrack"><div class="dbody" id="todayBody"></div></div></div>
   </section>
 
   <!-- SYNC (tab): project calendars, photos, voice -->
@@ -2339,36 +2347,37 @@ function todayHtml(ag, agOffset) {
   if (!evs.length) tl = `<div class="empty">No meetings ${isToday ? 'today' : 'this day'}.</div>`;
   else if (!rest.length && isToday) tl += `<div class="empty">That’s everything for today.</div>`;
   html += `<div class="tdtl">${tl}</div>
-    <div class="hint">Tap a meeting to open it. Blue dot: you haven’t replied. Dimmed: done, declined, or someone else’s (handed over, or a teammate’s interview copied to you). Swipe left or right to change day.</div>`;
+`;
+  const key = [];
+  if (evs.some(e => e.resp === 'needsAction' && !e.forOther && e.end > now)) key.push(['<i class="sdot info" aria-hidden="true"></i>', 'Needs your reply']);
+  if (evs.some(e => e.end <= now || e.forOther || e.resp === 'declined' || e.free) && (!isToday || tdEarlier || evs.some(e => e.end > now && (e.forOther || e.resp === 'declined' || e.free))))
+    key.push(['<span class="lg-dim" aria-hidden="true">Aa</span>', 'Faded: done, declined or not yours']);
+  html += legendHtml(key);
   return { html, evs };
 }
 /**
- * Swipe between days like Photos: the day follows your finger with the next (or previous) day
- * beside it, and a short flick or a drag past a quarter of the width moves over. A mostly vertical
- * drag scrolls as usual. Bound once, to the pager, so it works while a day is still loading too.
+ * Swipe between days like Photos, on Today and on the Interviews Board: the day follows your
+ * finger with the next (or previous) day beside it, and a flick or a drag past a quarter of the
+ * width moves over. A mostly vertical drag scrolls as usual. o: { peek(dir) → html,
+ * can(dir) → bool (false: the edge, it stretches and springs back), go(dir) }.
  */
-function bindDaySwipe() {
-  const pager = $('tdPager'), track = $('tdTrack');
-  if (!pager || tdSwipe) return;
-  tdSwipe = true;
-  const GAP = 16;
+function daySwipe(pager, o) {
+  if (!pager || pager._swipe) return;
+  pager._swipe = true;
+  const track = pager.firstElementChild, GAP = 16;
   let g = null;   // the drag in progress
-  const peek = off => {
-    const hit = cacheGet(agCache, off);
-    try { return hit ? todayHtml(hit, off).html : todayLoadingHtml(off); } catch (e) { return todayLoadingHtml(off); }
-  };
   const addPeeks = () => {
     const w = pager.clientWidth;
-    [-1, 1].forEach(d => {
+    [-1, 1].filter(d => o.can(d)).forEach(d => {
       const p = document.createElement('div');
-      p.className = 'tdpeek'; p.setAttribute('aria-hidden', 'true');
+      p.className = 'dpeek'; p.setAttribute('aria-hidden', 'true');
       p.style.left = d * (w + GAP) + 'px';
-      p.innerHTML = peek(agWant + d);
+      try { p.innerHTML = o.peek(d); } catch (e) { p.innerHTML = skelRows(4); }
       p.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
       track.appendChild(p);
     });
   };
-  const clear = () => { track.classList.remove('anim'); track.style.transform = ''; track.querySelectorAll('.tdpeek').forEach(p => p.remove()); };
+  const clear = () => { track.classList.remove('anim'); track.style.transform = ''; track.querySelectorAll('.dpeek').forEach(p => p.remove()); };
   const settle = (to, done) => {
     let fired = false;
     const end = () => { if (fired) return; fired = true; track.removeEventListener('transitionend', end); done(); };
@@ -2377,15 +2386,18 @@ function bindDaySwipe() {
     track.addEventListener('transitionend', end);
     setTimeout(end, 320);   // no transition (reduced motion) or the event never comes
   };
+  // something under the finger that scrolls sideways itself (a wide board, the day strip) keeps the gesture
+  const scrollsX = t => { for (let n = t; n && n !== pager; n = n.parentElement) if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return true; return false; };
+  const back = () => { g.busy = true; settle(0, () => { clear(); g = null; }); };
   pager.addEventListener('touchstart', e => {
     if (g && g.busy) return;   // still sliding from the last swipe
-    if (e.touches.length !== 1 || e.target.closest('input, textarea, select, .bscroll, .days7')) { g = null; return; }
+    if (e.touches.length !== 1 || e.target.closest('input, textarea, select, [data-bid]') || scrollsX(e.target)) { g = null; return; }
     const t = e.touches[0];
     g = { x: t.clientX, y: t.clientY, dx: 0, axis: '', pts: [[t.clientX, e.timeStamp]] };
   }, { passive: true });
   pager.addEventListener('touchmove', e => {
     if (!g || g.busy) return;
-    if (e.touches.length !== 1) { cancel(); return; }
+    if (e.touches.length !== 1) { if (g.axis === 'x') back(); else g = null; return; }
     const t = e.touches[0], dx = t.clientX - g.x, dy = t.clientY - g.y;
     if (!g.axis) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
@@ -2394,23 +2406,37 @@ function bindDaySwipe() {
     }
     if (g.axis !== 'x') return;
     e.preventDefault();   // ours now: don't scroll the page while moving sideways
-    g.dx = dx;
+    g.dx = o.can(dx < 0 ? 1 : -1) ? dx : dx * 0.25;   // past the last day it only stretches
     g.pts.push([t.clientX, e.timeStamp]); if (g.pts.length > 6) g.pts.shift();
-    track.style.transform = `translate3d(${dx}px,0,0)`;
+    track.style.transform = `translate3d(${g.dx}px,0,0)`;
   }, { passive: false });
-  const cancel = () => { if (g && g.axis === 'x' && !g.busy) { g.busy = true; settle(0, () => { clear(); g = null; }); } else if (!(g && g.busy)) g = null; };
-  pager.addEventListener('touchend', e => {
+  pager.addEventListener('touchend', () => {
     if (!g || g.busy) return;
     if (g.axis !== 'x') { g = null; return; }
     const w = pager.clientWidth, a = g.pts[0], b = g.pts[g.pts.length - 1];
     const v = b[1] > a[1] ? (b[0] - a[0]) / (b[1] - a[1]) : 0;   // px per ms over the last few moves
     const dir = g.dx < 0 ? 1 : -1;
-    const go = Math.abs(g.dx) > w * 0.25 || (Math.abs(v) > 0.35 && Math.abs(g.dx) > 24 && Math.sign(v) === Math.sign(g.dx));
+    const go = o.can(dir) && (Math.abs(g.dx) > w * 0.25 || (Math.abs(v) > 0.35 && Math.abs(g.dx) > 24 && Math.sign(v) === Math.sign(g.dx)));
+    if (!go) { back(); return; }
     g.busy = true;
-    if (!go) { settle(0, () => { clear(); g = null; }); return; }
-    settle(-dir * (w + GAP), () => { clear(); g = null; loadToday(agWant + dir); });   // same scroll position, so the day you saw sliding in stays put
+    settle(-dir * (w + GAP), () => { clear(); g = null; swiped(); o.go(dir); });   // same scroll position, so the day that slid in stays put
   }, { passive: true });
-  pager.addEventListener('touchcancel', cancel, { passive: true });
+  pager.addEventListener('touchcancel', () => { if (g && g.axis === 'x' && !g.busy) back(); else if (!(g && g.busy)) g = null; }, { passive: true });
+}
+/** The "swipe for other days" tip shows until you've swiped a few times. */
+function swipeTipOn() { try { return (+localStorage.getItem('relay_swiped') || 0) < 3; } catch (e) { return true; } }
+function swiped() { try { localStorage.setItem('relay_swiped', String((+localStorage.getItem('relay_swiped') || 0) + 1)); } catch (e) {} }
+/** A compact key under a day: only the marks that are on screen. items: [[markHtml, text]] */
+function legendHtml(items) {
+  if (swipeTipOn()) items = items.concat([[`<span class="lg-sw" aria-hidden="true">${icon('back')}${icon('back')}</span>`, 'Swipe for other days']]);
+  return items.length ? `<div class="legend">${items.map(([m, t]) => `<span>${m}${esc(t)}</span>`).join('')}</div>` : '';
+}
+function bindDaySwipe() {
+  daySwipe($('tdPager'), {
+    can: () => true,
+    peek: d => { const off = agWant + d, hit = cacheGet(agCache, off); return hit ? todayHtml(hit, off).html : todayLoadingHtml(off); },
+    go: d => loadToday(agWant + d)
+  });
 }
 function openClashSheet() {
   $('clsBody').innerHTML = `<div class="ivs-h"><h2 id="clsTitle">Clashes</h2><button class="iconbtn" type="button" id="clsX" aria-label="Close">${icon('x')}</button></div>` + clashesHtml();
@@ -3149,10 +3175,23 @@ function renderBoard() {
   const count = d => ivl.upcoming.filter(x => workDayOf(x.start) === d && x.resp !== 'declined').length;
   let html = ivSegHtml() + `<div class="days7" role="group" aria-label="Day">${days.map(d => `<button type="button" class="day7" data-bday="${d}" aria-pressed="${d === bdDay}">
       <span class="w">${esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span><span class="c">${count(d) ? count(d) + ' iv' : ''}</span></button>`).join('')}</div>`;
-  if (!bd || bdFor !== bdDay) {
-    el.innerHTML = html + `<div class="group">${skelRows(4)}</div>`;
-    bindIvSeg(); bindBoardDays(); loadBoard(bdDay); return;
-  }
+  const ready = bd && bdFor === bdDay;
+  const body = ready ? boardHtml(bd, bdDay) : { html: `<div class="group">${skelRows(4)}</div>`, ivs: [] };
+  el.innerHTML = html + `<div class="dpager" id="bdPager"><div class="dtrack"><div class="dbody">${body.html}</div></div></div>`;
+  bindIvSeg(); bindBoardDays();
+  const sel = el.querySelector('.day7[aria-pressed="true"]');
+  if (sel) { const strip = sel.parentElement; strip.scrollLeft = Math.max(0, sel.offsetLeft - (strip.clientWidth - sel.offsetWidth) / 2); }
+  daySwipe($('bdPager'), {
+    can: d => { const n = addDay(bdDay, d); return n >= days[0] && n <= days[6]; },
+    peek: d => { const n = addDay(bdDay, d), hit = cacheGet(bdCache, n); return hit ? boardHtml(hit, n).html : `<div class="group">${skelRows(4)}</div>`; },
+    go: d => { bdDay = addDay(bdDay, d); renderBoard(); }
+  });
+  if (ready) bindBoardDrag(body.ivs); else loadBoard(bdDay);
+}
+/** One day's board as HTML (named like the globals on purpose). → { html, ivs } */
+function boardHtml(bd, bdDay) {
+  const tz = ivl.homeTz, now = Date.now();
+  let html = '';
   const ivs = ivl.upcoming.filter(x => x.end > bd.from && x.start < bd.to && x.resp !== 'declined');
   const ivIds = new Set(ivs.flatMap(x => x.ids));
   const mine = bd.mine.filter(e => !ivIds.has(e.id));
@@ -3186,10 +3225,13 @@ function renderBoard() {
       <div class="bhd"></div>${cols.map(c => `<div class="bhd"><span class="bav ${c.key === 'me' ? 'me' : ''}">${esc(c.name[0])}</span><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></div>`).join('')}
       <div class="btimes" style="height:${(h1 - h0) * BD_PX}px">${hours.map(h => `<span style="top:${(h - h0) * BD_PX}px">${h === h0 ? '' : esc(fmtT(bd.from + h * 3600000, tz).replace(':00', '').replace(' ', ''))}</span>`).join('')}</div>
       ${cols.map(colHtml).join('')}
-    </div></div></div>
-    <div class="hint">Drag an interview from your column onto someone to hand it over at the same time. Tap one for details. Grey blocks are when people are busy; times are yours.</div>`;
-  el.innerHTML = html;
-  bindIvSeg(); bindBoardDays(); bindBoardDrag(ivs);
+    </div></div></div>`;
+  const key = [];
+  if (ivs.some(x => !x.handed)) key.push(['<i class="lg-blk iv" aria-hidden="true"></i>', 'Drag onto someone to hand over']);
+  if (ivs.some(x => x.handed)) key.push(['<i class="lg-blk got" aria-hidden="true"></i>', 'Handed over']);
+  if (mine.length || bd.people.some(p => p.busy.length)) key.push(['<i class="lg-blk busy" aria-hidden="true"></i>', 'Busy']);
+  html += legendHtml(key);
+  return { html, ivs };
 }
 function bindBoardDays() {
   $('v-iv').querySelectorAll('[data-bday]').forEach(b => b.onclick = () => { bdDay = b.dataset.bday; renderBoard(); });
