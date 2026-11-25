@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '8cc601d65c';</script>
+<script>window.TRACE_VER = 'ae6c7f27b1';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -283,6 +283,10 @@
   .tdgap-b, .lg-lock { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--note-soft); color: var(--focus); flex: none; } .tdgap-b .i, .lg-lock .i { width: 12px; height: 12px; }
   .lg-lock { width: 18px; height: 18px; }
   .tdgap > span:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .blksug { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--note-soft); font-size: 13.5px; line-height: 1.35; }
+  .blksug > .i { width: 17px; height: 17px; color: var(--focus); flex: none; } .blksug .grow { flex: 1; min-width: 0; } .blksug .btn { flex: none; }
+  .blksug.light { background: var(--surface-2); color: var(--muted); } .blksug.light > .i { color: var(--muted); }
+  .tdblock.sug { border-color: color-mix(in srgb, var(--focus) 45%, var(--line)); background: var(--note-soft); }
   .blkq { display: flex; flex-wrap: wrap; gap: 8px; } .blkq .pick { padding: 7px 12px; font-size: 13.5px; } .blkq .pick small { color: var(--muted); font-weight: 400; margin-left: 2px; }
   .blkgrid { display: grid; grid-template-columns: 62px 1fr 1fr; gap: 4px; touch-action: none; user-select: none; -webkit-user-select: none; }
   .blkh { display: grid; align-content: center; line-height: 1.15; } .blkh b { font-size: 13px; font-weight: 600; } .blkh small { font-size: 11px; color: var(--muted); }
@@ -2314,7 +2318,7 @@ function renderToday() {
   bindTdNav();
   $('tdClash').onclick = openClashSheet;
   const blkDay = () => addDay(dayIn(ag.from + 12 * 3600000, ag.homeTz), 0);
-  if ($('tdBlock')) $('tdBlock').onclick = () => openBlock(agOffset === 0 ? null : blkDay());
+  if ($('tdBlock')) $('tdBlock').onclick = () => openBlock(agOffset === 0 ? null : blkDay(), $('tdBlock').dataset.sug ? { all: true } : null);
   el.querySelectorAll('[data-gap]').forEach(b => b.onclick = () => {
     const [a, z] = b.dataset.gap.split('-').map(Number), tz = ag.homeTz;
     const d = dayIn(a, tz), day = a < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d;   // after midnight it's the evening before
@@ -2366,7 +2370,10 @@ function todayHtml(ag, agOffset) {
       <button class="tdst ${clashN ? 'bad' : ''}" type="button" id="tdClash"><b>${clashN}</b><span>clash${clashN === 1 ? '' : 'es'}${reply ? ` · ${reply} need${reply === 1 ? 's' : ''} a reply` : ''}</span></button></div>`;
   if (agOffset >= 0) {
     const bm = Math.round(blocked.filter(e => e.end > now).reduce((n, e) => n + (e.end - Math.max(e.start, now)) / 60000, 0));
-    html += `<button class="tdblock" type="button" id="tdBlock">${icon('lock')}<span class="grow"><b>Block time</b><small>${bm ? esc(fmtDur(bm)) + ' blocked · others see “Busy”' : 'Show as busy so no one books you'}</small></span>${icon('chev', 'chev')}</button>`;
+    const eve = agOffset === 0 ? blkToday(tz) : dayIn(ag.from + 12 * 3600000, tz), ew = blkWindow(eve, tz);
+    const suggest = !bm && !blocked.some(e => e.end > ew.from && e.start < ew.to) && BLK_BUSY_DAYS.includes(blkWeekday(eve)) && ew.to > now;
+    html += `<button class="tdblock ${suggest ? 'sug' : ''}" type="button" id="tdBlock" ${suggest ? 'data-sug="1"' : ''}>${icon('lock')}<span class="grow"><b>${suggest ? 'Busy ' + esc(blkDayName(eve)) + '? Block your free time' : 'Block time'}</b><small>${bm ? esc(fmtDur(bm)) + ' blocked · others see “Busy”'
+      : suggest ? esc(blkDayName(eve)) + 's are usually packed. One tap keeps the rest of the evening yours.' : 'Show as busy so no one books you'}</small></span>${icon('chev', 'chev')}</button>`;
   }
   // timeline
   let tl = '';
@@ -2504,6 +2511,10 @@ function bindDaySwipe() {
 }
 /* ───────── blocked time: show as "Busy" in your working evening so no one books you ───────── */
 const BLK_FROM_H = 18, BLK_HOURS = 9, BLK_STEP = 30 * 60000;   // 6 PM → 3 AM, half-hour slots (same as the server)
+/** Your usual week: Mondays and Wednesdays are packed (Relay suggests blocking), Tuesdays and Thursdays are lighter. */
+const BLK_BUSY_DAYS = [1, 3], BLK_LIGHT_DAYS = [2, 4];
+const blkWeekday = day => new Date(day + 'T12:00:00Z').getUTCDay();
+const blkDayName = day => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' }).format(Date.parse(day + 'T12:00:00Z'));
 let blk = null;   // the sheet: { day, w, cells, sel: Set of slot starts, orig, saving }
 /** The working evening that starts on `day`: from/to in ms, in your time zone. */
 function blkWindow(day, tz) {
@@ -2548,7 +2559,7 @@ async function openBlock(day, pre) {
     }
     blk.cells = cells;
     cells.forEach(c => { if (c.on) { blk.sel.add(c.t); blk.orig.add(c.t); } });
-    if (blk.pre) cells.forEach(c => { if (!c.mtg && !c.past && c.t >= blk.pre.start && c.t + BLK_STEP <= blk.pre.end) blk.sel.add(c.t); });
+    if (blk.pre) cells.forEach(c => { if (!c.mtg && !c.past && (blk.pre.all || (c.t >= blk.pre.start && c.t + BLK_STEP <= blk.pre.end))) blk.sel.add(c.t); });
     renderBlock();
   } catch (e) { if (blk && blk.day === day) { blk.err = true; renderBlock(); showError(e, { retry: () => openBlock(day, pre) }); } }
 }
@@ -2565,6 +2576,9 @@ function renderBlock() {
       <span class="w">${i === 0 ? 'Tonight' : esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span></button>`).join('')}</div>`;
   if (!b.cells) { el.innerHTML = html + (b.err ? '' : `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading your evening…</div>`) + `<div class="group">${skelRows(3)}</div>`; bindBlock(); return; }
   const half = b.w.from + 4 * 3600000;   // 10 PM: New York's morning before, afternoon after
+  const wd = blkWeekday(b.day), freeLeft = b.cells.some(c => !c.past && !c.mtg && !b.sel.has(c.t));
+  if (BLK_BUSY_DAYS.includes(wd) && !b.orig.size && freeLeft) html += `<div class="blksug">${icon('lock')}<span class="grow">${esc(blkDayName(b.day))}s are usually packed. Block the free time so nothing else lands on it?</span><button type="button" class="btn sm ink" data-blkq="all">Block free time</button></div>`;
+  else if (BLK_LIGHT_DAYS.includes(wd) && !b.orig.size && !b.sel.size) html += `<div class="blksug light">${icon('info')}<span class="grow">${esc(blkDayName(b.day))}s are usually lighter, a good evening to keep open for interviews.</span></div>`;
   html += `<div class="blkq">
       <button type="button" class="pick" data-blkq="all">Whole evening</button>
       <button type="button" class="pick" data-blkq="am">6–10 PM <small>ET morning</small></button>
