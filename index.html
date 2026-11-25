@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '3ba69637a2';</script>
+<script>window.TRACE_VER = '2c03911b39';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -1072,7 +1072,7 @@ const READ_CALLS = new Set(['getState', 'listCalendars', 'listModels', 'countFor
   'ivCalendars', 'ivList', 'ivSlots', 'accounts', 'ivBoard', 'boot', 'prefetch', 'ivPast', 'analyze', 'voice', 'acctStart']);
 /* Day caches: { key: { v, at, d } }. Shown for 30 min (refreshed quietly after 3), only on the day they were made
    (Today's keys are offsets from today), and kept across app restarts. Any change made in Relay drops them. */
-const PRE_SHOW_MS = 30 * 60000, PRE_FRESH_MS = 3 * 60000, PRE_KEY = 'relay_pre_v1';
+const PRE_SHOW_MS = 30 * 60000, PRE_FRESH_MS = 3 * 60000, PRE_KEY = 'relay_pre_v2';
 let agCache = {}, bdCache = {}, preAt = 0, prefetching = null, preGen = 0, preTimer = 0, bootPeople = null;
 const preDay = () => wday(Date.now());   // caches are for one workday
 const cachePut = (c, k, v, at) => { c[k] = { v, at: at || Date.now(), d: preDay() }; };
