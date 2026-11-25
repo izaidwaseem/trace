@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '4b1dad03bd';</script>
+<script>window.TRACE_VER = 'b1718fc04b';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -635,6 +635,10 @@
   .sheet { width: 100%; max-width: 640px; background: var(--surface); border-radius: 20px 20px 0 0; display: grid; gap: 16px;
     padding-block: 22px calc(26px + env(safe-area-inset-bottom, 0px));
     padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); }
+  /* tall sheets scroll inside themselves; the page behind stays put (iPhone would otherwise scroll it instead) */
+  .sheet.tall { max-height: 92vh; max-height: 92dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+  .sheet-wrap { overscroll-behavior: contain; }
+  html.sheet-open, html.sheet-open body { overflow: hidden; }
   .sheet h2 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
   .steps { display: grid; gap: 12px; }
   .step { display: flex; gap: 12px; align-items: center; color: var(--faint); }
@@ -917,10 +921,10 @@
 </div>
 
 <div class="sheet-wrap" id="blkSheet" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="blkTitle" id="blkBody" style="max-height:92vh;overflow-y:auto"></div>
+  <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="blkTitle" id="blkBody"></div>
 </div>
 <div class="sheet-wrap" id="oooSheet" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="oooTitle" id="oooBody" style="max-height:92vh;overflow-y:auto"></div>
+  <div class="sheet tall" role="dialog" aria-modal="true" aria-labelledby="oooTitle" id="oooBody"></div>
 </div>
 <div class="sheet-wrap" id="ivSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ivsTitle" id="ivsBody" style="max-height:90vh;overflow-y:auto"></div>
@@ -2559,6 +2563,19 @@ function bindDaySwipe() {
     go: d => loadToday(agWant + d)
   });
 }
+/**
+ * Redraws a sheet that's open without losing your place: keeps the scroll position and the
+ * field you're typing in. Skips the redraw when nothing changed (iPhone stops a scroll that's
+ * in progress when its content is replaced).
+ */
+function sheetPaint(el, html) {
+  if (el._html === html) return;
+  const top = el.scrollTop, a = document.activeElement, id = a && el.contains(a) && a.id, sel = id && a.selectionStart != null ? [a.selectionStart, a.selectionEnd] : null;
+  el.innerHTML = html; el._html = html;
+  el.scrollTop = top;
+  if (id && $(id)) { const f = $(id); f.focus({ preventScroll: true }); if (sel) try { f.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
+}
+function sheetLock() { document.documentElement.classList.toggle('sheet-open', [...document.querySelectorAll('.sheet-wrap')].some(w => !w.hidden)); }
 /* ───────── blocked time: show as "Busy" in your working evening so no one books you ───────── */
 const BLK_FROM_H = 18, BLK_HOURS = 9, BLK_STEP = 30 * 60000;   // 6 PM → 3 AM, half-hour slots (same as the server)
 /** Your usual week: Mondays and Wednesdays are packed (Relay suggests blocking), Tuesdays and Thursdays are lighter. */
@@ -2596,7 +2613,7 @@ async function openBlock(day, pre) {
   if (!tz) return;
   day = day || blkToday(tz);
   blk = { day, tz, w: blkWindow(day, tz), cells: null, sel: new Set(), orig: new Set(), pre: pre || null };
-  $('blkSheet').hidden = false;
+  $('blkSheet').hidden = false; $('blkBody').scrollTop = 0; $('blkBody')._html = ''; sheetLock();
   renderBlock();
   try {
     const evs = await blkEvents(day, tz);
@@ -2617,7 +2634,7 @@ async function openBlock(day, pre) {
     renderBlock();
   } catch (e) { if (blk && blk.day === day) { blk.err = true; renderBlock(); showError(e, { retry: () => openBlock(day, pre) }); } }
 }
-function closeBlock() { $('blkSheet').hidden = true; blk = null; }
+function closeBlock() { $('blkSheet').hidden = true; blk = null; sheetLock(); }
 function renderBlock() {
   const el = $('blkBody'), b = blk;
   if (!b) return;
@@ -2628,7 +2645,7 @@ function renderBlock() {
     <div class="hint" style="margin:-8px 0 0">People you share your calendar with see only “Busy”, so no one books these times. Nobody is notified.</div>
     <div class="days7" role="group" aria-label="Evening">${days.map((d, i) => `<button type="button" class="day7" data-blkday="${d}" aria-pressed="${d === b.day}">
       <span class="w">${i === 0 ? 'Tonight' : esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span></button>`).join('')}</div>`;
-  if (!b.cells) { el.innerHTML = html + (b.err ? '' : `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading your evening…</div>`) + `<div class="group">${skelRows(3)}</div>`; bindBlock(); return; }
+  if (!b.cells) { sheetPaint(el, html + (b.err ? '' : `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading your evening…</div>`) + `<div class="group">${skelRows(3)}</div>`); bindBlock(); return; }
   const half = b.w.from + 4 * 3600000;   // 10 PM: New York's morning before, afternoon after
   const wd = blkWeekday(b.day), freeLeft = b.cells.some(c => !c.past && !c.mtg && !b.sel.has(c.t));
   if (BLK_BUSY_DAYS.includes(wd) && !b.orig.size && freeLeft) html += `<div class="blksug">${icon('lock')}<span class="grow">${esc(blkDayName(b.day))}s are usually packed. Block the free time so nothing else lands on it?</span><button type="button" class="btn sm ink" data-blkq="all">Block free time</button></div>`;
@@ -2657,7 +2674,7 @@ function renderBlock() {
     <div class="hint" id="blkNameHint" style="margin:-6px 0 0">Only you see this name. Everyone else sees “Busy”.</div>
     <div class="blksum">${what}</div>
     <div class="actions"><button class="btn ink block" type="button" id="blkSave" ${blkSame(b) ? 'disabled' : ''}>${icon('lock')}${b.orig.size && !b.sel.size ? 'Remove blocks' : b.orig.size ? 'Save changes' : 'Block ' + (b.sel.size ? fmtDur(blkMins(b.sel)) : 'time')}</button></div>`;
-  el.innerHTML = html;
+  sheetPaint(el, html);
   bindBlock();
 }
 /** Nothing to save: same slots, and the same name (or no blocks to name). */
@@ -2761,13 +2778,13 @@ async function openOoo(pre) {
   const tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
   if (!tz) return;
   oo = { tz, from: pre && pre.from || '', to: pre && pre.to || '', title: pre && pre.title || '', list: null, aff: null, affFor: '' };
-  $('oooSheet').hidden = false;
+  $('oooSheet').hidden = false; $('oooBody').scrollTop = 0; $('oooBody')._html = ''; sheetLock();
   renderOoo();
   loadHolidays().then(() => { if (oo) renderOoo(); });
   try { oo.list = await run('oooList'); } catch (e) { oo.list = []; }
   if (oo) { renderOoo(); oooAffected(); }
 }
-function closeOoo() { $('oooSheet').hidden = true; oo = null; }
+function closeOoo() { $('oooSheet').hidden = true; oo = null; sheetLock(); }
 /** Meetings already on the chosen days, so you can hand interviews over before you go. */
 async function oooAffected() {
   const o = oo;
@@ -2839,7 +2856,7 @@ function renderOoo() {
   }
   const editing = o.from && (o.list || []).some(x => !(x.to < o.from || x.from > (o.to || o.from)));
   html += `<div class="actions"><button class="btn ink block" type="button" id="oooSave" ${o.from ? '' : 'disabled'}>${icon('away')}${!o.from ? 'Take time off' : editing ? 'Update time off' : 'Take ' + nDays + ' day' + (nDays === 1 ? '' : 's') + ' off'}</button></div>`;
-  el.innerHTML = html;
+  sheetPaint(el, html);
   bindOoo();
 }
 function bindOoo() {
