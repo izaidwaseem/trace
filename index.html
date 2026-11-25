@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'db0e2f7fbc';</script>
+<script>window.TRACE_VER = '8cc601d65c';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -238,6 +238,7 @@
   .lg-blk { width: 14px; height: 10px; border-radius: 3px; flex: none; }
   .lg-blk.iv { background: var(--note-soft); border-left: 3px solid var(--focus); }
   .lg-blk.got { background: var(--new-soft); border-left: 3px solid var(--new); }
+  .lg-blk.blocked { background: var(--note-soft); border-left: 3px solid var(--focus); }
   .lg-blk.busy { background: var(--surface-2); background-image: repeating-linear-gradient(135deg, transparent 0 3px, var(--line-strong) 3px 4px); }
   .tdsw .grow .linkbtn { justify-self: center; margin-top: 2px; }
   .tdsw { display: flex; align-items: center; gap: 10px; }
@@ -269,6 +270,31 @@
   .tdcg > .tdr + .tdr { border-top: 1px dashed var(--line); }
   .tdcg-h { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px 0 16px; font-size: 11.5px; font-weight: 600; color: var(--remove); }
   .tdcg-h .i { width: 15px; height: 15px; }
+  /* blocked time */
+  .tdblk { background-color: var(--note-soft); background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--focus) 10%, transparent) 7px 8px); }
+  .tdblk .tdr-n .i { width: 15px; height: 15px; color: var(--focus); flex: none; }
+  .tdblock { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .tdblock > .i:first-child { width: 18px; height: 18px; color: var(--focus); flex: none; }
+  .tdblock .grow { flex: 1; min-width: 0; display: grid; gap: 1px; } .tdblock b { font-size: 14.5px; font-weight: 600; } .tdblock small { font-size: 12.5px; color: var(--muted); }
+  .tdblock .chev { width: 16px; height: 16px; color: var(--faint); flex: none; }
+  button.tdgap { width: 100%; border: 0; background: none; font: inherit; cursor: pointer; }
+  .tdgap > span { white-space: nowrap; }
+  button.tdgap::before { flex: 0 0 6px; } button.tdgap::after { order: 1; } button.tdgap .tdgap-b { order: 2; margin-left: 0; }
+  .tdgap-b, .lg-lock { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--note-soft); color: var(--focus); flex: none; } .tdgap-b .i, .lg-lock .i { width: 12px; height: 12px; }
+  .lg-lock { width: 18px; height: 18px; }
+  .tdgap > span:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .blkq { display: flex; flex-wrap: wrap; gap: 8px; } .blkq .pick { padding: 7px 12px; font-size: 13.5px; } .blkq .pick small { color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .blkgrid { display: grid; grid-template-columns: 62px 1fr 1fr; gap: 4px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .blkh { display: grid; align-content: center; line-height: 1.15; } .blkh b { font-size: 13px; font-weight: 600; } .blkh small { font-size: 11px; color: var(--muted); }
+  .blkh.split { position: relative; } .blkh.split::before { content: ""; position: absolute; left: 0; right: -200%; top: -3px; border-top: 1px dashed var(--line-strong); }
+  .blkc { height: 38px; border-radius: 9px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--focus); cursor: pointer; display: grid; place-items: center; padding: 0 6px; min-width: 0; font: inherit; }
+  .blkc .i { width: 15px; height: 15px; }
+  .blkc.on { background-color: var(--note-soft); border-color: var(--focus); background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--focus) 16%, transparent) 7px 8px); }
+  .blkc.mtg { background: var(--surface-2); border-color: var(--line); color: var(--muted); cursor: default; justify-items: start; }
+  .blkc.mtg span { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .blkc.past { opacity: .4; cursor: default; }
+  .blksum { font-size: 13.5px; color: var(--muted); text-align: center; } .blksum b { color: var(--fg); }
+  .blk.blocked { background-color: var(--note-soft); color: var(--focus); background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--focus) 14%, transparent) 5px 6px); }
   .tdgap { display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); }
   .tdgap::before, .tdgap::after { content: ""; flex: 1; border-top: 1px dashed var(--line-strong); }
   .tdgap b { color: var(--new); font-weight: 600; }
@@ -709,6 +735,7 @@
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16z"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
@@ -858,6 +885,9 @@
   <div class="sheet sf" role="dialog" aria-modal="true" aria-labelledby="sfTitle" id="sfBody"></div>
 </div>
 
+<div class="sheet-wrap" id="blkSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="blkTitle" id="blkBody" style="max-height:92vh;overflow-y:auto"></div>
+</div>
 <div class="sheet-wrap" id="ivSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ivsTitle" id="ivsBody" style="max-height:90vh;overflow-y:auto"></div>
 </div>
@@ -1285,7 +1315,7 @@ function renderSyncStats() {
   if (!el) return;
   const ws = weekStart(), ps = S.profiles || [];
   const fresh = ps.filter(p => p.lastSync && p.lastSync.ts >= ws).length;
-  const changes = (S.history || []).filter(h => h.ts >= ws && !h.undone && !/^Undo of /.test(h.range || '') && !h.iv)
+  const changes = (S.history || []).filter(h => h.ts >= ws && !h.undone && !/^Undo of /.test(h.range || '') && !h.iv && !h.block)
     .reduce((n, h) => n + (h.added || 0) + (h.updated || 0) + (h.removed || 0), 0);
   const stale = ps.length - fresh, waiting = (S.queue || []).filter(j => j.status === 'waiting' || j.status === 'ready').length;
   el.innerHTML = `<div class="tdstats">
@@ -1333,7 +1363,7 @@ function renderUndoBox() {
 
 /* ───────── recent syncs: own scrolling card, grouped by day ───────── */
 let actFilter = 'all';
-const histKind = h => /^Undo of /.test(h.range || '') ? 'undo' : (h.voice || /^Voice: /.test(h.range || '')) ? 'voice' : (h.iv || /^Interview: /.test(h.range || '')) ? 'iv' : 'photo';
+const histKind = h => /^Undo of /.test(h.range || '') ? 'undo' : (h.block || /^Blocked time: /.test(h.range || '')) ? 'block' : (h.voice || /^Voice: /.test(h.range || '')) ? 'voice' : (h.iv || /^Interview: /.test(h.range || '')) ? 'iv' : 'photo';
 function renderHist() {
   const Hall = S.history || [];
   if ($('actFilter')) {
@@ -1365,6 +1395,7 @@ function histRow(h, H, timeFmt) {
   const isUndo = /^Undo of /.test(range);
   const isVoice = h.voice || /^Voice: /.test(range);
   const isIv = h.iv || /^Interview: /.test(range);
+  const isBlock = h.block || /^Blocked time: /.test(range);
   let title, kind;
   if (isUndo) {
     const w = range.slice(8);
@@ -1374,6 +1405,9 @@ function histRow(h, H, timeFmt) {
   } else if (isVoice) {
     title = '“' + range.replace(/^Voice: /, '') + '”';
     kind = 'Voice note';
+  } else if (isBlock) {
+    title = range.replace(/^Blocked time: /, '');
+    kind = 'Blocked time';
   } else if (isIv) {
     const t = range.replace(/^Interview: /, '');
     title = t.charAt(0).toUpperCase() + t.slice(1);
@@ -1384,7 +1418,7 @@ function histRow(h, H, timeFmt) {
   }
   const undone = h.undone || (!h.batch && H.some(x => x.code === h.code && x.range === 'Undo of ' + h.when));   // older entries without undo flags
   const canUndo = !undone && !isUndo && (h.batch || h.added > 0);
-  const ico = isUndo ? 'undo' : isVoice ? 'mic' : isIv ? 'listcheck' : 'camera';
+  const ico = isUndo ? 'undo' : isVoice ? 'mic' : isBlock ? 'lock' : isIv ? 'listcheck' : 'camera';
   return `<div class="act ${isUndo ? 'is-undo' : ''} ${undone ? 'is-undone' : ''}">
     ${chip(p || { code: h.code === 'VOICE' ? 'MIX' : h.code }, true)}
     <div class="txt"><div class="ht">${esc(title)}</div>
@@ -1401,7 +1435,7 @@ async function undoHistory(ts, btn) {
   const p = S.profiles.find(x => x.code === h.code);
   const what = [h.added && `remove the ${h.added} event${h.added === 1 ? '' : 's'} it added`, h.updated && `move ${h.updated} back`,
     h.removed && `put ${h.removed} back`].filter(Boolean).join(', ');
-  const ok = await dialog({ title: h.iv ? 'Undo this interview change?' : `Undo ${p ? p.name : h.code} sync?`, body: `${h.range || 'Sync'} (${h.when}). This will ${what || 'reverse it'} in your Google Calendar.`,
+  const ok = await dialog({ title: h.block ? 'Undo this blocked-time change?' : h.iv ? 'Undo this interview change?' : `Undo ${p ? p.name : h.code} sync?`, body: `${h.range || 'Sync'} (${h.when}). This will ${what || 'reverse it'} in your Google Calendar.`,
     primary: 'Undo sync', secondary: 'Cancel', danger: true });
   if (!ok) return;
   await withBusy(btn, 'Undoing…', async () => {
@@ -2251,6 +2285,9 @@ function tdMerge(list) {
   return out;
 }
 function tdRow(e, tz, now, extra) {
+  if (e.block) return `<div class="tdr tdblk ${e.end <= now ? 'dim' : ''}" role="button" tabindex="0" data-blk="${e.start}">
+    <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtDur(Math.round((e.end - e.start) / 60000)))}</small></span>
+    <span class="tdr-b"><span class="tdr-n">${icon('lock')}<span class="tdr-x">Blocked</span></span><span class="tdr-s">Until ${esc(fmtT(e.end, tz))} · others see “Busy”</span></span>${icon('chev', 'chev')}</div>`;
   const p = prof(e.proj), past = e.end <= now, live = e.start <= now && !past;
   const iv = ivl && e.iv ? ivFind(e.id) : null;
   const subs = [];
@@ -2260,6 +2297,7 @@ function tdRow(e, tz, now, extra) {
   if (iv && !e.forOther) subs.push([iv.who, iv.round].filter(Boolean).join(' · '));
   if (e.weekly) subs.push('weekly');
   if (e.resp === 'declined') subs.push('Declined');
+  if (!past && (e.clashes || []).some(c => c.type === 'block')) subs.push('On your blocked time');
   const dim = past || e.forOther || e.resp === 'declined' || e.free;
   const name = iv && !e.forOther ? ivName(iv) : e.title;
   return `<div class="tdr ${dim ? 'dim' : ''}" role="button" tabindex="0" data-td="${esc(e.id)}">
@@ -2275,6 +2313,14 @@ function renderToday() {
   el.innerHTML = html;
   bindTdNav();
   $('tdClash').onclick = openClashSheet;
+  const blkDay = () => addDay(dayIn(ag.from + 12 * 3600000, ag.homeTz), 0);
+  if ($('tdBlock')) $('tdBlock').onclick = () => openBlock(agOffset === 0 ? null : blkDay());
+  el.querySelectorAll('[data-gap]').forEach(b => b.onclick = () => {
+    const [a, z] = b.dataset.gap.split('-').map(Number), tz = ag.homeTz;
+    const d = dayIn(a, tz), day = a < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d;   // after midnight it's the evening before
+    openBlock(day, { start: a, end: z });
+  });
+  el.querySelectorAll('[data-blk]').forEach(b => { b.onclick = () => { const a = +b.dataset.blk, tz = ag.homeTz, d = dayIn(a, tz); openBlock(a < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d); }; b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } }; });
   if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
   el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
   el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
@@ -2290,12 +2336,13 @@ function renderToday() {
 function todayHtml(ag, agOffset) {
   const tz = ag.homeTz, now = Date.now(), isToday = agOffset === 0;
   const evs = ag.events.slice().sort((a, b) => a.start - b.start);
-  const mine = evs.filter(e => !e.forOther && e.resp !== 'declined' && !e.free);
+  const mine = evs.filter(e => !e.forOther && e.resp !== 'declined' && !e.free && !e.block);
+  const blocked = evs.filter(e => e.block);
   const inDay = (a, b) => Math.max(0, (Math.min(b, ag.to) - Math.max(a, ag.from)) / 60000);
   // numbers
   const total = mine.length, left = isToday ? mine.filter(e => e.end > now).length : total;
   const booked = Math.round(tdMerge(mine).reduce((n, b) => n + inDay(b.start, b.end), 0));
-  const blocks = tdMerge(mine.filter(e => !isToday || e.end > now));
+  const blocks = tdMerge(mine.concat(blocked).filter(e => !isToday || e.end > now));   // blocked time isn't free time
   let gapFrom = blocks[0] ? blocks[0].start : ag.from;   // free time between meetings, not before the first one
   const gaps = [];
   blocks.forEach(b => { if (b.start - gapFrom >= 30 * 60000) gaps.push({ start: gapFrom, end: b.start }); gapFrom = Math.max(gapFrom, b.end); });
@@ -2317,6 +2364,10 @@ function todayHtml(ag, agOffset) {
       <div class="tdst"><b>${booked ? esc(fmtHm(booked)) : '0'}</b><span>booked</span></div>
       <div class="tdst"><b>${longest ? esc(fmtHm(Math.round((longest.end - longest.start) / 60000))) : '–'}</b><span>${longest ? 'longest free · ' + esc(fmtT(longest.start, tz)) : 'no free gap'}</span></div>
       <button class="tdst ${clashN ? 'bad' : ''}" type="button" id="tdClash"><b>${clashN}</b><span>clash${clashN === 1 ? '' : 'es'}${reply ? ` · ${reply} need${reply === 1 ? 's' : ''} a reply` : ''}</span></button></div>`;
+  if (agOffset >= 0) {
+    const bm = Math.round(blocked.filter(e => e.end > now).reduce((n, e) => n + (e.end - Math.max(e.start, now)) / 60000, 0));
+    html += `<button class="tdblock" type="button" id="tdBlock">${icon('lock')}<span class="grow"><b>Block time</b><small>${bm ? esc(fmtDur(bm)) + ' blocked · others see “Busy”' : 'Show as busy so no one books you'}</small></span>${icon('chev', 'chev')}</button>`;
+  }
   // timeline
   let tl = '';
   const done = isToday ? evs.filter(e => e.end <= now) : [];
@@ -2334,17 +2385,29 @@ function todayHtml(ag, agOffset) {
     }
     group = [];
   };
+  const canBlock = agOffset >= 0;
+  let gapsBlockable = false;
+  const gap = until => {   // free time before `until`: tap it to block it
+    if (lastEnd === null || until - lastEnd < 30 * 60000) return;
+    const label = `<span><b>Free ${esc(fmtDur(Math.round((until - lastEnd) / 60000)))}</b> · ${esc(fmtT(lastEnd, tz))} – ${esc(fmtT(until, tz))}</span>`;
+    const inWin = [-1, 0].some(k => { const w = blkWindow(addDay(dayIn(lastEnd, tz), k), tz); return lastEnd < w.to && until > w.from; });   // only your working evening
+    if (canBlock && until > now && inWin) gapsBlockable = true;
+    tl += canBlock && until > now && inWin ? `<button class="tdgap" type="button" data-gap="${lastEnd}-${until}" aria-label="Free ${esc(fmtT(lastEnd, tz))} to ${esc(fmtT(until, tz))}. Block it.">${label}<span class="tdgap-b" aria-hidden="true">${icon('lock')}</span></button>`
+      : `<div class="tdgap">${label}</div>`;
+  };
   rest.forEach(e => {
+    if (e.block) { flush(); gap(e.start); tl += tdRow(e, tz, now); lastEnd = Math.max(lastEnd || 0, e.end); return; }
     const counts = !e.forOther && e.resp !== 'declined' && !e.free;
     if (!counts) { flush(); tl += tdRow(e, tz, now); return; }
     if (group.length && e.start < groupEnd) { group.push(e); groupEnd = Math.max(groupEnd, e.end); return; }
     flush();
-    if (lastEnd !== null && e.start - lastEnd >= 30 * 60000) tl += `<div class="tdgap"><span><b>Free ${esc(fmtDur(Math.round((e.start - lastEnd) / 60000)))}</b> · ${esc(fmtT(lastEnd, tz))} – ${esc(fmtT(e.start, tz))}</span></div>`;
+    gap(e.start);
     group = [e]; groupEnd = e.end;
     lastEnd = Math.max(lastEnd || 0, e.end);
   });
   flush();
   if (!evs.length) tl = `<div class="empty">No meetings ${isToday ? 'today' : 'this day'}.</div>`;
+  else if (!mine.length && blocked.length && !rest.some(e => !e.block)) tl += `<div class="empty">No meetings, just your blocked time.</div>`;
   else if (!rest.length && isToday) tl += `<div class="empty">That’s everything for today.</div>`;
   html += `<div class="tdtl">${tl}</div>
 `;
@@ -2352,6 +2415,7 @@ function todayHtml(ag, agOffset) {
   if (evs.some(e => e.resp === 'needsAction' && !e.forOther && e.end > now)) key.push(['<i class="sdot info" aria-hidden="true"></i>', 'Needs your reply']);
   if (evs.some(e => e.end <= now || e.forOther || e.resp === 'declined' || e.free) && (!isToday || tdEarlier || evs.some(e => e.end > now && (e.forOther || e.resp === 'declined' || e.free))))
     key.push(['<span class="lg-dim" aria-hidden="true">Aa</span>', 'Faded: done, declined or not yours']);
+  if (gapsBlockable) key.push([`<span class="lg-lock" aria-hidden="true">${icon('lock')}</span>`, 'Tap a free gap to block it']);
   html += legendHtml(key);
   return { html, evs };
 }
@@ -2436,6 +2500,160 @@ function bindDaySwipe() {
     can: () => true,
     peek: d => { const off = agWant + d, hit = cacheGet(agCache, off); return hit ? todayHtml(hit, off).html : todayLoadingHtml(off); },
     go: d => loadToday(agWant + d)
+  });
+}
+/* ───────── blocked time: show as "Busy" in your working evening so no one books you ───────── */
+const BLK_FROM_H = 18, BLK_HOURS = 9, BLK_STEP = 30 * 60000;   // 6 PM → 3 AM, half-hour slots (same as the server)
+let blk = null;   // the sheet: { day, w, cells, sel: Set of slot starts, orig, saving }
+/** The working evening that starts on `day`: from/to in ms, in your time zone. */
+function blkWindow(day, tz) {
+  const from = zoned(day, String(BLK_FROM_H).padStart(2, '0') + ':00', tz);
+  return { from, to: from + BLK_HOURS * 3600000 };
+}
+/** Before 3 AM you're still in last night's evening. */
+function blkToday(tz) { const now = Date.now(), d = dayIn(now, tz); return now < blkWindow(addDay(d, -1), tz).to ? addDay(d, -1) : d; }
+const blkOff = (day, tz) => Math.round((Date.parse(day) - Date.parse(dayIn(Date.now(), tz))) / 864e5);
+/** Your events in an evening, from the day caches (asks the server for a day it doesn't have). */
+async function blkEvents(day, tz) {
+  const o = blkOff(day, tz), out = [];
+  for (const k of [o, o + 1]) {
+    let a = cacheGet(agCache, k);
+    if (!a) { a = await run('agenda', k); cachePut(agCache, k, a); }
+    a.events.forEach(e => { if (!out.some(x => x.id === e.id)) out.push(e); });
+  }
+  const w = blkWindow(day, tz);
+  return out.filter(e => e.end > w.from && e.start < w.to);
+}
+function blkMins(set) { return set.size * BLK_STEP / 60000; }
+function blkRuns(starts) {   // [{start,end}] from slot starts
+  const s = [...starts].sort((a, b) => a - b), out = [];
+  s.forEach(t => { const l = out[out.length - 1]; if (l && l.end === t) l.end = t + BLK_STEP; else out.push({ start: t, end: t + BLK_STEP }); });
+  return out;
+}
+async function openBlock(day, pre) {
+  const tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
+  if (!tz) return;
+  day = day || blkToday(tz);
+  blk = { day, tz, w: blkWindow(day, tz), cells: null, sel: new Set(), orig: new Set(), pre: pre || null };
+  $('blkSheet').hidden = false;
+  renderBlock();
+  try {
+    const evs = await blkEvents(day, tz);
+    if (!blk || blk.day !== day) return;
+    const w = blk.w, now = Date.now(), cells = [];
+    for (let t = w.from; t < w.to; t += BLK_STEP) {
+      const hit = evs.filter(e => e.start < t + BLK_STEP && e.end > t);
+      const mtg = hit.find(e => !e.block && !e.forOther && e.resp !== 'declined' && !e.free);
+      cells.push({ t, past: t + BLK_STEP <= now, mtg: mtg ? mtg.title : '', on: hit.some(e => e.block) });
+    }
+    blk.cells = cells;
+    cells.forEach(c => { if (c.on) { blk.sel.add(c.t); blk.orig.add(c.t); } });
+    if (blk.pre) cells.forEach(c => { if (!c.mtg && !c.past && c.t >= blk.pre.start && c.t + BLK_STEP <= blk.pre.end) blk.sel.add(c.t); });
+    renderBlock();
+  } catch (e) { if (blk && blk.day === day) { blk.err = true; renderBlock(); showError(e, { retry: () => openBlock(day, pre) }); } }
+}
+function closeBlock() { $('blkSheet').hidden = true; blk = null; }
+function renderBlock() {
+  const el = $('blkBody'), b = blk;
+  if (!b) return;
+  const tz = b.tz, first = blkToday(tz);
+  const days = []; for (let i = 0; i < 7; i++) days.push(addDay(first, i));
+  const et = ms => new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric' }).format(ms).replace(' AM', 'a').replace(' PM', 'p');
+  let html = `<div class="ivs-h"><h2 id="blkTitle">Block time</h2><button class="iconbtn" type="button" id="blkX" aria-label="Close">${icon('x')}</button></div>
+    <div class="hint" style="margin:-8px 0 0">Shows you as “Busy” so no one books these times. Nobody is notified, and only you see that it’s blocked.</div>
+    <div class="days7" role="group" aria-label="Evening">${days.map((d, i) => `<button type="button" class="day7" data-blkday="${d}" aria-pressed="${d === b.day}">
+      <span class="w">${i === 0 ? 'Tonight' : esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span></button>`).join('')}</div>`;
+  if (!b.cells) { el.innerHTML = html + (b.err ? '' : `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading your evening…</div>`) + `<div class="group">${skelRows(3)}</div>`; bindBlock(); return; }
+  const half = b.w.from + 4 * 3600000;   // 10 PM: New York's morning before, afternoon after
+  html += `<div class="blkq">
+      <button type="button" class="pick" data-blkq="all">Whole evening</button>
+      <button type="button" class="pick" data-blkq="am">6–10 PM <small>ET morning</small></button>
+      <button type="button" class="pick" data-blkq="pm">10 PM–3 AM <small>ET afternoon</small></button>
+      ${b.sel.size ? '<button type="button" class="pick" data-blkq="none">Clear</button>' : ''}</div>`;
+  html += `<div class="blkgrid" id="blkGrid" role="group" aria-label="Half-hour slots. Tap or drag to block.">`;
+  for (let i = 0; i < b.cells.length; i += 2) {
+    const h = b.cells[i];
+    html += `<div class="blkh${h.t === half ? ' split' : ''}"><b>${esc(fmtT(h.t, tz).replace(':00', ''))}</b><small>${esc(et(h.t))} ET</small></div>`;
+    [b.cells[i], b.cells[i + 1]].forEach(c => {
+      if (!c) return;
+      const on = b.sel.has(c.t), dis = c.past || !!c.mtg;
+      html += `<button type="button" class="blkc${on ? ' on' : ''}${c.mtg ? ' mtg' : ''}${c.past ? ' past' : ''}" data-blkt="${c.t}" ${dis ? 'disabled' : ''} aria-pressed="${on}"
+        aria-label="${esc(fmtT(c.t, tz))}${c.mtg ? ', ' + esc(c.mtg) : on ? ', blocked' : ', free'}">${c.mtg ? `<span>${esc(c.mtg)}</span>` : on ? icon('lock') : ''}</button>`;
+    });
+  }
+  html += `</div>`;
+  const runs = blkRuns(b.sel), same = b.sel.size === b.orig.size && [...b.sel].every(t => b.orig.has(t));
+  const what = b.sel.size ? `<b>${esc(fmtDur(blkMins(b.sel)))}</b> blocked${runs.length > 1 ? ` in ${runs.length} slots` : ''} · ${runs.slice(0, 3).map(r => esc(fmtT(r.start, tz).replace(':00', '') + '–' + fmtT(r.end, tz).replace(':00', ''))).join(', ')}${runs.length > 3 ? '…' : ''}`
+    : b.orig.size ? 'All blocks removed for this evening' : 'Tap or drag across the times to block';
+  html += `<div class="blksum">${what}</div>
+    <div class="actions"><button class="btn ink block" type="button" id="blkSave" ${same ? 'disabled' : ''}>${icon('lock')}${b.orig.size && !b.sel.size ? 'Remove blocks' : b.orig.size ? 'Save changes' : 'Block ' + (b.sel.size ? fmtDur(blkMins(b.sel)) : 'time')}</button></div>`;
+  el.innerHTML = html;
+  bindBlock();
+}
+function bindBlock() {
+  const b = blk;
+  $('blkX').onclick = closeBlock;
+  $('blkSheet').onclick = e => { if (e.target === $('blkSheet')) closeBlock(); };
+  $('blkBody').querySelectorAll('[data-blkday]').forEach(x => x.onclick = () => { if (x.dataset.blkday !== b.day) openBlock(x.dataset.blkday); });
+  const sel = $('blkBody').querySelector('.day7[aria-pressed="true"]');
+  if (sel) { const s = sel.parentElement; s.scrollLeft = Math.max(0, sel.offsetLeft - (s.clientWidth - sel.offsetWidth) / 2); }
+  if (!b.cells) return;
+  const free = c => !c.past && !c.mtg;
+  $('blkBody').querySelectorAll('[data-blkq]').forEach(x => x.onclick = () => {
+    const q = x.dataset.blkq, half = b.w.from + 4 * 3600000;
+    const pick = b.cells.filter(c => free(c) && (q === 'all' || (q === 'am' && c.t < half) || (q === 'pm' && c.t >= half)));
+    if (q === 'none') b.sel.clear();
+    else if (pick.length && pick.every(c => b.sel.has(c.t))) pick.forEach(c => b.sel.delete(c.t));   // tapping it again takes it off
+    else pick.forEach(c => b.sel.add(c.t));
+    b.cells.filter(c => c.past && b.orig.has(c.t)).forEach(c => b.sel.add(c.t));   // what's already over stays as it was
+    renderBlock();
+  });
+  // tap a slot to switch it; drag across slots to paint them all the same way
+  const grid = $('blkGrid');
+  let paint = null;
+  const cellAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('[data-blkt]') : null; };
+  const apply = el => {
+    if (!el || el.disabled) return;
+    const t = +el.dataset.blkt;
+    if (paint.done.has(t)) return;
+    paint.done.add(t);
+    if (paint.on) b.sel.add(t); else b.sel.delete(t);
+    el.classList.toggle('on', paint.on); el.setAttribute('aria-pressed', paint.on); el.innerHTML = paint.on ? icon('lock') : '';
+  };
+  grid.addEventListener('pointerdown', e => {
+    const el = e.target.closest('[data-blkt]');
+    if (!el || el.disabled) return;
+    e.preventDefault();
+    paint = { on: !b.sel.has(+el.dataset.blkt), done: new Set() };
+    apply(el);
+    try { grid.setPointerCapture(e.pointerId); } catch (er) {}
+  });
+  grid.addEventListener('pointermove', e => { if (paint) apply(cellAt(e.clientX, e.clientY)); });
+  const end = () => { if (paint) { paint = null; renderBlock(); } };
+  grid.addEventListener('pointerup', end); grid.addEventListener('pointercancel', end);
+  grid.addEventListener('keydown', e => { const el = e.target.closest('[data-blkt]'); if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const t = +el.dataset.blkt; if (b.sel.has(t)) b.sel.delete(t); else b.sel.add(t); renderBlock(); } });
+  $('blkSave').onclick = e => saveBlock(e.currentTarget);
+}
+async function saveBlock(btn) {
+  const b = blk;
+  if (!b || b.saving) return;
+  b.saving = true;
+  const slots = blkRuns(b.sel), mins = blkMins(b.sel), tz = b.tz;
+  const when = b.day === blkToday(tz) ? 'tonight' : dayLabel(b.day).split(',')[0];
+  await withBusy(btn, 'Saving…', async () => {
+    try {
+      const r = await run('blockSet', { day: b.day, slots });
+      closeBlock();
+      if (view === 'today') loadToday(agWant);
+      if (r.same) return;
+      const msg = slots.length ? `Blocked ${fmtDur(mins)} ${when}` : `Blocks removed for ${when}`;
+      toast(msg, { type: 'ok', action: r.hist ? { label: 'Undo', fn: async () => {
+        toastBusy('Undoing…');
+        try { await run('undoEntry', r.hist); toast('Undone', { type: 'ok' }); } catch (e) { hideToast(); showError(e); }
+        if (view === 'today') loadToday(agWant);
+      } } : null });
+      run('getState').then(x => { S = x; }).catch(() => {});
+    } catch (e) { b.saving = false; showError(e, { retry: () => saveBlock(btn) }); }
   });
 }
 function openClashSheet() {
@@ -3207,7 +3425,7 @@ function boardHtml(bd, bdDay) {
   const colHtml = c => {
     let inner = '';
     if (c.key === 'me') {
-      mine.forEach(e => { inner += blk('busy', e.start, e.end, `<b>${esc(e.title)}</b>`); });
+      mine.forEach(e => { inner += e.block ? blk('blocked', e.start, e.end, `<b>Blocked</b>`) : blk('busy', e.start, e.end, `<b>${esc(e.title)}</b>`); });
       ivs.forEach(x => {
         inner += x.handed ? blk('ghost', x.start, x.end, `<b>${esc(x.company || x.who || 'Interview')}</b><span>→ ${esc(x.handed.name)}</span>`)
           : blk('iv', x.start, x.end, `<b>${esc(x.company || x.who || x.title)}</b><span>${esc([x.who && x.company ? x.who : '', x.round].filter(Boolean).join(' · '))}</span>`, `tabindex="0" role="button" data-bid="${esc(x.id)}" aria-label="${esc(ivName(x))}, ${esc(fmtT(x.start, tz))}. Drag to someone to hand over."`);
@@ -3229,7 +3447,8 @@ function boardHtml(bd, bdDay) {
   const key = [];
   if (ivs.some(x => !x.handed)) key.push(['<i class="lg-blk iv" aria-hidden="true"></i>', 'Drag onto someone to hand over']);
   if (ivs.some(x => x.handed)) key.push(['<i class="lg-blk got" aria-hidden="true"></i>', 'Handed over']);
-  if (mine.length || bd.people.some(p => p.busy.length)) key.push(['<i class="lg-blk busy" aria-hidden="true"></i>', 'Busy']);
+  if (mine.some(e => e.block)) key.push(['<i class="lg-blk blocked" aria-hidden="true"></i>', 'Your blocked time']);
+  if (mine.some(e => !e.block) || bd.people.some(p => p.busy.length)) key.push(['<i class="lg-blk busy" aria-hidden="true"></i>', 'Busy']);
   html += legendHtml(key);
   return { html, ivs };
 }
