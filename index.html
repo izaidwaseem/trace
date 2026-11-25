@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = 'ae6c7f27b1';</script>
+<script>window.TRACE_VER = '9c69b64ee6';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -297,6 +297,7 @@
   .blkc.mtg { background: var(--surface-2); border-color: var(--line); color: var(--muted); cursor: default; justify-items: start; }
   .blkc.mtg span { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .blkc.past { opacity: .4; cursor: default; }
+  .blkname { display: grid; gap: 6px; font-size: 13px; font-weight: 600; } .blkname input { font: 400 16px var(--font); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); width: 100%; min-width: 0; }
   .blksum { font-size: 13.5px; color: var(--muted); text-align: center; } .blksum b { color: var(--fg); }
   .blk.blocked { background-color: var(--note-soft); color: var(--focus); background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--focus) 14%, transparent) 5px 6px); }
   .tdgap { display: flex; align-items: center; gap: 10px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); }
@@ -2291,7 +2292,7 @@ function tdMerge(list) {
 function tdRow(e, tz, now, extra) {
   if (e.block) return `<div class="tdr tdblk ${e.end <= now ? 'dim' : ''}" role="button" tabindex="0" data-blk="${e.start}">
     <span class="tdr-t tnum">${esc(fmtT(e.start, tz))}<small>${esc(fmtDur(Math.round((e.end - e.start) / 60000)))}</small></span>
-    <span class="tdr-b"><span class="tdr-n">${icon('lock')}<span class="tdr-x">Blocked</span></span><span class="tdr-s">Until ${esc(fmtT(e.end, tz))} · others see “Busy”</span></span>${icon('chev', 'chev')}</div>`;
+    <span class="tdr-b"><span class="tdr-n">${icon('lock')}<span class="tdr-x">${esc(e.title || 'Blocked')}</span></span><span class="tdr-s">Blocked until ${esc(fmtT(e.end, tz))} · others see “Busy”</span></span>${icon('chev', 'chev')}</div>`;
   const p = prof(e.proj), past = e.end <= now, live = e.start <= now && !past;
   const iv = ivl && e.iv ? ivFind(e.id) : null;
   const subs = [];
@@ -2557,6 +2558,9 @@ async function openBlock(day, pre) {
       const mtg = hit.find(e => !e.block && !e.forOther && e.resp !== 'declined' && !e.free);
       cells.push({ t, past: t + BLK_STEP <= now, mtg: mtg ? mtg.title : '', on: hit.some(e => e.block) });
     }
+    const named = evs.find(e => e.block);
+    blk.origTitle = named ? named.title : '';
+    blk.title = blk.origTitle || (S && S.settings && S.settings.blockTitle) || 'Dev focus';
     blk.cells = cells;
     cells.forEach(c => { if (c.on) { blk.sel.add(c.t); blk.orig.add(c.t); } });
     if (blk.pre) cells.forEach(c => { if (!c.mtg && !c.past && (blk.pre.all || (c.t >= blk.pre.start && c.t + BLK_STEP <= blk.pre.end))) blk.sel.add(c.t); });
@@ -2571,7 +2575,7 @@ function renderBlock() {
   const days = []; for (let i = 0; i < 7; i++) days.push(addDay(first, i));
   const et = ms => new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric' }).format(ms).replace(' AM', 'a').replace(' PM', 'p');
   let html = `<div class="ivs-h"><h2 id="blkTitle">Block time</h2><button class="iconbtn" type="button" id="blkX" aria-label="Close">${icon('x')}</button></div>
-    <div class="hint" style="margin:-8px 0 0">Shows you as “Busy” so no one books these times. Nobody is notified, and only you see that it’s blocked.</div>
+    <div class="hint" style="margin:-8px 0 0">People you share your calendar with see only “Busy”, so no one books these times. Nobody is notified.</div>
     <div class="days7" role="group" aria-label="Evening">${days.map((d, i) => `<button type="button" class="day7" data-blkday="${d}" aria-pressed="${d === b.day}">
       <span class="w">${i === 0 ? 'Tonight' : esc(dayLabel(d).split(',')[0])}</span><span class="n tnum">${+d.slice(8)}</span></button>`).join('')}</div>`;
   if (!b.cells) { el.innerHTML = html + (b.err ? '' : `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading your evening…</div>`) + `<div class="group">${skelRows(3)}</div>`; bindBlock(); return; }
@@ -2596,13 +2600,21 @@ function renderBlock() {
     });
   }
   html += `</div>`;
-  const runs = blkRuns(b.sel), same = b.sel.size === b.orig.size && [...b.sel].every(t => b.orig.has(t));
+  const runs = blkRuns(b.sel);
   const what = b.sel.size ? `<b>${esc(fmtDur(blkMins(b.sel)))}</b> blocked${runs.length > 1 ? ` in ${runs.length} slots` : ''} · ${runs.slice(0, 3).map(r => esc(fmtT(r.start, tz).replace(':00', '') + '–' + fmtT(r.end, tz).replace(':00', ''))).join(', ')}${runs.length > 3 ? '…' : ''}`
     : b.orig.size ? 'All blocks removed for this evening' : 'Tap or drag across the times to block';
-  html += `<div class="blksum">${what}</div>
-    <div class="actions"><button class="btn ink block" type="button" id="blkSave" ${same ? 'disabled' : ''}>${icon('lock')}${b.orig.size && !b.sel.size ? 'Remove blocks' : b.orig.size ? 'Save changes' : 'Block ' + (b.sel.size ? fmtDur(blkMins(b.sel)) : 'time')}</button></div>`;
+  html += `<label class="blkname"><span>Name on your calendar</span><input id="blkName" type="text" maxlength="60" autocomplete="off" value="${esc(b.title)}" aria-describedby="blkNameHint"></label>
+    <div class="hint" id="blkNameHint" style="margin:-6px 0 0">Only you see this name. Everyone else sees “Busy”.</div>
+    <div class="blksum">${what}</div>
+    <div class="actions"><button class="btn ink block" type="button" id="blkSave" ${blkSame(b) ? 'disabled' : ''}>${icon('lock')}${b.orig.size && !b.sel.size ? 'Remove blocks' : b.orig.size ? 'Save changes' : 'Block ' + (b.sel.size ? fmtDur(blkMins(b.sel)) : 'time')}</button></div>`;
   el.innerHTML = html;
   bindBlock();
+}
+/** Nothing to save: same slots, and the same name (or no blocks to name). */
+function blkSame(b) {
+  const slots = b.sel.size === b.orig.size && [...b.sel].every(t => b.orig.has(t));
+  const name = (b.title || '').trim() || 'Dev focus';
+  return slots && (!b.sel.size || name === (b.origTitle || name));
 }
 function bindBlock() {
   const b = blk;
@@ -2646,21 +2658,23 @@ function bindBlock() {
   const end = () => { if (paint) { paint = null; renderBlock(); } };
   grid.addEventListener('pointerup', end); grid.addEventListener('pointercancel', end);
   grid.addEventListener('keydown', e => { const el = e.target.closest('[data-blkt]'); if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const t = +el.dataset.blkt; if (b.sel.has(t)) b.sel.delete(t); else b.sel.add(t); renderBlock(); } });
+  $('blkName').oninput = e => { b.title = e.target.value; $('blkSave').disabled = blkSame(b); };
   $('blkSave').onclick = e => saveBlock(e.currentTarget);
 }
 async function saveBlock(btn) {
   const b = blk;
   if (!b || b.saving) return;
   b.saving = true;
-  const slots = blkRuns(b.sel), mins = blkMins(b.sel), tz = b.tz;
+  const slots = blkRuns(b.sel), mins = blkMins(b.sel), tz = b.tz, title = (b.title || '').trim() || 'Dev focus';
   const when = b.day === blkToday(tz) ? 'tonight' : dayLabel(b.day).split(',')[0];
   await withBusy(btn, 'Saving…', async () => {
     try {
-      const r = await run('blockSet', { day: b.day, slots });
+      const r = await run('blockSet', { day: b.day, slots, title });
+      if (S && S.settings) S.settings.blockTitle = title;
       closeBlock();
       if (view === 'today') loadToday(agWant);
       if (r.same) return;
-      const msg = slots.length ? `Blocked ${fmtDur(mins)} ${when}` : `Blocks removed for ${when}`;
+      const msg = !slots.length ? `Blocks removed for ${when}` : !r.added && !r.removed ? `Renamed to “${title}”` : `${title}: ${fmtDur(mins)} blocked ${when}`;
       toast(msg, { type: 'ok', action: r.hist ? { label: 'Undo', fn: async () => {
         toastBusy('Undoing…');
         try { await run('undoEntry', r.hist); toast('Undone', { type: 'ok' }); } catch (e) { hideToast(); showError(e); }
@@ -3439,7 +3453,7 @@ function boardHtml(bd, bdDay) {
   const colHtml = c => {
     let inner = '';
     if (c.key === 'me') {
-      mine.forEach(e => { inner += e.block ? blk('blocked', e.start, e.end, `<b>Blocked</b>`) : blk('busy', e.start, e.end, `<b>${esc(e.title)}</b>`); });
+      mine.forEach(e => { inner += e.block ? blk('blocked', e.start, e.end, `<b>${esc(e.title || 'Blocked')}</b>`) : blk('busy', e.start, e.end, `<b>${esc(e.title)}</b>`); });
       ivs.forEach(x => {
         inner += x.handed ? blk('ghost', x.start, x.end, `<b>${esc(x.company || x.who || 'Interview')}</b><span>→ ${esc(x.handed.name)}</span>`)
           : blk('iv', x.start, x.end, `<b>${esc(x.company || x.who || x.title)}</b><span>${esc([x.who && x.company ? x.who : '', x.round].filter(Boolean).join(' · '))}</span>`, `tabindex="0" role="button" data-bid="${esc(x.id)}" aria-label="${esc(ivName(x))}, ${esc(fmtT(x.start, tz))}. Drag to someone to hand over."`);
