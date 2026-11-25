@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '82d78ed103';</script>
+<script>window.TRACE_VER = '79d834918c';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -222,6 +222,12 @@
   .slot[aria-pressed="true"] small { color: inherit; opacity: .75; }
   #v-today > div:empty { display: none; }
   #v-today { margin-top: -8px; }
+  /* day pager: the day follows your finger and the next/previous day slides in beside it */
+  #tdPager { overflow-x: clip; touch-action: pan-y; }
+  #tdTrack { position: relative; }
+  #tdTrack.anim { transition: transform .24s cubic-bezier(.2,.8,.2,1); }
+  .tdpeek { position: absolute; top: 0; width: 100%; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); pointer-events: none; }
+  .tdpeek > * { min-width: 0; }
   #todayBody { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
   #todayBody > * { min-width: 0; }
   #todayBody > .hint { margin-top: -2px; }
@@ -735,7 +741,7 @@
     <div id="shareBox"></div>
     <div class="todaycard" id="todayCard"></div>
     <div id="nextIvBox"></div>
-    <div id="todayBody"></div>
+    <div id="tdPager"><div id="tdTrack"><div id="todayBody"></div></div></div>
   </section>
 
   <!-- SYNC (tab): project calendars, photos, voice -->
@@ -2172,7 +2178,7 @@ async function loadToday(offset) {
     if (cacheOld(agCache, offset)) { if (offset >= -1 && offset <= 6) prefetchDays(true); else refreshDay(offset); }
     return;
   }
-  if (view === 'today') renderTodayLoading(offset);
+  if (view === 'today') { renderTodayLoading(offset); bindDaySwipe(); }
   agLoading = true;
   try {
     if (prefetching && offset >= -1 && offset <= 6) await prefetching;
@@ -2203,11 +2209,15 @@ function bindTdNav() {
   if ($('tdBack')) $('tdBack').onclick = () => loadToday(0);
 }
 /** Not loaded yet: show the day asked for at once, with a spinner, so the tap feels answered. */
-function renderTodayLoading(offset) {
-  const el = $('todayBody'), tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
+function todayLoadingHtml(offset) {
+  const tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
   const day = addDay(dayIn(Date.now(), tz), offset);
-  el.innerHTML = tdHead(offset, Date.parse(day + 'T12:00:00Z'), 'UTC')
+  return tdHead(offset, Date.parse(day + 'T12:00:00Z'), 'UTC')
     + `<div class="tdload" role="status"><span class="spin-sm" aria-hidden="true"></span>Loading…</div><div class="group">${skelRows(4)}</div>`;
+}
+function renderTodayLoading(offset) {
+  const el = $('todayBody');
+  el.innerHTML = todayLoadingHtml(offset);
   el.style.opacity = '';
   bindTdNav();
 }
@@ -2253,6 +2263,23 @@ function tdRow(e, tz, now, extra) {
 function renderToday() {
   const el = $('todayBody');
   if (!ag) { el.innerHTML = skelRows(5); loadToday(agOffset); return; }
+  const { html, evs } = todayHtml(ag, agOffset);
+  el.innerHTML = html;
+  bindTdNav();
+  $('tdClash').onclick = openClashSheet;
+  if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
+  el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
+  el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
+    if (ev.target.closest('a')) return;
+    const e = evs.find(x => x.id === b.dataset.td);
+    const iv = ivl && e && e.iv ? ivFind(e.id) : null;
+    if (iv) openIvDetail(iv.id); else if (e && e.link) window.open(e.link, '_blank', 'noopener');
+  });
+  el.style.opacity = '';
+  bindDaySwipe();
+}
+/** One day's Today screen as HTML. Takes the day's data and offset (named like the globals on purpose). */
+function todayHtml(ag, agOffset) {
   const tz = ag.homeTz, now = Date.now(), isToday = agOffset === 0;
   const evs = ag.events.slice().sort((a, b) => a.start - b.start);
   const mine = evs.filter(e => !e.forOther && e.resp !== 'declined' && !e.free);
@@ -2313,27 +2340,77 @@ function renderToday() {
   else if (!rest.length && isToday) tl += `<div class="empty">That’s everything for today.</div>`;
   html += `<div class="tdtl">${tl}</div>
     <div class="hint">Tap a meeting to open it. Blue dot: you haven’t replied. Dimmed: done, declined, or someone else’s (handed over, or a teammate’s interview copied to you). Swipe left or right to change day.</div>`;
-  el.innerHTML = html;
-  bindTdNav();
-  $('tdClash').onclick = openClashSheet;
-  if ($('tdEarl')) $('tdEarl').onclick = () => { tdEarlier = !tdEarlier; renderToday(); };
-  el.querySelectorAll('[data-td]').forEach(b => b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } });
-  el.querySelectorAll('[data-td]').forEach(b => b.onclick = ev => {
-    if (ev.target.closest('a')) return;
-    const e = evs.find(x => x.id === b.dataset.td);
-    const iv = ivl && e && e.iv ? ivFind(e.id) : null;
-    if (iv) openIvDetail(iv.id); else if (e && e.link) window.open(e.link, '_blank', 'noopener');
-  });
-  el.style.opacity = '';
-  if (!tdSwipe) {
-    tdSwipe = true;
-    let sx = 0, sy = 0;
-    el.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-    el.addEventListener('touchend', e => {
-      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
-      if (Math.abs(dx) > 70 && Math.abs(dy) < 45) loadToday(agWant + (dx < 0 ? 1 : -1));
-    }, { passive: true });
-  }
+  return { html, evs };
+}
+/**
+ * Swipe between days like Photos: the day follows your finger with the next (or previous) day
+ * beside it, and a short flick or a drag past a quarter of the width moves over. A mostly vertical
+ * drag scrolls as usual. Bound once, to the pager, so it works while a day is still loading too.
+ */
+function bindDaySwipe() {
+  const pager = $('tdPager'), track = $('tdTrack');
+  if (!pager || tdSwipe) return;
+  tdSwipe = true;
+  const GAP = 16;
+  let g = null;   // the drag in progress
+  const peek = off => {
+    const hit = cacheGet(agCache, off);
+    try { return hit ? todayHtml(hit, off).html : todayLoadingHtml(off); } catch (e) { return todayLoadingHtml(off); }
+  };
+  const addPeeks = () => {
+    const w = pager.clientWidth;
+    [-1, 1].forEach(d => {
+      const p = document.createElement('div');
+      p.className = 'tdpeek'; p.setAttribute('aria-hidden', 'true');
+      p.style.left = d * (w + GAP) + 'px';
+      p.innerHTML = peek(agWant + d);
+      p.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+      track.appendChild(p);
+    });
+  };
+  const clear = () => { track.classList.remove('anim'); track.style.transform = ''; track.querySelectorAll('.tdpeek').forEach(p => p.remove()); };
+  const settle = (to, done) => {
+    let fired = false;
+    const end = () => { if (fired) return; fired = true; track.removeEventListener('transitionend', end); done(); };
+    track.classList.add('anim');
+    track.style.transform = `translate3d(${to}px,0,0)`;
+    track.addEventListener('transitionend', end);
+    setTimeout(end, 320);   // no transition (reduced motion) or the event never comes
+  };
+  pager.addEventListener('touchstart', e => {
+    if (g && g.busy) return;   // still sliding from the last swipe
+    if (e.touches.length !== 1 || e.target.closest('input, textarea, select, .bscroll, .days7')) { g = null; return; }
+    const t = e.touches[0];
+    g = { x: t.clientX, y: t.clientY, dx: 0, axis: '', pts: [[t.clientX, e.timeStamp]] };
+  }, { passive: true });
+  pager.addEventListener('touchmove', e => {
+    if (!g || g.busy) return;
+    if (e.touches.length !== 1) { cancel(); return; }
+    const t = e.touches[0], dx = t.clientX - g.x, dy = t.clientY - g.y;
+    if (!g.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      g.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (g.axis === 'x') { clear(); addPeeks(); }
+    }
+    if (g.axis !== 'x') return;
+    e.preventDefault();   // ours now: don't scroll the page while moving sideways
+    g.dx = dx;
+    g.pts.push([t.clientX, e.timeStamp]); if (g.pts.length > 6) g.pts.shift();
+    track.style.transform = `translate3d(${dx}px,0,0)`;
+  }, { passive: false });
+  const cancel = () => { if (g && g.axis === 'x' && !g.busy) { g.busy = true; settle(0, () => { clear(); g = null; }); } else if (!(g && g.busy)) g = null; };
+  pager.addEventListener('touchend', e => {
+    if (!g || g.busy) return;
+    if (g.axis !== 'x') { g = null; return; }
+    const w = pager.clientWidth, a = g.pts[0], b = g.pts[g.pts.length - 1];
+    const v = b[1] > a[1] ? (b[0] - a[0]) / (b[1] - a[1]) : 0;   // px per ms over the last few moves
+    const dir = g.dx < 0 ? 1 : -1;
+    const go = Math.abs(g.dx) > w * 0.25 || (Math.abs(v) > 0.35 && Math.abs(g.dx) > 24 && Math.sign(v) === Math.sign(g.dx));
+    g.busy = true;
+    if (!go) { settle(0, () => { clear(); g = null; }); return; }
+    settle(-dir * (w + GAP), () => { clear(); g = null; loadToday(agWant + dir); });   // same scroll position, so the day you saw sliding in stays put
+  }, { passive: true });
+  pager.addEventListener('touchcancel', cancel, { passive: true });
 }
 function openClashSheet() {
   $('clsBody').innerHTML = `<div class="ivs-h"><h2 id="clsTitle">Clashes</h2><button class="iconbtn" type="button" id="clsX" aria-label="Close">${icon('x')}</button></div>` + clashesHtml();
