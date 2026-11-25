@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>window.TRACE_VER = '2c03911b39';</script>
+<script>window.TRACE_VER = '170b1bf14b';</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
@@ -2381,6 +2381,7 @@ function renderToday() {
     openOoo({ from: d, to: thu ? addDay(d, 1) : d, title: name });   // a Thursday holiday usually means the long weekend
   };
   if ($('tdOoo')) $('tdOoo').onclick = () => openOoo();
+  if ($('tdOff') && $('tdOff').dataset.hol) { const [d] = $('tdOff').dataset.hol.split('|'), thu = new Date(d + 'T12:00:00Z').getUTCDay() === 4; oooWarm(d, thu ? addDay(d, 1) : d); }
   el.querySelectorAll('[data-ooo]').forEach(b => { b.onclick = () => openOoo(); b.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); b.click(); } }; });
   if (!usHol) loadHolidays().then(l => { if (l.length && view === 'today' && $('tdOff') && !$('tdOff').dataset.hol) renderToday(); });
   el.querySelectorAll('[data-gap]').forEach(b => b.onclick = () => {
@@ -2800,38 +2801,76 @@ function oooSpan(e, tz) {
   const f = d => dayLabel(d).replace(/,.*/, '') + ' ' + +d.slice(8);
   return a === z ? f(a) : f(a) + ' – ' + f(z);
 }
+/* What the sheet already knows (this session, 3 min): your time off, and what's on chosen days. */
+const oooMemo = { list: null, listAt: 0, aff: {} };
+const OOO_MEMO_MS = 3 * 60000;
+const oooFresh = m => m && Date.now() - m.at < OOO_MEMO_MS;
+function oooForget() { oooMemo.list = null; oooMemo.aff = {}; }
+/** What's on the chosen workdays, straight from the day caches when they hold every one of them (instant). */
+function oooFromCache(from, to) {
+  const today = wday(Date.now()), off = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
+  const start = wStart(from), end = wStart(addDay(to, 1)), evs = [];
+  for (let k = off(from); k <= off(to); k++) {
+    const a = cacheGet(agCache, k);
+    if (!a) return null;
+    a.events.forEach(e => { if (!evs.some(x => x.id === e.id)) evs.push(e); });
+  }
+  return evs.filter(e => e.end > start && e.start < end && e.end > Date.now() && !e.block && !e.forOther && e.resp !== 'declined' && !e.free).sort((a, b) => a.start - b.start);
+}
+/** One request for the sheet: your time off and what's on the chosen days. Remembered for 3 minutes. */
+async function oooFetch(from, to) {
+  const r = await run('oooSheet', { from: from || '', to: to || from || '' });
+  oooMemo.list = r.list; oooMemo.listAt = Date.now();
+  if (from) oooMemo.aff[from + '|' + (to || from)] = { at: Date.now(), aff: r.aff };
+  return r;
+}
+/** Quietly load a suggested holiday's days, so the sheet opens with them ready. */
+const oooWarmed = new Set();
+function oooWarm(from, to) {
+  const k = from + '|' + to;
+  if (oooWarmed.has(k)) return;   // once per app open
+  oooWarmed.add(k);
+  oooFetch(from, to).catch(() => {});
+}
 async function openOoo(pre) {
   const tz = (S && S.settings && S.settings.homeTz) || (ag && ag.homeTz);
   if (!tz) return;
-  oo = { tz, from: pre && pre.from || '', to: pre && pre.to || '', title: pre && pre.title || '', list: null, aff: null, affFor: '' };
+  oo = { tz, from: pre && pre.from || '', to: pre && pre.to || '', title: pre && pre.title || '', list: oooMemo.list && Date.now() - oooMemo.listAt < OOO_MEMO_MS ? oooMemo.list : null, aff: null, affFor: '' };
   $('oooSheet').hidden = false; $('oooBody').scrollTop = 0; $('oooBody')._html = ''; sheetLock();
-  renderOoo();
   loadHolidays().then(() => { if (oo) renderOoo(); });
-  try { oo.list = await run('oooList'); } catch (e) { oo.list = []; }
-  if (oo) { renderOoo(); oooAffected(); }
+  oooAffected(!oo.list);
 }
-function closeOoo() { $('oooSheet').hidden = true; oo = null; sheetLock(); }
-/** Meetings already on the chosen days, so you can hand interviews over before you go. */
-async function oooAffected() {
+function closeOoo() { $('oooSheet').hidden = true; if (oo) clearTimeout(oo.t); oo = null; sheetLock(); }
+/**
+ * Meetings already on the chosen days, so you can hand interviews over before you go.
+ * Shown at once from what Relay already has; otherwise one request (after a short pause, since
+ * picking a range is two taps). needList: also fetch your time off.
+ */
+function oooAffected(needList) {
   const o = oo;
-  if (!o || !o.from) return;
-  const key = o.from + '|' + o.to;
-  if (o.affFor === key) return;
-  o.affFor = key; o.aff = null; renderOoo();
-  const tz = o.tz, start = wStart(o.from), end = wStart(addDay(o.to || o.from, 1));
-  const today = wday(Date.now()), off = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
-  const evs = [];
-  try {
-    for (let k = off(o.from); k <= Math.min(14, off(o.to || o.from)); k++) {
-      let a = cacheGet(agCache, k);
-      if (!a) { a = await run('agenda', k); cachePut(agCache, k, a); }
-      a.events.forEach(e => { if (!evs.some(x => x.id === e.id)) evs.push(e); });
-    }
-    if (!ivl) { try { await loadIv(); } catch (e) {} }
-  } catch (e) { if (oo === o && o.affFor === key) { o.aff = 'err'; renderOoo(); } return; }
-  if (oo !== o || o.affFor !== key) return;
-  o.aff = evs.filter(e => e.end > start && e.start < end && e.end > Date.now() && !e.block && !e.forOther && e.resp !== 'declined' && !e.free).sort((a, b) => a.start - b.start);
+  if (!o) return;
+  const to = o.to || o.from, key = o.from ? o.from + '|' + to : '';
+  if (!needList && key === o.affFor) return;
+  o.affFor = key;
+  const memo = key && oooFresh(oooMemo.aff[key]) ? oooMemo.aff[key].aff : null;
+  o.aff = !key ? null : memo || oooFromCache(o.from, to);
   renderOoo();
+  if (!needList && (!key || memo)) return;   // all known
+  clearTimeout(o.t);
+  o.t = setTimeout(async () => {
+    try {
+      const r = await oooFetch(o.from, to);
+      if (oo !== o) return;
+      o.list = r.list;
+      if (key && o.affFor === key) o.aff = r.aff;   // fresher, and knows which interview each one is
+      renderOoo();
+    } catch (e) {
+      if (oo !== o) return;
+      if (!o.list) o.list = [];
+      if (key && o.affFor === key && o.aff === null) o.aff = 'err';
+      renderOoo();
+    }
+  }, needList ? 0 : 250);
 }
 function renderOoo() {
   const o = oo, el = $('oooBody');
@@ -2873,10 +2912,10 @@ function renderOoo() {
     else if (o.aff === 'err') html += `<div class="hint">Couldn’t check your calendar. You can still save; Relay will alert you about anything on these days.</div>`;
     else if (!o.aff.length) html += `<div class="hint">Nothing booked. Relay will alert you if anything lands on these days.</div>`;
     else html += o.aff.map(e => {
-      const x = e.iv && ivl ? ivFind(e.id) : null, gave = x && x.handed;
+      const x = e.iv && ivl ? ivFind(e.ivId || e.id) : null, ivId = x ? x.id : e.ivId, gave = x ? x.handed && x.handed.name : e.handed;
       return `<div class="ooorow"><span class="tdr-t tnum">${esc(fmtDay(e.start, tz).replace(/,.*/, ''))}<small>${esc(fmtT(e.start, tz))}</small></span>
-        <span class="grow"><b>${e.iv ? '<span class="ivtag">Interview</span>' : ''}${esc(x ? ivName(x) : e.title)}</b>${gave ? `<small>Handed to ${esc(x.handed.name)}</small>` : ''}</span>
-        ${x && !gave ? `<button class="btn sm" type="button" data-ooohand="${esc(x.id)}">Hand over</button>` : e.link ? `<a class="btn sm ghost" href="${esc(e.link)}" target="_blank" rel="noopener" aria-label="Open in Google Calendar">${icon('external')}</a>` : ''}</div>`;
+        <span class="grow"><b>${e.iv ? '<span class="ivtag">Interview</span>' : ''}${esc(x ? ivName(x) : e.title)}</b>${gave ? `<small>Handed to ${esc(gave)}</small>` : ''}</span>
+        ${ivId && !gave ? `<button class="btn sm" type="button" data-ooohand="${esc(ivId)}">Hand over</button>` : e.link ? `<a class="btn sm ghost" href="${esc(e.link)}" target="_blank" rel="noopener" aria-label="Open in Google Calendar">${icon('external')}</a>` : ''}</div>`;
     }).join('') + `<div class="hint">These stay on your calendar. Hand interviews over, and decline other meetings in Google Calendar. Relay alerts you about anything new.</div>`;
     html += `</div>`;
   }
@@ -2899,11 +2938,17 @@ function bindOoo() {
   B.querySelectorAll('[data-oooh]').forEach(b => b.onclick = () => { const [f, t, n] = b.dataset.oooh.split('|'); o.from = f; o.to = t; if (!o.titleTyped) o.title = n; renderOoo(); oooAffected(); });
   B.querySelectorAll('[data-oooedit]').forEach(b => b.onclick = () => { const x = o.list.find(y => y.id === b.dataset.oooedit); o.from = x.from; o.to = x.to; o.title = x.title; o.titleTyped = true; renderOoo(); oooAffected(); });
   B.querySelectorAll('[data-ooorm]').forEach(b => b.onclick = () => removeOoo(b.dataset.ooorm, b));
-  B.querySelectorAll('[data-ooohand]').forEach(b => b.onclick = () => { const x = ivFind(b.dataset.ooohand); if (!x) return; closeOoo(); openHand(x); });
+  B.querySelectorAll('[data-ooohand]').forEach(b => b.onclick = async () => {
+    let x = ivFind(b.dataset.ooohand);
+    if (!x) { b.disabled = true; try { await loadIv(); } catch (e) {} x = ivFind(b.dataset.ooohand); b.disabled = false; }
+    if (!x) return toast('That interview isn’t in your list any more. Pull to refresh.', { type: 'warn' });
+    closeOoo(); openHand(x);
+  });
   if ($('oooName')) $('oooName').oninput = e => { o.title = e.target.value; o.titleTyped = true; };
   $('oooSave').onclick = e => saveOoo(e.currentTarget);
 }
 function afterOoo(msg, hist) {
+  oooForget();
   closeOoo();
   dropPrefetch();
   if (view === 'today') loadToday(agWant);
